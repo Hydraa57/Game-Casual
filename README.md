@@ -68,14 +68,16 @@ Kalau hanya web-nya yang di-deploy, **solo mode tetap jalan** (seluruh permainan
 
 ### 1. Deploy game-server
 
-Sudah ada [`apps/game-server/Dockerfile`](apps/game-server/Dockerfile) yang host-agnostic — jalan di Render, Fly.io, Railway, Koyeb, atau VPS biasa. Build context-nya **root repo**, bukan folder `apps/game-server`:
+**Jalur tercepat — Render Blueprint.** Sudah ada [`render.yaml`](render.yaml) di root: buka Render → **New → Blueprint** → pilih repo ini. Render membaca file itu dan membuat service-nya sendiri (Docker, region Singapura, health check `/health`, `CORS_ORIGIN` sudah terisi). Free tier Render tidak minta kartu kredit.
+
+**Host lain** — [`apps/game-server/Dockerfile`](apps/game-server/Dockerfile) host-agnostic, jalan di Fly.io, Railway, Koyeb, atau VPS biasa. Build context-nya **root repo**, bukan folder `apps/game-server`:
 
 ```bash
 docker build -f apps/game-server/Dockerfile -t pixelmatrix-server .
 docker run -p 3001:3001 -e CORS_ORIGIN=https://<domain-web-mu> pixelmatrix-server
 ```
 
-Di Render/Railway cukup arahkan ke Dockerfile itu dan set env-nya. Yang wajib dicek:
+Yang wajib dicek:
 
 | Env | Isi | Kenapa |
 |---|---|---|
@@ -86,13 +88,15 @@ Pastikan host-nya memberi **HTTPS**. Halaman web yang https tidak boleh membuka 
 
 ### 2. Arahkan web ke game-server
 
-Set env di hosting web:
+Di Vercel: **Settings → Environment Variables**, tambahkan untuk environment Production:
 
 ```
-NEXT_PUBLIC_GAME_SERVER_URL=https://<alamat-game-server>
+NEXT_PUBLIC_GAME_SERVER_URL=https://<nama-service>.onrender.com
 ```
 
-**Deploy ulang setelah menyetelnya.** Variabel `NEXT_PUBLIC_*` dibaca saat build, bukan saat halaman dibuka — mengubahnya di dashboard saja tidak berpengaruh sampai ada build baru.
+**Deploy ulang setelah menyetelnya** (Deployments → ⋯ → Redeploy). Variabel `NEXT_PUBLIC_*` dibaca saat build, bukan saat halaman dibuka — mengubahnya di dashboard saja tidak berpengaruh sampai ada build baru. Ini penyebab paling umum "sudah diset kok masih error".
+
+Selama env ini belum ada, client menebak `https://<domain-web>:3001` — port yang tidak pernah ada di Vercel. Itulah persisnya pesan error yang muncul di halaman multiplayer.
 
 ### 3. Pastikan
 
@@ -100,7 +104,9 @@ Buka `https://<alamat-game-server>/health` di browser. Kalau membalas `{"ok":tru
 
 Kalau masih gagal, pesan errornya sekarang menyebutkan alamat yang dicoba — itu petunjuk pertama yang perlu dilihat.
 
-> **Catatan free tier:** Render dan sejenisnya menidurkan instance yang idle, jadi match pertama setelah lama tidak dipakai bisa menunggu 30–60 detik. Untuk main di tongkrongan itu terasa; kalau mengganggu, pakai paket yang tidak tidur atau Fly.io.
+> **Catatan free tier:** Render menidurkan instance yang idle. Efeknya yang perlu diketahui: saat pertama membuka halaman multiplayer setelah lama tidak dipakai, statusnya **akan** menunjukkan "terputus" dulu selama 30–60 detik sementara server bangun, lalu berubah sendiri ke "tersambung" — client-nya mencoba ulang otomatis, jadi tidak perlu refresh. Untuk main di tongkrongan ini terasa; kalau mengganggu, pakai paket yang tidak tidur atau Fly.io.
+
+> **Latensi itu penting di game ini.** Pemenang klik rebutan ditentukan dari urutan kedatangan di server, jadi jarak fisik ke server langsung memengaruhi keadilannya. `render.yaml` sudah menyetel region **Singapura** (~30 ms dari Indonesia) alih-alih default Oregon (~200 ms). Kalau deploy manual tanpa Blueprint, pastikan pilih region terdekat.
 
 ## Mulai dari Mana?
 

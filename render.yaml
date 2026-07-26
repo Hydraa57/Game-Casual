@@ -1,0 +1,26 @@
+# Blueprint Render untuk game-server Pixel Matrix.
+#
+# Cara pakai: Render → New → Blueprint → pilih repo ini. Render membaca file ini
+# dan membuat service-nya sendiri. Web-nya TIDAK ada di sini — itu tetap di
+# Vercel; file ini hanya untuk server multiplayer yang butuh proses hidup terus.
+#
+# Kalau lebih suka host lain (Fly.io, Railway, Koyeb, VPS), lewati file ini dan
+# pakai apps/game-server/Dockerfile langsung — lihat README bagian Deployment.
+services:
+  - type: web
+    name: pixelmatrix-game-server
+    runtime: docker
+    dockerfilePath: ./apps/game-server/Dockerfile
+    # Build context-nya root repo, bukan folder apps/game-server: Dockerfile-nya
+    # perlu pnpm-lock.yaml dan packages/shared.
+    dockerContext: .
+    plan: free
+    # Singapura, bukan default Oregon. Untuk game refleks yang menentukan
+    # pemenang dari selisih milidetik, beda ~200 ms vs ~30 ms dari Indonesia itu
+    # bukan detail — di Oregon, rebutan pixel akan terasa tidak adil.
+    region: singapore
+    healthCheckPath: /health
+    envVars:
+      - key: CORS_ORIGIN
+        # Ganti kalau domain web-mu berubah. Jangan biarkan `*` di produksi.
+        value: https://game-casual-web.vercel.app
