@@ -31,6 +31,25 @@
 
 > Status: fungsinya sudah lengkap dan lolos uji otomatis di viewport HP (390×844). **Yang belum: penilaian "seru atau tidak" oleh kamu sendiri di HP nyata.** Itu gerbang menuju Fase 2 — angka di `packages/shared/src/constants/game.ts` (terutama `TARGET_COLOR_SPAWN_WEIGHT`, `INITIAL_SPAWN_INTERVAL_MS`, `INITIAL_LIFETIME_MS`) adalah yang paling layak diulik.
 
+## Fase 1.5 — Kedalaman Solo ✅
+
+Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederhana, dan mati di level 6 berarti mengulang 2-3 menit bagian mudah. Pengukuran membenarkan keduanya — dan menemukan kurva kesulitan yang sebagian saling meniadakan.
+
+- [x] **Rename ke Pixel Matrix** — "Pixel Pulse" sudah dipakai game lain (lihat [COMPETITIVE-RESEARCH.md](./COMPETITIVE-RESEARCH.md)). Key `localStorage` dimigrasi supaya rekor yang sudah ada tidak hilang
+- [x] **Kurva kesulitan diperbaiki**: interpolasi eksplisit Lv 1 → Lv 20; jumlah pixel hidup sekarang MENURUN (2,50 → 2,00), dulu justru naik
+- [x] **Bonus poin per level** ×1 → ×2, jadi bertahan di level sulit akhirnya dibayar (poin maks/klik 40 → 80)
+- [x] **`BoardState.level` eksplisit** — prasyarat supaya multiplayer papan-rebutan tidak menurunkan kesulitan dari klik satu pemain
+- [x] **Checkpoint tiap 5 level + continue 2×** — menjawab keluhan utama
+- [x] **Pixel spesial**: bom ☠ (Lv 8+), emas ★ (Lv 3+), nyawa ♥ (Lv 5+)
+- [x] **Dua warna target** dari Lv 12, bobot spawn total tetap
+- [x] **Mode chaos** Lv 21+: 4 modifier acak deterministik dari seed
+- [x] **`?level=N` khusus development** — alat balancing dan uji E2E level tinggi
+- [x] Riset pembanding ditulis ke [COMPETITIVE-RESEARCH.md](./COMPETITIVE-RESEARCH.md)
+
+**✅ Milestone:** 153 unit test hijau, semua mekanik terverifikasi end-to-end di viewport HP. **Gerbang berikutnya tetap sama: kamu sendiri harus merasa gamenya seru di HP nyata** sebelum Fase 2 dimulai.
+
+> Konstanta yang paling layak diulik saat balancing ada di `packages/shared/src/constants/game.ts`: `TARGET_COLOR_SPAWN_WEIGHT` (0.5 — paling berpengaruh ke "rasa"), `MIN_LIFETIME_MS` (1000 — jendela reaksi tersulit), `BOMB_MIN_CHANCE`/`BOMB_MAX_CHANCE`, dan `MAX_LEVEL_BONUS_MULTIPLIER` (setel 1 untuk mematikan bonus level).
+
 ## Fase 2 — Multiplayer Vertical Slice 🎯
 
 - [ ] `apps/game-server`: Express (`/health`) + Socket.IO + validasi payload (zod)
@@ -47,6 +66,8 @@
 - [ ] Join room gampang dari HP: input kode besar-besaran + tombol share/copy link undangan
 
 **✅ Milestone:** 2 HP di jaringan yang sama main bareng lancar; dua tap hampir bersamaan pada pixel yang sama → hanya satu yang dapat poin.
+
+> **Ini fase paling bernilai di seluruh roadmap.** Riset pembanding menemukan bahwa solo mode punya banyak saingan yang sudah rilis (Tappy Tiles Colors Rush praktis game yang sama), sementara kombinasi "browser + kode room + 2-4 HP terpisah + satu papan rebutan" tidak ditemukan padanannya. Kalau harus memilih satu fase untuk diselesaikan, ini yang dipilih.
 
 ## Fase 3 — Akun & Persistensi
 
@@ -85,6 +106,7 @@
 | Fase | Uji |
 |---|---|
 | 0 | `pnpm install` lalu `pnpm typecheck && pnpm lint && pnpm test` hijau; CI hijau |
+| 1.5 | `?level=8` bom mengurangi nyawa & emas membayar ×5; `?level=12` dua swatch warna target; `?level=21` badge chaos tampil; mati 3× → tombol "Lanjut dari Lv N", continue ketiga tidak ditawarkan |
 | 1 | Mainkan sendiri di localhost: skor/combo/nyawa/pause sesuai GDD; refresh → high score bertahan. **Lalu buka dari HP** (via IP LAN): papan pas di layar, tap responsif, tidak ada scroll/zoom liar |
 | 2 | Dua tab browser + satu incognito (3 "pemain"): skor sinkron; klik rebutan hanya dimenangkan satu pemain; spam klik terkena rate limit; tutup satu tab → match jalan terus. Ulangi dengan 2 HP nyata |
 | 3 | Login Google; main solo → skor muncul di profil & DB; main MP → match history terisi (guest tercatat sebagai nickname) |

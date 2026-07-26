@@ -2,7 +2,7 @@
 
 Game casual berbasis browser: refleks arcade + sentuhan brain-training, gaya retro pixel art. Bisa dimainkan solo (endless, kejar high score) atau bareng 2–4 teman secara real-time di satu papan yang sama — cukup bagikan kode room, tanpa install apa pun. **Dirancang mobile-first** karena skenario utamanya dimainkan bareng-bareng saat nongkrong, dari HP masing-masing.
 
-**Status: 🎮 Solo mode sudah bisa dimainkan** (Fase 1 selesai). Multiplayer menyusul di Fase 2.
+**Status: 🎮 Solo mode lengkap** (Fase 1 + 1.5 selesai) — kurva kesulitan sampai Lv 20, checkpoint & continue, pixel bom/emas/nyawa, dua warna target, dan mode chaos. Multiplayer menyusul di Fase 2, dan menurut [riset pembanding](docs/COMPETITIVE-RESEARCH.md) itulah pembeda sesungguhnya produk ini.
 
 ## Dokumen
 
@@ -12,7 +12,8 @@ Game casual berbasis browser: refleks arcade + sentuhan brain-training, gaya ret
 | [docs/API.md](docs/API.md) | Kontrak REST API — format response, endpoint user/room/skor/shop |
 | [docs/GAME-DESIGN.md](docs/GAME-DESIGN.md) | Spesifikasi gameplay Pixel Matrix — papan, skor, combo, kurva kesulitan, aturan multiplayer rebutan |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arsitektur teknis — struktur monorepo, kontrak event Socket.IO, skema database, deployment |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Roadmap 6 fase + checklist task + cara verifikasi per fase |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Roadmap per fase + checklist task + cara verifikasi |
+| [docs/COMPETITIVE-RESEARCH.md](docs/COMPETITIVE-RESEARCH.md) | Riset pembanding — game apa saja yang sudah mirip, dan di mana pembeda produk ini |
 
 ## Keputusan Kunci
 
@@ -20,6 +21,7 @@ Game casual berbasis browser: refleks arcade + sentuhan brain-training, gaya ret
 - **Guest dulu, auth belakangan**: di MVP siapa pun bisa buat/gabung room dengan nickname — teman bisa langsung main. NextAuth + PostgreSQL masuk di Fase 3.
 - **Multiplayer papan rebutan**: 2–4 pemain berebut pixel di papan yang sama; server otoritatif memutus siapa cepat dia dapat.
 - **Monorepo, satu sumber aturan main**: logika game hidup di `packages/shared` dan dipakai client (solo) maupun server (multiplayer) — keduanya dijamin identik.
+- **Kedalaman lewat beban mental, bukan cuma kecepatan**: warna target berganti, distraktor bertambah, dua warna target di Lv 12+, dan pixel bom yang menghukum karena *disentuh* — bukan karena diabaikan.
 - **Mobile-first**: papan tetap 8×8 di semua device (hanya ukurannya yang di-scale), HUD dibuat DOM/React agar responsif, target sentuh ≥44px. Detail di [GAME-DESIGN.md §7](docs/GAME-DESIGN.md).
 - **Bilingual sejak awal**: UI Indonesia (default) + English via next-intl.
 
