@@ -1,5 +1,7 @@
 import {
+  CHECKPOINT_EVERY_LEVELS,
   GRID_SIZE,
+  MAX_CONTINUES,
   SOLO_STARTING_LIVES,
   TARGET_MAX_DURATION_MS,
   TARGET_MIN_DURATION_MS,
@@ -56,6 +58,16 @@ export interface BoardState {
   readonly nextPixelSeq: number;
 }
 
+/**
+ * Titik simpan untuk fitur continue (solo). Merekam progres saat pemain
+ * menyentuh level kelipatan CHECKPOINT_EVERY_LEVELS.
+ */
+export interface Checkpoint {
+  readonly level: number;
+  readonly score: number;
+  readonly correctClicks: number;
+}
+
 export interface GameState {
   readonly config: GameConfig;
   readonly status: GameStatus;
@@ -63,6 +75,10 @@ export interface GameState {
   readonly elapsedMs: number;
   readonly board: BoardState;
   readonly score: ScoreState;
+  /** Checkpoint terakhir yang tercapai; `null` kalau belum pernah. */
+  readonly checkpoint: Checkpoint | null;
+  /** Sisa continue di ronde ini. Selalu 0 di multiplayer. */
+  readonly continuesLeft: number;
 }
 
 export function soloConfig(overrides: Partial<GameConfig> = {}): GameConfig {
@@ -135,7 +151,16 @@ export function createGameState({
       nextPixelSeq: 1,
     },
     score: createScoreState(config.startingLives),
+    checkpoint: null,
+    // Continue adalah fitur solo. Di multiplayer, "mati lalu lanjut" tidak masuk
+    // akal karena match-nya berjalan bersamaan untuk semua pemain.
+    continuesLeft: supportsContinues(config) ? MAX_CONTINUES : 0,
   };
+}
+
+/** Continue hanya untuk mode dengan sistem nyawa, yaitu solo. */
+export function supportsContinues(config: GameConfig): boolean {
+  return config.startingLives !== null;
 }
 
 export function startGame(state: GameState): GameState {
@@ -180,4 +205,71 @@ export function isTargetChangeImminent(state: GameState): boolean {
 export function remainingTimeMs(state: GameState): number | null {
   if (state.config.timeLimitMs === null) return null;
   return Math.max(0, state.config.timeLimitMs - state.elapsedMs);
+}
+
+// ---------------------------------------------------------------------------
+// Checkpoint & continue
+// ---------------------------------------------------------------------------
+
+export function isCheckpointLevel(level: number): boolean {
+  return level >= CHECKPOINT_EVERY_LEVELS && level % CHECKPOINT_EVERY_LEVELS === 0;
+}
+
+/**
+ * Rekam checkpoint kalau `level` adalah level checkpoint yang belum tercatat.
+ * Mengembalikan `null` kalau tidak ada yang perlu direkam, supaya pemanggil
+ * bisa tahu kapan harus memancarkan event.
+ */
+export function checkpointFor(state: GameState, level: number): Checkpoint | null {
+  if (!supportsContinues(state.config)) return null;
+  if (!isCheckpointLevel(level)) return null;
+  if (state.checkpoint !== null && state.checkpoint.level >= level) return null;
+
+  return {
+    level,
+    score: state.score.score,
+    correctClicks: state.score.correctClicks,
+  };
+}
+
+/** True kalau overlay game over boleh menawarkan tombol "lanjut". */
+export function canContinue(state: GameState): boolean {
+  return (
+    state.status === 'gameOver' &&
+    state.checkpoint !== null &&
+    state.continuesLeft > 0 &&
+    supportsContinues(state.config)
+  );
+}
+
+/**
+ * Lanjutkan dari checkpoint terakhir: skor dan progres level kembali ke nilai
+ * saat checkpoint disentuh (BUKAN nilai saat mati, dan bukan nol), nyawa penuh
+ * lagi, papan dikosongkan.
+ *
+ * `bestCombo` dan penghitung klik salah sengaja dipertahankan supaya statistik
+ * akhir tetap jujur menggambarkan seluruh ronde.
+ */
+export function continueFromCheckpoint(state: GameState): GameState {
+  if (!canContinue(state) || state.checkpoint === null) return state;
+
+  const checkpoint = state.checkpoint;
+  const fresh = createGameState({ seed: state.board.rngState, config: state.config });
+
+  return {
+    ...fresh,
+    status: 'running',
+    elapsedMs: state.elapsedMs,
+    board: { ...fresh.board, level: checkpoint.level },
+    score: {
+      ...fresh.score,
+      score: checkpoint.score,
+      correctClicks: checkpoint.correctClicks,
+      bestCombo: state.score.bestCombo,
+      wrongClicks: state.score.wrongClicks,
+      lives: state.config.startingLives,
+    },
+    checkpoint,
+    continuesLeft: state.continuesLeft - 1,
+  };
 }

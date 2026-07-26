@@ -2,6 +2,7 @@ import { WRONG_CLICK_PENALTY } from '../constants/index';
 import type { ClickRejectReason, GameEvent } from './events';
 import { levelFor } from './difficulty';
 import { applyPenalty, comboMultiplier, pointsForClick, remainingRatio } from './scoring';
+import { checkpointFor } from './state';
 import type { GameState } from './state';
 
 export interface ClickResult {
@@ -150,5 +151,15 @@ function applyCorrectClick(state: GameState, pixelId: string, ratio: number): Cl
     events.push({ type: 'targetScoreReached', score: score.score });
   }
 
-  return { state: { ...state, status, board, score }, events, claimed: true };
+  const next: GameState = { ...state, status, board, score };
+
+  // Checkpoint direkam setelah skor klik ini masuk, jadi melanjutkan dari
+  // checkpoint mengembalikanmu ke keadaan tepat saat level itu tercapai.
+  const checkpoint = checkpointFor(next, newLevel);
+  if (checkpoint !== null) {
+    events.push({ type: 'checkpointReached', level: checkpoint.level, score: checkpoint.score });
+    return { state: { ...next, checkpoint }, events, claimed: true };
+  }
+
+  return { state: next, events, claimed: true };
 }

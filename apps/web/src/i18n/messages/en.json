@@ -41,6 +41,11 @@
     "bestCombo": "Best combo",
     "accuracy": "Accuracy",
     "playAgain": "Play again",
-    "maxLevel": "MAX"
+    "maxLevel": "MAX",
+    "continueFrom": "Continue at Lv {level}",
+    "continuesLeft": "{count} left",
+    "startOver": "Start over",
+    "checkpoint": "Checkpoint",
+    "continues": "Continues"
   }
 }

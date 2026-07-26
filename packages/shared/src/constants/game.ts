@@ -92,6 +92,23 @@ export const COLOR_UNLOCK_LEVELS = [3, 5, 8] as const;
  */
 export const MAX_LEVEL_BONUS_MULTIPLIER = 2;
 
+// ---------------------------------------------------------------------------
+// Checkpoint & continue (solo)
+// ---------------------------------------------------------------------------
+
+/** Checkpoint tercatat setiap kali level naik ke kelipatan angka ini. */
+export const CHECKPOINT_EVERY_LEVELS = 5;
+
+/**
+ * Berapa kali pemain boleh lanjut dari checkpoint dalam satu ronde.
+ *
+ * Dibatasi supaya rondenya tetap punya ujung: dengan continue tak terbatas,
+ * skor tinggi cuma soal kesabaran dan rekor jadi tidak berarti. Dua kali cukup
+ * untuk menghilangkan rasa "mati di level 7 harus ulang dari level 1", yang
+ * memakan 2-3 menit bagian mudah setiap kali.
+ */
+export const MAX_CONTINUES = 2;
+
 /**
  * Peluang sebuah pixel baru berwarna sama dengan warna target.
  *

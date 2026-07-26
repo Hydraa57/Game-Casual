@@ -5,6 +5,7 @@ import { Sfx } from './sfx';
 
 export interface SoloController {
   start(): void;
+  continueRound(): void;
   pause(): void;
   resume(): void;
   setMuted(muted: boolean): void;
@@ -14,11 +15,17 @@ export interface SoloController {
 export interface CreateSoloGameOptions {
   readonly parent: HTMLElement;
   readonly onHud: (snapshot: HudSnapshot) => void;
+  /** Hanya development — lihat `BoardSceneOptions.startLevel`. */
+  readonly startLevel?: number;
 }
 
-export function createSoloGame({ parent, onHud }: CreateSoloGameOptions): SoloController {
+export function createSoloGame({
+  parent,
+  onHud,
+  startLevel,
+}: CreateSoloGameOptions): SoloController {
   const sfx = new Sfx();
-  const scene = new BoardScene({ onHud, sfx });
+  const scene = new BoardScene({ onHud, sfx, startLevel });
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -44,6 +51,7 @@ export function createSoloGame({ parent, onHud }: CreateSoloGameOptions): SoloCo
 
   return {
     start: () => scene.startRound(),
+    continueRound: () => scene.continueRound(),
     pause: () => scene.pauseRound(),
     resume: () => scene.resumeRound(),
     setMuted: (muted: boolean) => sfx.setMuted(muted),

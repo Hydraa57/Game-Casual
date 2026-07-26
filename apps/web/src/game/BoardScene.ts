@@ -3,6 +3,9 @@
 import * as Phaser from 'phaser';
 import {
   applyClick,
+  canContinue,
+  CLICKS_PER_LEVEL,
+  continueFromCheckpoint,
   COLOR_GLYPH,
   COLOR_HEX,
   comboMultiplier,
@@ -37,6 +40,12 @@ const MAX_FRAME_MS = 100;
 export interface BoardSceneOptions {
   readonly onHud: (snapshot: HudSnapshot) => void;
   readonly sfx: Sfx;
+  /**
+   * Mulai ronde dari level ini, bukan dari level 1. Hanya dipakai di
+   * development (lihat `?level=` di halaman solo) untuk mengulik balancing dan
+   * menguji mekanik level tinggi tanpa harus main sepuluh menit dulu.
+   */
+  readonly startLevel?: number;
 }
 
 interface PixelView {
@@ -101,7 +110,15 @@ export class BoardScene extends Phaser.Scene {
   startRound(): void {
     this.options.sfx.unlock();
     this.clearViews();
-    this.gameState = startGame(this.gameState);
+    this.gameState = applyStartLevel(startGame(this.gameState), this.options.startLevel);
+    this.emitSnapshot();
+  }
+
+  /** Lanjut dari checkpoint terakhir tanpa mengulang ronde dari awal. */
+  continueRound(): void {
+    this.options.sfx.unlock();
+    this.clearViews();
+    this.gameState = continueFromCheckpoint(this.gameState);
     this.emitSnapshot();
   }
 
@@ -285,6 +302,9 @@ export class BoardScene extends Phaser.Scene {
       targetColor: board.targetColor,
       targetImminent: status === 'running' && isTargetChangeImminent(this.gameState),
       accuracy: totalClicks === 0 ? 1 : score.correctClicks / totalClicks,
+      checkpointLevel: this.gameState.checkpoint?.level ?? null,
+      continuesLeft: this.gameState.continuesLeft,
+      canContinue: canContinue(this.gameState),
     };
 
     // Hanya kabari React kalau ada yang benar-benar berubah — kalau tidak,
@@ -293,4 +313,18 @@ export class BoardScene extends Phaser.Scene {
     this.lastSnapshot = snapshot;
     this.options.onHud(snapshot);
   }
+}
+
+/**
+ * Geser state ke level tertentu dengan menyetel jumlah klik benar seolah pemain
+ * sudah sampai di sana, supaya `levelFor()` dan `board.level` tetap sepakat.
+ */
+function applyStartLevel(state: GameState, startLevel: number | undefined): GameState {
+  if (startLevel === undefined || startLevel <= 1) return state;
+
+  return {
+    ...state,
+    board: { ...state.board, level: startLevel },
+    score: { ...state.score, correctClicks: (startLevel - 1) * CLICKS_PER_LEVEL },
+  };
 }

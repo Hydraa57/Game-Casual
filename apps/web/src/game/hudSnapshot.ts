@@ -1,4 +1,4 @@
-import { SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
+import { MAX_CONTINUES, SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
 import type { Color, GameStatus } from '@pixelmatrix/shared';
 
 /**
@@ -22,6 +22,11 @@ export interface HudSnapshot {
   readonly targetColor: Color;
   readonly targetImminent: boolean;
   readonly accuracy: number;
+  /** Level checkpoint terakhir yang tersentuh; `null` kalau belum ada. */
+  readonly checkpointLevel: number | null;
+  readonly continuesLeft: number;
+  /** True saat overlay game over boleh menawarkan tombol "lanjut". */
+  readonly canContinue: boolean;
 }
 
 /** Nilai awal supaya HUD sudah terlihat wajar sebelum Phaser selesai dimuat. */
@@ -37,6 +42,9 @@ export const INITIAL_SNAPSHOT: HudSnapshot = {
   targetColor: 'red',
   targetImminent: false,
   accuracy: 1,
+  checkpointLevel: null,
+  continuesLeft: MAX_CONTINUES,
+  canContinue: false,
 };
 
 export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
@@ -51,6 +59,9 @@ export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
     a.atMaxLevel === b.atMaxLevel &&
     a.targetColor === b.targetColor &&
     a.targetImminent === b.targetImminent &&
-    a.accuracy === b.accuracy
+    a.accuracy === b.accuracy &&
+    a.checkpointLevel === b.checkpointLevel &&
+    a.continuesLeft === b.continuesLeft &&
+    a.canContinue === b.canContinue
   );
 }

@@ -9,7 +9,7 @@ import { Link } from '@/i18n/navigation';
 import { readHighScore, writeHighScore } from '@/lib/highScore';
 import { Hud } from './Hud';
 
-export function SoloGame() {
+export function SoloGame({ startLevel }: { startLevel?: number }) {
   const t = useTranslations('solo');
   const boardRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<SoloController | null>(null);
@@ -31,7 +31,7 @@ export function SoloGame() {
 
     void import('@/game/createSoloGame').then(({ createSoloGame }) => {
       if (disposed || !boardRef.current) return;
-      controller = createSoloGame({ parent: boardRef.current, onHud: setSnapshot });
+      controller = createSoloGame({ parent: boardRef.current, onHud: setSnapshot, startLevel });
       controllerRef.current = controller;
     });
 
@@ -40,7 +40,7 @@ export function SoloGame() {
       controller?.destroy();
       controllerRef.current = null;
     };
-  }, []);
+  }, [startLevel]);
 
   // Simpan rekor begitu ronde selesai.
   useEffect(() => {
@@ -56,6 +56,11 @@ export function SoloGame() {
   const start = useCallback(() => {
     setIsNewRecord(false);
     controllerRef.current?.start();
+  }, []);
+
+  const continueRound = useCallback(() => {
+    setIsNewRecord(false);
+    controllerRef.current?.continueRound();
   }, []);
 
   const togglePause = useCallback(() => {
@@ -99,6 +104,19 @@ export function SoloGame() {
 
       <Hud snapshot={snapshot} />
 
+      {/* Baru muncul setelah checkpoint pertama, supaya awal permainan tidak ramai. */}
+      {snapshot.checkpointLevel !== null && (
+        <div className="metabar">
+          <span>
+            <span className="hud__label">{t('checkpoint')}</span> Lv {snapshot.checkpointLevel}
+          </span>
+          <span>
+            <span className="hud__label">{t('continues')}</span>{' '}
+            {'●'.repeat(snapshot.continuesLeft) || '—'}
+          </span>
+        </div>
+      )}
+
       <div className="board" ref={boardRef}>
         {snapshot.status === 'idle' && (
           <div className="overlay">
@@ -133,9 +151,23 @@ export function SoloGame() {
                 {t('accuracy')}: {Math.round(snapshot.accuracy * 100)}%
               </span>
             </div>
-            <button className="btn btn--primary" type="button" onClick={start}>
-              {t('playAgain')}
-            </button>
+            {snapshot.canContinue && snapshot.checkpointLevel !== null ? (
+              <>
+                <button className="btn btn--primary" type="button" onClick={continueRound}>
+                  {t('continueFrom', { level: snapshot.checkpointLevel })}
+                  <span className="badge">
+                    {t('continuesLeft', { count: snapshot.continuesLeft })}
+                  </span>
+                </button>
+                <button className="btn btn--small" type="button" onClick={start}>
+                  {t('startOver')}
+                </button>
+              </>
+            ) : (
+              <button className="btn btn--primary" type="button" onClick={start}>
+                {t('playAgain')}
+              </button>
+            )}
           </div>
         )}
       </div>

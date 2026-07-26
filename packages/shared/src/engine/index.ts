@@ -27,10 +27,14 @@ export {
 } from './scoring';
 
 export {
+  canContinue,
+  checkpointFor,
+  continueFromCheckpoint,
   createGameState,
   createScoreState,
   currentLevel,
   isAtMaxLevel,
+  isCheckpointLevel,
   isPlayable,
   isTargetChangeImminent,
   multiplayerConfig,
@@ -39,9 +43,11 @@ export {
   resumeGame,
   soloConfig,
   startGame,
+  supportsContinues,
 } from './state';
 export type {
   BoardState,
+  Checkpoint,
   CreateGameStateOptions,
   GameConfig,
   GameState,

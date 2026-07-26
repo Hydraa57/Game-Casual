@@ -41,6 +41,11 @@
     "bestCombo": "Combo terbaik",
     "accuracy": "Akurasi",
     "playAgain": "Main lagi",
-    "maxLevel": "MAX"
+    "maxLevel": "MAX",
+    "continueFrom": "Lanjut dari Lv {level}",
+    "continuesLeft": "{count} tersisa",
+    "startOver": "Mulai dari awal",
+    "checkpoint": "Checkpoint",
+    "continues": "Lanjut"
   }
 }

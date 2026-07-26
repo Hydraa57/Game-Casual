@@ -1,9 +1,28 @@
 import { setRequestLocale } from 'next-intl/server';
 import { SoloGame } from '@/components/SoloGame';
 
-export default async function SoloPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
+/**
+ * `?level=N` memulai ronde dari level N. Ini alat balancing, jadi sengaja
+ * hanya berlaku di development — di produksi parameternya diabaikan supaya
+ * high score tidak bisa dikarang lewat URL.
+ */
+function parseStartLevel(value: string | string[] | undefined): number | undefined {
+  if (process.env.NODE_ENV === 'production') return undefined;
+  if (typeof value !== 'string') return undefined;
+
+  const level = Number.parseInt(value, 10);
+  return Number.isFinite(level) && level > 1 ? level : undefined;
+}
+
+export default async function SoloPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ locale }, query] = await Promise.all([params, searchParams]);
   setRequestLocale(locale);
 
-  return <SoloGame />;
+  return <SoloGame startLevel={parseStartLevel(query.level)} />;
 }

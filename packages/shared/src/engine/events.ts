@@ -49,6 +49,11 @@ export type GameEvent =
       readonly livesLeft: number | null;
     }
   | { readonly type: 'levelUp'; readonly level: number }
+  | {
+      readonly type: 'checkpointReached';
+      readonly level: number;
+      readonly score: number;
+    }
   | { readonly type: 'comboBroken'; readonly previousCombo: number }
   | { readonly type: 'gameOver'; readonly score: number }
   | { readonly type: 'targetScoreReached'; readonly score: number };
