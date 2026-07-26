@@ -60,6 +60,48 @@ pnpm format       # prettier --write
 
 Client mencari game-server di host yang sama pada port 3001, jadi multiplayer dari HP jalan tanpa konfigurasi tambahan. Untuk menimpanya, set `NEXT_PUBLIC_GAME_SERVER_URL`.
 
+## Deployment
+
+**Web dan game-server harus di-deploy terpisah.** Ini bukan pilihan gaya: game-server memegang state room di memori dan menjaga koneksi WebSocket yang hidup selama match. Platform serverless — termasuk Vercel Functions — mematikan proses di antara request, jadi tidak bisa menjalankannya.
+
+Kalau hanya web-nya yang di-deploy, **solo mode tetap jalan** (seluruh permainannya di browser), tapi halaman multiplayer akan menampilkan "Game server tidak terjangkau" karena memang tidak ada yang bisa dihubungi.
+
+### 1. Deploy game-server
+
+Sudah ada [`apps/game-server/Dockerfile`](apps/game-server/Dockerfile) yang host-agnostic — jalan di Render, Fly.io, Railway, Koyeb, atau VPS biasa. Build context-nya **root repo**, bukan folder `apps/game-server`:
+
+```bash
+docker build -f apps/game-server/Dockerfile -t pixelmatrix-server .
+docker run -p 3001:3001 -e CORS_ORIGIN=https://<domain-web-mu> pixelmatrix-server
+```
+
+Di Render/Railway cukup arahkan ke Dockerfile itu dan set env-nya. Yang wajib dicek:
+
+| Env | Isi | Kenapa |
+|---|---|---|
+| `CORS_ORIGIN` | origin web-nya, misal `https://pixel-matrix.vercel.app` | Default-nya `*` — aman untuk dev, tidak untuk produksi |
+| `PORT` | biasanya diisi otomatis oleh host | Server membacanya dari env |
+
+Pastikan host-nya memberi **HTTPS**. Halaman web yang https tidak boleh membuka koneksi ke `ws://` biasa — browser memblokirnya sebagai mixed content, dan gejalanya sama persis dengan server mati.
+
+### 2. Arahkan web ke game-server
+
+Set env di hosting web:
+
+```
+NEXT_PUBLIC_GAME_SERVER_URL=https://<alamat-game-server>
+```
+
+**Deploy ulang setelah menyetelnya.** Variabel `NEXT_PUBLIC_*` dibaca saat build, bukan saat halaman dibuka — mengubahnya di dashboard saja tidak berpengaruh sampai ada build baru.
+
+### 3. Pastikan
+
+Buka `https://<alamat-game-server>/health` di browser. Kalau membalas `{"ok":true,...}`, server-nya hidup. Setelah itu halaman multiplayer harus menunjukkan status "tersambung".
+
+Kalau masih gagal, pesan errornya sekarang menyebutkan alamat yang dicoba — itu petunjuk pertama yang perlu dilihat.
+
+> **Catatan free tier:** Render dan sejenisnya menidurkan instance yang idle, jadi match pertama setelah lama tidak dipakai bisa menunggu 30–60 detik. Untuk main di tongkrongan itu terasa; kalau mengganggu, pakai paket yang tidak tidur atau Fly.io.
+
 ## Mulai dari Mana?
 
 Lihat [ROADMAP.md](docs/ROADMAP.md). Fase 0, 1, dan 1.5 selesai; Fase 2 (multiplayer) sedang dikerjakan. Prinsip urutannya: **buktikan gamenya seru dulu, baru bangun infrastruktur.**

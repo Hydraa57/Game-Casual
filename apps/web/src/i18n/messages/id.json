@@ -84,7 +84,7 @@
     "copied": "Tersalin!",
     "shareTitle": "Main Pixel Matrix bareng?",
     "shareText": "Gabung room {code} di Pixel Matrix:",
-    "serverOffline": "Game server tidak terjangkau. Pastikan server-nya jalan.",
+    "serverOffline": "Game server tidak terjangkau di {url} — multiplayer belum bisa dipakai. Solo mode tetap jalan.",
     "status": {
       "connecting": "menyambung",
       "online": "tersambung",

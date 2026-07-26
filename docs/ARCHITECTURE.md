@@ -161,10 +161,14 @@ Mengikuti [API.md](./API.md): prefix `/api/v1`, envelope `{ success, data | erro
 | Tahap | Web (`apps/web`) | Game server (`apps/game-server`) |
 |---|---|---|
 | Dev | `pnpm dev` → :3000 | `pnpm dev` → :3001 (satu perintah, paralel dari root) |
-| Fase 4 | Vercel | Render / Fly.io |
+| Produksi | Vercel / hosting statik-SSR apa pun | Render / Fly.io / Railway / VPS — via `apps/game-server/Dockerfile` |
+
+**Keduanya WAJIB di-deploy terpisah.** Game server memegang state room di memori dan menjaga koneksi WebSocket selama match berlangsung; platform serverless (termasuk Vercel Functions) mematikan proses di antara request, jadi tidak bisa menjadi inangnya. Kalau hanya web yang di-deploy, solo mode tetap jalan tapi multiplayer mati total. Langkah lengkapnya ada di [README bagian Deployment](../README.md#deployment).
 
 Catatan operasional:
 
+- **Game server harus dilayani lewat HTTPS.** Halaman https tidak diizinkan browser membuka `ws://` polos (mixed content), dan gejalanya identik dengan server mati — ini jebakan yang paling sering makan waktu.
+- **`NEXT_PUBLIC_GAME_SERVER_URL` dibaca saat build**, bukan saat runtime. Mengubahnya di dashboard hosting tanpa deploy ulang tidak berpengaruh.
 - **Render free tier tidur saat idle** → cold start 30–60 dtk di match pertama. Terima saja untuk fase hobi, atau pindah ke paket murah / Fly.io jika mengganggu.
 - Environment: `NEXT_PUBLIC_GAME_SERVER_URL` di web; `CORS_ORIGIN`, `PORT` di game-server; `DATABASE_URL`, `NEXTAUTH_*` mulai Fase 3.
 - Satu instance game server memadai untuk target awal 1.000 CCU (koneksi Socket.IO per node bisa ribuan). Jalur scale-out sudah diantisipasi PRD (stateless + horizontal): **Redis adapter Socket.IO + sticky session** — dicatat, tidak dibangun sebelum dibutuhkan. Load test k6/Artillery di Fase 5.

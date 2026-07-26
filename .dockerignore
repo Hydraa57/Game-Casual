@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+build
+coverage
+test-results
+playwright-report
+.git
+.github
+docs
+apps/web
+*.log
+.env
+.env.local
+.env.*.local

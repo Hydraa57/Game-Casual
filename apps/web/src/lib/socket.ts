@@ -8,6 +8,11 @@ export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
  * Alamat game-server. Di development default-nya host yang sama dengan halaman
  * ini pada port 3001 — itu yang membuat game bisa dibuka dari HP di jaringan
  * yang sama tanpa mengubah konfigurasi apa pun.
+ *
+ * Tebakan ":3001" itu HANYA benar untuk development. Begitu web-nya di-deploy,
+ * `NEXT_PUBLIC_GAME_SERVER_URL` wajib diisi alamat game-server yang sebenarnya
+ * — lihat README bagian Deployment. Nilainya dibaca saat build, jadi mengubah
+ * env di hosting harus diikuti deploy ulang.
  */
 export function gameServerUrl(): string {
   const configured = process.env.NEXT_PUBLIC_GAME_SERVER_URL;
@@ -18,7 +23,11 @@ export function gameServerUrl(): string {
 
 export function createSocket(): GameSocket {
   return io(gameServerUrl(), {
-    transports: ['websocket'],
+    // WebSocket dulu karena latensinya paling rendah, tapi kalau ada proxy yang
+    // tidak mengizinkan upgrade, `tryAllTransports` membuat koneksi tetap jadi
+    // lewat polling alih-alih gagal total.
+    transports: ['websocket', 'polling'],
+    tryAllTransports: true,
     autoConnect: true,
     // Reconnect otomatis: koneksi seluler sering terputus sebentar, dan pemain
     // tidak seharusnya kehilangan lobby karena itu.

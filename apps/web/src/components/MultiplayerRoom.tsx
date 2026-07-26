@@ -6,6 +6,7 @@ import type { RoomErrorCode } from '@pixelmatrix/shared';
 import { useRoom } from '@/hooks/useRoom';
 import { Link } from '@/i18n/navigation';
 import { readNickname, writeNickname } from '@/lib/nickname';
+import { gameServerUrl } from '@/lib/socket';
 import { MatchView } from './MatchView';
 import { RoomEntry } from './RoomEntry';
 import { RoomLobby } from './RoomLobby';
@@ -66,7 +67,11 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
         </p>
       )}
 
-      {room.status === 'offline' && <p className="hint hint--warn">{t('serverOffline')}</p>}
+      {/* Alamat yang dicoba ikut ditampilkan: tanpa itu, "server tidak
+          terjangkau" tidak memberi petunjuk apa pun soal apa yang salah. */}
+      {room.status === 'offline' && (
+        <p className="hint hint--warn">{t('serverOffline', { url: gameServerUrl() })}</p>
+      )}
 
       {room.room === null ? (
         <RoomEntry

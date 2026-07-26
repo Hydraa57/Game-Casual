@@ -84,7 +84,7 @@
     "copied": "Copied!",
     "shareTitle": "Play Pixel Matrix together?",
     "shareText": "Join room {code} on Pixel Matrix:",
-    "serverOffline": "Game server unreachable. Make sure it is running.",
+    "serverOffline": "Game server unreachable at {url} — multiplayer is unavailable. Solo mode still works.",
     "status": {
       "connecting": "connecting",
       "online": "connected",
