@@ -73,6 +73,17 @@ export const INITIAL_ACTIVE_COLORS = 3;
 /** Level di mana satu warna baru diaktifkan (3 → 4 → 5 → 6 warna). */
 export const COLOR_UNLOCK_LEVELS = [3, 5, 7] as const;
 
+/**
+ * Peluang sebuah pixel baru berwarna sama dengan warna target.
+ *
+ * Kalau warna dipilih merata dari 6 warna, hanya ~1/6 pixel yang bisa diklik —
+ * papan terasa mati dan pemain cuma menunggu. Spawn di-bias ke warna target
+ * supaya selalu ada sesuatu untuk dikejar, tapi tetap di bawah 100% supaya
+ * pemain benar-benar harus membedakan warna. Angka paling berpengaruh ke
+ * "rasa" permainan — ini yang pertama diulik saat balancing.
+ */
+export const TARGET_COLOR_SPAWN_WEIGHT = 0.5;
+
 // ---------------------------------------------------------------------------
 // Warna target (GDD §2)
 // ---------------------------------------------------------------------------

@@ -42,9 +42,19 @@ Game harus nyaman dimainkan **di HP maupun desktop** — skenario utamanya orang
 | Speed bonus | 0–10 poin, proporsional sisa umur pixel: `round(10 × sisaUmur / lifetime)` |
 | Combo multiplier | Naik tiap **5 klik benar beruntun**: ×1 → ×1.5 → ×2 (maksimum) |
 | Klik salah (warna ≠ target) | **−5 poin** (skor tidak bisa di bawah 0), combo reset ke ×1 |
-| Pixel expire tanpa diklik | Tidak ada penalti poin, tapi **memutus combo** |
+| Pixel warna target expire tanpa diklik | Tidak ada penalti poin, tapi **memutus combo** |
 
 Rasional: speed bonus menghargai refleks, combo menghargai konsistensi, dan penalti klik salah membuat spam-click merugikan (juga bagian dari mitigasi cheat di MP).
+
+### Detail aturan yang diputuskan saat implementasi engine
+
+Lima hal ini awalnya ambigu di draf pertama; keputusannya dikunci di kode dan unit test:
+
+1. **Hanya pixel warna target yang memutus combo saat expire.** Pixel warna lain memang seharusnya diabaikan — kalau distraktor yang pudar ikut memutus combo, menjaga combo jadi mustahil begitu 6 warna aktif.
+2. **Klik salah tidak menghapus pixel-nya.** Kalau dihapus, klik ngawur jadi strategi untuk membersihkan distraktor dari papan. Pemain kehilangan poin dan nyawa, papan tidak berubah.
+3. **Multiplier berlaku pada klik yang menyentuh kelipatan 5**, bukan klik sesudahnya — jadi mencapai combo terasa langsung berhadiah. Klik ke-5 bernilai ×1.5.
+4. **Tap pada pixel yang sudah hilang tidak dihukum** (`notFound` / `tooLate`, penalti 0). Di HP, tap ganda atau tap yang datang telat beberapa milidetik itu wajar — bukan kesalahan pemain. Ini juga yang membuat multiplayer adil: pemain yang kalah cepat merebut pixel tidak ikut dihukum.
+5. **Spawn di-bias ke warna target** (`TARGET_COLOR_SPAWN_WEIGHT`, awalnya 0.5). Kalau warna dipilih merata dari 6 warna, hanya ~1/6 pixel yang bisa diklik dan papan terasa mati. Ini konstanta paling berpengaruh ke "rasa" permainan — yang pertama diulik saat balancing.
 
 ## 4. Solo Mode (Endless)
 
