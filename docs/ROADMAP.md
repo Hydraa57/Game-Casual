@@ -2,14 +2,15 @@
 
 > Disusun untuk **solo developer, proyek hobi** — per fase adalah milestone kecil yang selesai-utuh dan menyenangkan untuk dicapai, tanpa deadline keras. Urutannya sengaja: **buktikan gamenya seru dulu (Fase 1–2), baru investasi infrastruktur (Fase 3–4)**. Angka desain diambil dari [GAME-DESIGN.md](./GAME-DESIGN.md); struktur teknis dari [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-## Fase 0 — Fondasi Repo
+## Fase 0 — Fondasi Repo ✅
 
-- [ ] Scaffold monorepo pnpm workspaces: `apps/web`, `apps/game-server`, `packages/shared`
-- [ ] TypeScript strict + ESLint + Prettier konsisten di semua workspace
-- [ ] `packages/shared`: tipe domain awal (Pixel, Player, RoomState) + konstanta balancing dari GDD
-- [ ] Script `pnpm dev` dari root menjalankan web (:3000) + game-server (:3001) paralel
-- [ ] GitHub Actions ringan: typecheck + lint tiap push
-- [ ] Perbarui README (cara menjalankan dev)
+- [x] Scaffold monorepo pnpm workspaces (`apps/*`, `packages/*`)
+- [x] TypeScript strict + ESLint 9 flat config + Prettier konsisten di semua workspace
+- [x] `packages/shared`: tipe domain awal (Pixel, Player, RoomState) + konstanta balancing dari GDD
+- [x] Script root: `dev` / `build` / `typecheck` / `lint` / `test` / `format` via `pnpm -r`
+- [x] GitHub Actions: typecheck + lint + format check + test tiap push
+- [x] Requirement mobile ditetapkan di GDD §7 + ARCHITECTURE §8
+- [ ] Perbarui README (cara menjalankan dev) — menyusul setelah `apps/web` ada di Fase 1
 
 ## Fase 1 — Solo Playable ("first fun") 🎯
 
@@ -17,15 +18,16 @@
 - [ ] Unit test engine (skor, combo reset, batas kurva kesulitan)
 - [ ] Halaman `/play/solo`: mount Phaser (dynamic import, ssr:false)
 - [ ] Renderer grid 8×8 + siklus hidup pixel (spawn → redup → expire)
-- [ ] Input klik + resolusi lewat engine shared
-- [ ] HUD: warna target (+ animasi peringatan ganti), skor, combo meter, 3 nyawa
+- [ ] Input pointer (mouse + touch satu jalur) + resolusi lewat engine shared
+- [ ] HUD **sebagai DOM/React**: warna target (+ kedip peringatan), skor, combo meter, 3 nyawa, level
+- [ ] **Layout mobile-first**: canvas `Scale.FIT` responsif, kolom tunggal, `touch-action: none`, viewport tanpa double-tap zoom, tombol ≥44px
 - [ ] Pause / resume (bekukan seluruh state) + game over + restart
 - [ ] High score di `localStorage`
 - [ ] Scaffold i18n `next-intl` (id default + en) — semua string UI lewat kamus
-- [ ] SFX dasar: klik benar / salah / game over
+- [ ] SFX dasar: klik benar / salah / game over + toggle mute
 - [ ] Landing page sederhana → tombol "Main Solo"
 
-**✅ Milestone:** kamu sendiri betah main ≥3 ronde berturut-turut. Kalau belum, ulik angka balancing di `shared/constants` sebelum lanjut — **jangan masuk Fase 2 dengan core loop yang hambar.**
+**✅ Milestone:** kamu sendiri betah main ≥3 ronde berturut-turut, **dan dicoba langsung di HP** (bukan cuma DevTools). Kalau belum seru, ulik angka balancing di `shared/constants` sebelum lanjut — **jangan masuk Fase 2 dengan core loop yang hambar.**
 
 ## Fase 2 — Multiplayer Vertical Slice 🎯
 
@@ -36,12 +38,13 @@
 - [ ] Game loop otoritatif 20Hz per room memakai engine shared: spawn, expire, ganti target
 - [ ] Resolusi klik rebutan first-arrival + `game:pixelClaimed` / `game:clickRejected`
 - [ ] Rate limit ~8 klik/dtk/pemain + cooldown lokal 500 ms saat klik salah
-- [ ] Leaderboard live di samping papan
+- [ ] Leaderboard live (di atas papan saat mobile, di samping saat desktop)
 - [ ] Kondisi menang (target skor / waktu habis) + sudden death saat seri
 - [ ] Layar hasil (peringkat, akurasi, combo terbaik) + tombol rematch
 - [ ] Handle disconnect: pemain keluar dari match, skor terakhir tetap di hasil
+- [ ] Join room gampang dari HP: input kode besar-besaran + tombol share/copy link undangan
 
-**✅ Milestone:** 2 device di jaringan lokal main bareng lancar; dua klik hampir bersamaan pada pixel yang sama → hanya satu yang dapat poin.
+**✅ Milestone:** 2 HP di jaringan yang sama main bareng lancar; dua tap hampir bersamaan pada pixel yang sama → hanya satu yang dapat poin.
 
 ## Fase 3 — Akun & Persistensi
 
@@ -59,10 +62,12 @@
 - [ ] Deploy: Vercel (web) + Render/Fly.io (game-server), env & CORS produksi, wss
 - [ ] Ukur latency nyata; rampingkan payload event bila perlu (NFR: aksi < 150 ms)
 - [ ] Juice: partikel, screen shake, popup combo & poin, nada SFX naik seiring combo, BGM + mute
-- [ ] Glyph buta warna di tiap pixel
+- [ ] Haptic feedback (`navigator.vibrate`) saat klik salah di HP
 - [ ] Landing page proper (cara main, tombol buat/gabung room)
-- [ ] Cek load time < 3 dtk (NFR) — code splitting Phaser
-- [ ] Playtest dengan teman-teman → iterasi angka balancing GDD
+- [ ] Cek load time < 3 dtk (NFR) — code splitting Phaser; **ukur juga di jaringan seluler**, bukan hanya WiFi
+- [ ] Uji di HP nyata: Android Chrome + iOS Safari (bukan hanya emulasi DevTools)
+- [ ] Opsional: manifest PWA supaya bisa "Add to Home Screen" — memangkas friksi saat nongkrong
+- [ ] Playtest dengan teman-teman → iterasi angka balancing GDD (**validasi di HP dulu**, lihat GDD §7)
 
 ## Fase 5 — Menuju PRD Penuh (opsional, urutan bebas)
 
@@ -77,8 +82,8 @@
 
 | Fase | Uji |
 |---|---|
-| 0 | `pnpm dev` menyalakan kedua app; CI hijau |
-| 1 | Mainkan sendiri di localhost: skor/combo/nyawa/pause sesuai GDD; refresh → high score bertahan |
-| 2 | Dua tab browser + satu incognito (3 "pemain"): skor sinkron; klik rebutan hanya dimenangkan satu pemain; spam klik terkena rate limit; tutup satu tab → match jalan terus |
+| 0 | `pnpm install` lalu `pnpm typecheck && pnpm lint && pnpm test` hijau; CI hijau |
+| 1 | Mainkan sendiri di localhost: skor/combo/nyawa/pause sesuai GDD; refresh → high score bertahan. **Lalu buka dari HP** (via IP LAN): papan pas di layar, tap responsif, tidak ada scroll/zoom liar |
+| 2 | Dua tab browser + satu incognito (3 "pemain"): skor sinkron; klik rebutan hanya dimenangkan satu pemain; spam klik terkena rate limit; tutup satu tab → match jalan terus. Ulangi dengan 2 HP nyata |
 | 3 | Login Google; main solo → skor muncul di profil & DB; main MP → match history terisi (guest tercatat sebagai nickname) |
-| 4 | Main dari 2 jaringan berbeda via URL publik; input terasa < 150 ms; load pertama < 3 dtk |
+| 4 | Main dari 2 jaringan berbeda via URL publik; input terasa < 150 ms; load pertama < 3 dtk; uji di Android Chrome & iOS Safari |

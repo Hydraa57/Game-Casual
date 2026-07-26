@@ -9,11 +9,14 @@ Pixel Pulse adalah game refleks arcade dengan sentuhan brain-training: pemain ha
 - **Solo mode**: endless, kejar high score, kesulitan naik bertahap.
 - **Multiplayer (2–4 pemain)**: satu papan bersama, semua pemain berebut pixel yang sama — siapa cepat dia dapat.
 
+Game harus nyaman dimainkan **di HP maupun desktop** — skenario utamanya orang ngumpul dan semua pegang ponsel masing-masing. Detail di §7.
+
 ## 2. Papan & Elemen Visual
 
 | Elemen | Spesifikasi |
 |---|---|
-| Grid | **8×8** (64 sel), canvas ±640×640 px |
+| Grid | **8×8** (64 sel) — jumlah sel **tetap di semua device** (lihat §7 Mobile) |
+| Canvas | Persegi, responsif: mengisi lebar layar hingga maksimum 640×640 px |
 | Warna pixel | 6 warna: merah, biru, hijau, kuning, ungu, oranye |
 | Aksesibilitas | Setiap warna punya **glyph unik** kecil di dalam pixel (dukungan buta warna) |
 | Gaya | Retro pixel art: kotak berwarna + border 1px, font "Press Start 2P" |
@@ -106,7 +109,30 @@ Lobby (room code 6 karakter, ready check semua pemain)
 - Popup teks combo ("×1.5!", "×2!") dan popup poin melayang di posisi klik.
 - SFX via jsfxr / asset chiptune gratis; BGM opsional dengan toggle mute.
 
-## 7. Ide Lanjutan (Fase 5+, dicatat saja — bukan komitmen)
+## 7. Mobile & Touch (wajib, bukan opsional)
+
+Skenario utama game ini adalah **nongkrong**: semua orang pegang HP, tidak ada yang buka laptop. Karena itu HP adalah target kelas satu, bukan afterthought. Ini **memperluas** constraint Usability di PRD yang semula menyebut desktop saja — game tetap jalan di desktop, tapi layout dirancang **mobile-first**.
+
+### Aturan desain
+
+| Aspek | Keputusan |
+|---|---|
+| Grid | **Tetap 8×8 di semua ukuran layar.** Yang di-scale adalah ukuran pixel-nya, bukan jumlah selnya — papan multiplayer wajib identik untuk semua pemain, dan high score solo harus sebanding antar device |
+| Target sentuh | Di HP 360 px, satu sel ≈ 44 px — tepat di ambang minimum target sentuh. Gap antar pixel dibuat tipis supaya area tap maksimal |
+| Orientasi | **Portrait-first**: HUD di atas, papan persegi di tengah, kontrol di bawah. Landscape tetap jalan (papan di tengah) |
+| HUD | Dibuat sebagai **DOM/React, bukan digambar di dalam canvas** — teks ikut ukuran font sistem, rapi di layar kecil, dan mudah di-i18n |
+| Kontrol | Tombol pause & mute minimal 44×44 px di zona jempol (bawah). Tidak ada interaksi yang butuh hover atau keyboard |
+| Gestur | `touch-action: none` di area papan supaya tap tidak memicu scroll; double-tap zoom dinonaktifkan; tap highlight dimatikan |
+| Notch | Padding mengikuti `env(safe-area-inset-*)` |
+| Feedback | Getar (`navigator.vibrate`) singkat saat klik salah, kalau device mendukung |
+
+### Konsekuensi untuk gameplay
+
+- **Tidak ada mekanik yang butuh presisi kursor** — semua interaksi adalah tap pada sel berukuran jempol.
+- Karena tap di HP sedikit lebih lambat dari klik mouse, angka balancing (spawn/lifetime) **divalidasi di HP dulu**, bukan di desktop. Kalau di HP terasa mustahil, angkanya yang salah — bukan pemainnya.
+- Multiplayer campuran HP + desktop: perbedaan kecepatan input antar device diterima sebagai bagian dari permainan santai (bukan game esport). Dicatat sebagai hal yang diamati saat playtest Fase 4.
+
+## 8. Ide Lanjutan (Fase 5+, dicatat saja — bukan komitmen)
 
 - **Power-up**: color bomb (klaim semua pixel satu warna), freeze lawan 2 dtk, shuffle papan.
 - **Mode papan-terpisah**: tiap pemain papan identik (seeded sama), murni adu kecepatan — varian yang lebih "adil".

@@ -19,10 +19,11 @@
                       * = mulai Fase 3
 ```
 
-Dua keputusan arsitektur terpenting:
+Tiga keputusan arsitektur terpenting:
 
 1. **Game server terpisah dari Next.js** — Vercel serverless tidak bisa memelihara koneksi WebSocket persisten, dan game loop 20Hz butuh proses yang hidup terus.
 2. **Aturan main hidup di `packages/shared`** — engine yang sama dijalankan client (solo mode, sepenuhnya offline di browser) dan server (multiplayer, otoritatif). Satu sumber kebenaran, tidak ada duplikasi logika, dan solo/MP dijamin terasa identik.
+3. **Phaser hanya menggambar papan; HUD adalah DOM/React** — supaya layout responsif di HP jadi urusan CSS biasa (bukan menghitung posisi teks di canvas), teks HUD ikut i18n, dan ukuran font tetap enak dibaca di layar kecil. Canvas dan React berkomunikasi lewat callback satu arah dari scene ke React (`onStateChange`).
 
 ## 2. Struktur Monorepo (pnpm workspaces)
 
@@ -36,7 +37,8 @@ game-casual/
 │   │       ├── app/[locale]/            # landing page
 │   │       │   ├── play/solo/           # halaman solo mode
 │   │       │   └── play/room/[code]/    # lobby + match multiplayer
-│   │       ├── game/                    # Phaser: scenes, renderer grid, HUD
+│   │       ├── components/              # HUD, tombol, overlay (DOM/React, responsif)
+│   │       ├── game/                    # Phaser: scene renderer papan saja
 │   │       │   └── (di-mount lewat client component, dynamic import ssr:false)
 │   │       ├── i18n/                    # next-intl: messages/id.json, en.json
 │   │       └── lib/socket.ts            # koneksi Socket.IO client
@@ -170,4 +172,20 @@ Catatan operasional:
 ## 7. i18n
 
 - `next-intl` dengan routing `[locale]` (`id` default, `en`), messages di `apps/web/src/i18n/messages/`.
-- Teks in-game (HUD Phaser) mengambil dari kamus yang sama lewat props saat mount — tidak ada string UI yang di-hardcode di scene.
+- Karena HUD adalah DOM/React (bukan teks di dalam canvas), seluruh string UI otomatis lewat `useTranslations` — tidak ada teks yang di-hardcode di scene Phaser.
+
+## 8. Mobile / Responsif
+
+Game harus enak dimainkan di HP (lihat [GAME-DESIGN.md §7](./GAME-DESIGN.md)). Implikasi teknisnya:
+
+| Hal | Implementasi |
+|---|---|
+| Skala canvas | Phaser `Scale.FIT` + `autoCenter`, resolusi internal tetap 640×640 → logika game tidak pernah tahu soal ukuran layar; hanya renderer yang di-scale |
+| Container | Wrapper CSS `aspect-ratio: 1`, `width: min(100vw - padding, 640px)` |
+| Input | Phaser `pointerdown` menangani mouse & touch sekaligus — satu jalur input, tidak ada cabang khusus mobile |
+| Gestur browser | `touch-action: none` + `-webkit-tap-highlight-color: transparent` pada canvas; `viewport` Next.js dengan `maximumScale: 1` agar tap cepat tidak memicu zoom |
+| Layout | Mobile-first: kolom tunggal (HUD → papan → kontrol). Breakpoint desktop hanya menambah lebar & memindahkan leaderboard MP ke samping |
+| Safe area | Padding `env(safe-area-inset-bottom)` untuk HP dengan gesture bar |
+| Haptic | `navigator.vibrate(50)` saat klik salah, dibungkus feature-check |
+
+Untuk multiplayer nanti, koneksi HP lewat jaringan seluler lebih fluktuatif daripada WiFi desktop — payload event sudah dirancang kecil (delta, bukan full state) sehingga tidak perlu perlakuan khusus.
