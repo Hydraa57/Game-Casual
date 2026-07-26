@@ -1,5 +1,5 @@
-import { COLOR_HEX } from '@pixelpulse/shared';
-import type { Color } from '@pixelpulse/shared';
+import { COLOR_HEX } from '@pixelmatrix/shared';
+import type { Color } from '@pixelmatrix/shared';
 
 /** Warna papan dalam bentuk string CSS, untuk HUD di DOM. */
 export function cssColor(color: Color): string {

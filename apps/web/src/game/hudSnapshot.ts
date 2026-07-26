@@ -1,5 +1,5 @@
-import { SOLO_STARTING_LIVES } from '@pixelpulse/shared';
-import type { Color, GameStatus } from '@pixelpulse/shared';
+import { SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
+import type { Color, GameStatus } from '@pixelmatrix/shared';
 
 /**
  * Data HUD yang dikirim scene Phaser ke React. Sengaja hanya nilai primitif

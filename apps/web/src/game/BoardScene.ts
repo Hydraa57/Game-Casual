@@ -15,8 +15,8 @@ import {
   resumeGame,
   startGame,
   step,
-} from '@pixelpulse/shared';
-import type { GameEvent, GameState, Pixel } from '@pixelpulse/shared';
+} from '@pixelmatrix/shared';
+import type { GameEvent, GameState, Pixel } from '@pixelmatrix/shared';
 import { isSameSnapshot } from './hudSnapshot';
 import type { HudSnapshot } from './hudSnapshot';
 import { BOARD_BACKGROUND, GRID_LINE } from './palette';
@@ -44,12 +44,12 @@ interface PixelView {
 }
 
 interface DebugWindow {
-  __ppScene?: BoardScene;
+  __pmScene?: BoardScene;
 }
 
 /**
  * Scene ini HANYA menggambar papan dan menerima tap. Seluruh aturan main
- * berasal dari `@pixelpulse/shared` — persis engine yang nanti dijalankan game
+ * berasal dari `@pixelmatrix/shared` — persis engine yang nanti dijalankan game
  * server untuk multiplayer.
  */
 export class BoardScene extends Phaser.Scene {
@@ -76,7 +76,7 @@ export class BoardScene extends Phaser.Scene {
     if (process.env.NODE_ENV !== 'production') {
       // Kait untuk uji end-to-end: tes perlu tahu pixel mana yang berwarna
       // target supaya bisa mengetuk sel yang benar. Tidak ada di build produksi.
-      (window as unknown as DebugWindow).__ppScene = this;
+      (window as unknown as DebugWindow).__pmScene = this;
     }
 
     this.emitSnapshot();

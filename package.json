@@ -2,7 +2,7 @@
   "name": "game-casual",
   "version": "0.0.0",
   "private": true,
-  "description": "Game Otak Santai Bareng — Pixel Pulse",
+  "description": "Game Otak Santai Bareng — Pixel Matrix",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=20"

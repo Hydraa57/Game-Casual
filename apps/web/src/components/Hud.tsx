@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { COLOR_GLYPH } from '@pixelpulse/shared';
+import { COLOR_GLYPH } from '@pixelmatrix/shared';
 import type { HudSnapshot } from '@/game/hudSnapshot';
 import { cssColor } from '@/game/palette';
 

@@ -1,4 +1,4 @@
-# Game Otak Santai Bareng — "Pixel Pulse"
+# Game Otak Santai Bareng — "Pixel Matrix"
 
 Game casual berbasis browser: refleks arcade + sentuhan brain-training, gaya retro pixel art. Bisa dimainkan solo (endless, kejar high score) atau bareng 2–4 teman secara real-time di satu papan yang sama — cukup bagikan kode room, tanpa install apa pun. **Dirancang mobile-first** karena skenario utamanya dimainkan bareng-bareng saat nongkrong, dari HP masing-masing.
 
@@ -10,7 +10,7 @@ Game casual berbasis browser: refleks arcade + sentuhan brain-training, gaya ret
 |---|---|
 | [docs/PRD.md](docs/PRD.md) | Product Requirements Document — visi, functional & non-functional requirements, KPI, risiko |
 | [docs/API.md](docs/API.md) | Kontrak REST API — format response, endpoint user/room/skor/shop |
-| [docs/GAME-DESIGN.md](docs/GAME-DESIGN.md) | Spesifikasi gameplay Pixel Pulse — papan, skor, combo, kurva kesulitan, aturan multiplayer rebutan |
+| [docs/GAME-DESIGN.md](docs/GAME-DESIGN.md) | Spesifikasi gameplay Pixel Matrix — papan, skor, combo, kurva kesulitan, aturan multiplayer rebutan |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arsitektur teknis — struktur monorepo, kontrak event Socket.IO, skema database, deployment |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Roadmap 6 fase + checklist task + cara verifikasi per fase |
 
@@ -36,7 +36,7 @@ packages/shared/   Tipe, konstanta balancing, engine aturan main
 docs/              Blueprint & planning
 ```
 
-`packages/shared` adalah satu-satunya sumber aturan main. Scene Phaser hanya menggambar papan dan meneruskan tap; HUD dibuat sebagai DOM/React agar responsif di layar kecil.
+`packages/shared` (`@pixelmatrix/shared`) adalah satu-satunya sumber aturan main. Scene Phaser hanya menggambar papan dan meneruskan tap; HUD dibuat sebagai DOM/React agar responsif di layar kecil.
 
 ## Development
 

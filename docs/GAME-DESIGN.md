@@ -1,10 +1,12 @@
-# Game Design Document — Pixel Pulse
+# Game Design Document — Pixel Matrix
 
 > Dokumen ini mengelaborasi FR-07 (Core Gameplay) dari [PRD.md](./PRD.md) menjadi spesifikasi yang bisa langsung diimplementasikan. Semua angka di sini adalah **hipotesis awal untuk balancing** — divalidasi lewat playtest di Fase 4, bukan angka final.
+>
+> **Catatan nama:** PRD masih menyebut gamenya "Pixel Pulse" karena dokumen itu dibiarkan verbatim sebagai blueprint asli. Nama itu ternyata sudah dipakai game lain (ada game rhythm di itch.io, plus "Pixel Pulse Studio"), jadi sejak Juli 2026 gamenya bernama **Pixel Matrix**. Bacalah "Pixel Pulse" di PRD sebagai nama lama dari game yang sama.
 
 ## 1. Konsep Inti
 
-Pixel Pulse adalah game refleks arcade dengan sentuhan brain-training: pemain harus mencocokkan **warna target** dengan pixel yang menyala di papan, secepat dan seakurat mungkin. Tantangan mentalnya datang dari pergantian warna target yang memaksa otak "switch context" berulang kali — sederhana dipelajari, sulit dikuasai.
+Pixel Matrix adalah game refleks arcade dengan sentuhan brain-training: pemain harus mencocokkan **warna target** dengan pixel yang menyala di papan, secepat dan seakurat mungkin. Tantangan mentalnya datang dari pergantian warna target yang memaksa otak "switch context" berulang kali — sederhana dipelajari, sulit dikuasai.
 
 - **Solo mode**: endless, kejar high score, kesulitan naik bertahap.
 - **Multiplayer (2–4 pemain)**: satu papan bersama, semua pemain berebut pixel yang sama — siapa cepat dia dapat.

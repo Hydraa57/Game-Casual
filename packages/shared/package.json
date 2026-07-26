@@ -1,9 +1,9 @@
 {
-  "name": "@pixelpulse/shared",
+  "name": "@pixelmatrix/shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Tipe, konstanta, dan engine aturan main Pixel Pulse — dipakai bersama oleh web (solo) dan game-server (multiplayer)",
+  "description": "Tipe, konstanta, dan engine aturan main Pixel Matrix — dipakai bersama oleh web (solo) dan game-server (multiplayer)",
   "exports": {
     ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
