@@ -67,15 +67,32 @@ Lima hal ini awalnya ambigu di draf pertama; keputusannya dikunci di kode dan un
 
 ### Kurva kesulitan
 
-Level naik setiap **15 klik benar**:
+Level naik setiap **15 klik benar**. Kurvanya **diinterpolasi eksplisit dari Lv 1 ke Lv 20** — bukan peluruhan per level — supaya ujungnya tepat di "Lv 20 = MAX" dan angkanya bisa dibaca langsung:
 
-| Parameter | Awal (Lv 1) | Per level | Batas |
-|---|---|---|---|
-| Interval spawn | 1.2 dtk | −8% | min 0.4 dtk |
-| Lifetime pixel | 3.0 dtk | −5% | min 1.2 dtk |
-| Warna aktif | 3 | +1 di Lv 3, Lv 5, Lv 7 | maks 6 |
+| Parameter | Lv 1 | Lv 20 (MAX) |
+|---|---|---|
+| Interval spawn | 1200 ms | 500 ms |
+| Lifetime pixel | 3000 ms | 1000 ms |
+| Warna aktif | 3 | 6 (penuh sejak Lv 8: +1 di Lv 3, 5, 8) |
+| Bonus poin level | ×1 | ×2 |
 
-Semakin banyak warna aktif = semakin banyak distraktor = beban kognitif naik, bukan cuma kecepatan.
+Angka nyata per level:
+
+| Lv | spawn | lifetime | warna | pixel hidup | target hidup | bonus | poin maks/klik |
+|---|---|---|---|---|---|---|---|
+| 1 | 1200 | 3000 | 3 | 2,50 | 1,25 | ×1,00 | 40 |
+| 5 | 1053 | 2579 | 5 | 2,45 | 1,22 | ×1,21 | 48 |
+| 10 | 868 | 2053 | 6 | 2,37 | 1,18 | ×1,47 | 59 |
+| 15 | 684 | 1526 | 6 | 2,23 | 1,12 | ×1,74 | 69 |
+| 20 | 500 | 1000 | 6 | 2,00 | 1,00 | ×2,00 | 80 |
+
+### ⚠️ Aturan yang tidak boleh dilanggar saat mengulik kurva
+
+**Umur pixel harus menyusut dengan rasio LEBIH BESAR daripada jeda spawn.** Versi pertama game ini melanggarnya (spawn −8%/level, lifetime −5%/level), akibatnya papan justru makin padat dan pixel warna target yang tersedia **naik** dari 1,25 (Lv 1) ke 1,83 (Lv 15) — sebagian kenaikan kesulitan saling meniadakan, dan gamenya terasa hambar di level tinggi.
+
+Sekarang lifetime menjadi 1/3 sementara spawn menjadi 5/12, jadi "pixel hidup" menurun 2,50 → 2,00. Ada unit test (`difficulty.test.ts`, blok "arah kesulitan") yang gagal kalau arahnya terbalik lagi.
+
+Kesulitan datang dari tiga arah sekaligus: **jendela reaksi menyusut 3×** (3000 → 1000 ms), **distraktor bertambah** (3 → 6 warna), dan **sasaran makin langka** (1,25 → 1,00 pixel target hidup). Plus mekanik di §4.1 dan §4.2.
 
 ## 5. Multiplayer — Papan Rebutan (2–4 pemain)
 

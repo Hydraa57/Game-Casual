@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { BASE_POINTS, MAX_SPEED_BONUS, WRONG_CLICK_PENALTY } from '../constants/index';
+import {
+  BASE_POINTS,
+  MAX_CURVE_LEVEL,
+  MAX_LEVEL_BONUS_MULTIPLIER,
+  MAX_SPEED_BONUS,
+  WRONG_CLICK_PENALTY,
+} from '../constants/index';
 import type { Pixel } from '../types/index';
 import {
   applyPenalty,
   comboMultiplier,
+  levelBonusMultiplier,
   pointsForClick,
   remainingRatio,
   speedBonus,
@@ -56,8 +63,25 @@ describe('comboMultiplier', () => {
   });
 });
 
+describe('levelBonusMultiplier', () => {
+  it('×1 di level 1 dan ×2 tepat di level maksimum', () => {
+    expect(levelBonusMultiplier(1)).toBe(1);
+    expect(levelBonusMultiplier(MAX_CURVE_LEVEL)).toBe(MAX_LEVEL_BONUS_MULTIPLIER);
+  });
+
+  it('naik terus di antara keduanya', () => {
+    for (let level = 2; level <= MAX_CURVE_LEVEL; level += 1) {
+      expect(levelBonusMultiplier(level)).toBeGreaterThan(levelBonusMultiplier(level - 1));
+    }
+  });
+
+  it('berhenti di ×2 setelah level maksimum', () => {
+    expect(levelBonusMultiplier(MAX_CURVE_LEVEL + 40)).toBe(MAX_LEVEL_BONUS_MULTIPLIER);
+  });
+});
+
 describe('pointsForClick', () => {
-  it('klik paling cepat tanpa combo = poin dasar + bonus maksimum', () => {
+  it('klik paling cepat tanpa combo di level 1 = poin dasar + bonus maksimum', () => {
     expect(pointsForClick(1, 1)).toBe(BASE_POINTS + MAX_SPEED_BONUS);
   });
 
@@ -72,6 +96,18 @@ describe('pointsForClick', () => {
 
   it('combo 10 memberi multiplier ×2', () => {
     expect(pointsForClick(1, 10)).toBe(40);
+  });
+
+  it('level default 1 supaya pemanggil lama tidak berubah perilakunya', () => {
+    expect(pointsForClick(1, 1)).toBe(pointsForClick(1, 1, 1));
+  });
+
+  it('klik yang sama dibayar lebih mahal di level tinggi', () => {
+    expect(pointsForClick(1, 1, MAX_CURVE_LEVEL)).toBeGreaterThan(pointsForClick(1, 1, 1));
+  });
+
+  it('poin maksimum per klik = (10+10) × combo ×2 × level ×2 = 80', () => {
+    expect(pointsForClick(1, 10, MAX_CURVE_LEVEL)).toBe(80);
   });
 });
 

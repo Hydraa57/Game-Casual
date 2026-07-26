@@ -32,7 +32,12 @@ export function Hud({ snapshot }: { snapshot: HudSnapshot }) {
           hint={snapshot.multiplier > 1 ? `×${snapshot.multiplier}` : undefined}
           tone={snapshot.multiplier > 1 ? 'combo' : undefined}
         />
-        <Stat label={t('level')} value={snapshot.level} />
+        <Stat
+          label={t('level')}
+          value={snapshot.level}
+          hint={snapshot.atMaxLevel ? t('maxLevel') : undefined}
+          tone={snapshot.atMaxLevel ? 'combo' : undefined}
+        />
         <Stat
           label={t('lives')}
           value={snapshot.lives === null ? '∞' : '▮'.repeat(snapshot.lives) || '—'}

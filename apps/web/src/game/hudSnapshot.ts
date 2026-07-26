@@ -17,6 +17,8 @@ export interface HudSnapshot {
   readonly bestCombo: number;
   readonly lives: number | null;
   readonly level: number;
+  /** True saat kurva kesulitan sudah mentok — HUD menandainya "MAX". */
+  readonly atMaxLevel: boolean;
   readonly targetColor: Color;
   readonly targetImminent: boolean;
   readonly accuracy: number;
@@ -31,6 +33,7 @@ export const INITIAL_SNAPSHOT: HudSnapshot = {
   bestCombo: 0,
   lives: SOLO_STARTING_LIVES,
   level: 1,
+  atMaxLevel: false,
   targetColor: 'red',
   targetImminent: false,
   accuracy: 1,
@@ -45,6 +48,7 @@ export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
     a.bestCombo === b.bestCombo &&
     a.lives === b.lives &&
     a.level === b.level &&
+    a.atMaxLevel === b.atMaxLevel &&
     a.targetColor === b.targetColor &&
     a.targetImminent === b.targetImminent &&
     a.accuracy === b.accuracy

@@ -105,7 +105,7 @@ function applyCorrectClick(state: GameState, pixelId: string, ratio: number): Cl
   const pixel = state.board.pixels.find((candidate) => candidate.id === pixelId)!;
 
   const combo = state.score.combo + 1;
-  const points = pointsForClick(ratio, combo);
+  const points = pointsForClick(ratio, combo, state.board.level);
   const correctClicks = state.score.correctClicks + 1;
 
   const score = {
@@ -116,8 +116,16 @@ function applyCorrectClick(state: GameState, pixelId: string, ratio: number): Cl
     correctClicks,
   };
 
+  // Di solo, level papan mengikuti progres pemain. Di multiplayer nanti server
+  // yang menentukan level papan, jadi nilainya dibiarkan apa adanya.
+  const previousLevel = levelFor(state.score.correctClicks);
+  const newLevel = levelFor(correctClicks);
+  const boardLevel =
+    state.config.mode === 'solo' ? Math.max(state.board.level, newLevel) : state.board.level;
+
   const board = {
     ...state.board,
+    level: boardLevel,
     pixels: state.board.pixels.filter((candidate) => candidate.id !== pixelId),
     correctClicksSinceTargetChange: state.board.correctClicksSinceTargetChange + 1,
   };
@@ -132,8 +140,6 @@ function applyCorrectClick(state: GameState, pixelId: string, ratio: number): Cl
     score: score.score,
   });
 
-  const previousLevel = levelFor(state.score.correctClicks);
-  const newLevel = levelFor(correctClicks);
   if (newLevel > previousLevel) {
     events.push({ type: 'levelUp', level: newLevel });
   }

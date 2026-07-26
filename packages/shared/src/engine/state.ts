@@ -6,7 +6,7 @@ import {
   TARGET_WARNING_MS,
 } from '../constants/index';
 import type { Color, GameMode, GameStatus, Pixel } from '../types/index';
-import { activeColors, levelFor } from './difficulty';
+import { activeColors, isMaxCurveLevel } from './difficulty';
 import { nextInRange, pickOne } from './rng';
 
 export interface GameConfig {
@@ -37,6 +37,15 @@ export interface ScoreState {
  */
 export interface BoardState {
   readonly pixels: readonly Pixel[];
+  /**
+   * Level kesulitan papan. Disimpan eksplisit, BUKAN diturunkan di dalam
+   * `step()` dari klik satu pemain: di multiplayer papan-rebutan, papannya
+   * bersama sementara `correctClicks` milik masing-masing pemain, jadi
+   * menurunkannya dari sana akan membuat kesulitan bergantung pada siapa yang
+   * paling rajin mengklik. Solo mengisinya dari `levelFor(correctClicks)`;
+   * server multiplayer nanti mengisinya dari waktu berjalan.
+   */
+  readonly level: number;
   readonly targetColor: Color;
   /** Waktu (dalam `elapsedMs`) saat warna target berikutnya berganti. */
   readonly targetChangesAtMs: number;
@@ -117,6 +126,7 @@ export function createGameState({
     elapsedMs: 0,
     board: {
       pixels: [],
+      level: 1,
       targetColor: target.value,
       targetChangesAtMs: Math.round(firstChange.value),
       correctClicksSinceTargetChange: 0,
@@ -151,9 +161,14 @@ export function isPlayable(status: GameStatus): boolean {
   return status === 'running';
 }
 
-/** Level saat ini, diturunkan dari jumlah klik benar (solo). */
+/** Level kesulitan papan saat ini. */
 export function currentLevel(state: GameState): number {
-  return levelFor(state.score.correctClicks);
+  return state.board.level;
+}
+
+/** True saat kesulitan sudah mentok — HUD menampilkan "MAX". */
+export function isAtMaxLevel(state: GameState): boolean {
+  return isMaxCurveLevel(state.board.level);
 }
 
 /** True saat HUD harus berkedip karena warna target akan segera berganti. */

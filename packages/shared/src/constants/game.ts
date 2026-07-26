@@ -61,17 +61,36 @@ export const COMBO_MULTIPLIERS = [1, 1.5, 2] as const;
 export const SOLO_STARTING_LIVES = 3;
 export const CLICKS_PER_LEVEL = 15;
 
+/**
+ * Level di mana kurva kesulitan mencapai ujungnya. Di atas level ini semua
+ * angka sudah maksimal dan yang bertambah hanyalah modifier chaos.
+ *
+ * Kurva dihitung dengan interpolasi eksplisit dari nilai Lv 1 ke nilai Lv
+ * MAX_CURVE_LEVEL, BUKAN dengan faktor peluruhan per level. Versi pertama game
+ * ini memakai faktor (0.92 dan 0.95) dan akibatnya titik mentoknya tersebar
+ * tak terduga di level 15 dan 19 — sulit dilihat dari kodenya, dan bikin
+ * "Level 20 = MAX" tidak mungkin dijanjikan dengan tepat.
+ */
+export const MAX_CURVE_LEVEL = 20;
+
 export const INITIAL_SPAWN_INTERVAL_MS = 1200;
-export const SPAWN_INTERVAL_FACTOR_PER_LEVEL = 0.92;
-export const MIN_SPAWN_INTERVAL_MS = 400;
+export const MIN_SPAWN_INTERVAL_MS = 500;
 
 export const INITIAL_LIFETIME_MS = 3000;
-export const LIFETIME_FACTOR_PER_LEVEL = 0.95;
-export const MIN_LIFETIME_MS = 1200;
+export const MIN_LIFETIME_MS = 1000;
 
 export const INITIAL_ACTIVE_COLORS = 3;
 /** Level di mana satu warna baru diaktifkan (3 → 4 → 5 → 6 warna). */
-export const COLOR_UNLOCK_LEVELS = [3, 5, 7] as const;
+export const COLOR_UNLOCK_LEVELS = [3, 5, 8] as const;
+
+/**
+ * Bonus poin karena bertahan di level tinggi: ×1 di Lv 1 sampai ×2 di Lv 20.
+ *
+ * Tanpa ini, klik di Lv 20 (yang jauh lebih sulit) dibayar sama dengan klik di
+ * Lv 1, sehingga bertahan lama tidak terasa dihargai dan skor tinggi murni soal
+ * ketahanan mengulang. Setel ke 1 untuk mematikan efeknya.
+ */
+export const MAX_LEVEL_BONUS_MULTIPLIER = 2;
 
 /**
  * Peluang sebuah pixel baru berwarna sama dengan warna target.

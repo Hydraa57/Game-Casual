@@ -4,6 +4,9 @@ export type { ClickResult } from './click';
 export {
   activeColorCount,
   activeColors,
+  curveProgress,
+  expectedPixelsAlive,
+  isMaxCurveLevel,
   levelFor,
   lifetimeMs,
   spawnIntervalMs,
@@ -17,6 +20,7 @@ export type { RandomResult } from './rng';
 export {
   applyPenalty,
   comboMultiplier,
+  levelBonusMultiplier,
   pointsForClick,
   remainingRatio,
   speedBonus,
@@ -26,6 +30,7 @@ export {
   createGameState,
   createScoreState,
   currentLevel,
+  isAtMaxLevel,
   isPlayable,
   isTargetChangeImminent,
   multiplayerConfig,

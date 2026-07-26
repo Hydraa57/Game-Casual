@@ -5,7 +5,7 @@ import {
   TARGET_MIN_DURATION_MS,
 } from '../constants/index';
 import type { Color, GameStatus, Pixel } from '../types/index';
-import { activeColors, levelFor, lifetimeMs, spawnIntervalMs } from './difficulty';
+import { activeColors, lifetimeMs, spawnIntervalMs } from './difficulty';
 import type { GameEvent } from './events';
 import { nextInRange, nextRandom, pickOne } from './rng';
 import type { BoardState, GameState, ScoreState } from './state';
@@ -34,7 +34,7 @@ export function step(state: GameState, deltaMs: number): StepResult {
 
   const events: GameEvent[] = [];
   const elapsedMs = state.elapsedMs + deltaMs;
-  const level = levelFor(state.score.correctClicks);
+  const level = state.board.level;
 
   let board = state.board;
   let score = state.score;

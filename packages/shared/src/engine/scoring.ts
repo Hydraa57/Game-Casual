@@ -2,10 +2,12 @@ import {
   BASE_POINTS,
   COMBO_MULTIPLIERS,
   COMBO_STEP,
+  MAX_LEVEL_BONUS_MULTIPLIER,
   MAX_SPEED_BONUS,
   WRONG_CLICK_PENALTY,
 } from '../constants/index';
 import type { Pixel } from '../types/index';
+import { curveProgress } from './difficulty';
 
 /**
  * Sisa umur pixel sebagai rasio 0..1 (1 = baru muncul, 0 = tepat mau pudar).
@@ -33,14 +35,26 @@ export function comboMultiplier(combo: number): number {
 }
 
 /**
+ * Bonus karena bertahan di level tinggi: ×1 di Lv 1 naik mulus sampai ×2 di
+ * Lv 20, lalu berhenti di sana.
+ */
+export function levelBonusMultiplier(level: number): number {
+  return 1 + (MAX_LEVEL_BONUS_MULTIPLIER - 1) * curveProgress(level);
+}
+
+/**
  * Poin untuk satu klik benar.
  *
  * `combo` yang dipakai adalah combo SETELAH klik ini dihitung, jadi klik yang
  * tepat menyentuh kelipatan 5 langsung menikmati multiplier barunya — terasa
  * seperti hadiah, bukan seperti telat satu langkah.
+ *
+ * Poin maksimum per klik jadi (10 + 10) × 2 (combo) × 2 (level) = 80.
  */
-export function pointsForClick(ratio: number, combo: number): number {
-  return Math.round((BASE_POINTS + speedBonus(ratio)) * comboMultiplier(combo));
+export function pointsForClick(ratio: number, combo: number, level = 1): number {
+  const raw =
+    (BASE_POINTS + speedBonus(ratio)) * comboMultiplier(combo) * levelBonusMultiplier(level);
+  return Math.round(raw);
 }
 
 /** Skor tidak pernah turun di bawah nol (GDD §3). */
