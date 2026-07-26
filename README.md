@@ -2,7 +2,7 @@
 
 Game casual berbasis browser: refleks arcade + sentuhan brain-training, gaya retro pixel art. Bisa dimainkan solo (endless, kejar high score) atau bareng 2–4 teman secara real-time di satu papan yang sama — cukup bagikan kode room, tanpa install apa pun. **Dirancang mobile-first** karena skenario utamanya dimainkan bareng-bareng saat nongkrong, dari HP masing-masing.
 
-**Status: 🏗️ Fase 0 (fondasi).** Monorepo dan `packages/shared` sudah berdiri; gameplay belum ada.
+**Status: 🎮 Solo mode sudah bisa dimainkan** (Fase 1 selesai). Multiplayer menyusul di Fase 2.
 
 ## Dokumen
 
@@ -30,23 +30,31 @@ Next.js + Phaser (Vercel) · Node + Socket.IO (Render/Fly.io) · PostgreSQL + Pr
 ## Struktur Repo
 
 ```
-apps/web/          Next.js + Phaser (belum ada — Fase 1)
+apps/web/          Next.js + Phaser — landing page & solo mode
 apps/game-server/  Socket.IO game server (belum ada — Fase 2)
 packages/shared/   Tipe, konstanta balancing, engine aturan main
 docs/              Blueprint & planning
 ```
 
+`packages/shared` adalah satu-satunya sumber aturan main. Scene Phaser hanya menggambar papan dan meneruskan tap; HUD dibuat sebagai DOM/React agar responsif di layar kecil.
+
 ## Development
+
+Butuh Node ≥20 dan pnpm 10.
 
 ```bash
 pnpm install
+pnpm dev          # http://localhost:3000 (juga listen di 0.0.0.0)
 pnpm typecheck    # tsc di semua workspace
 pnpm lint         # eslint
-pnpm test         # vitest
+pnpm test         # vitest (engine aturan main)
+pnpm build        # production build
 pnpm format       # prettier --write
 ```
 
-Butuh Node ≥20 dan pnpm 10. `pnpm dev` akan menyalakan app begitu `apps/web` ada (Fase 1).
+### Main dari HP
+
+`pnpm dev` sudah listen di semua interface, jadi buka `http://<IP-komputermu>:3000` dari HP yang satu WiFi (cek IP dengan `ip addr` / `ifconfig`). Kalau Next memblokir permintaannya, tambahkan IP-nya ke `allowedDevOrigins` di `apps/web/next.config.ts`.
 
 ## Mulai dari Mana?
 

@@ -10,24 +10,26 @@
 - [x] Script root: `dev` / `build` / `typecheck` / `lint` / `test` / `format` via `pnpm -r`
 - [x] GitHub Actions: typecheck + lint + format check + test tiap push
 - [x] Requirement mobile ditetapkan di GDD §7 + ARCHITECTURE §8
-- [ ] Perbarui README (cara menjalankan dev) — menyusul setelah `apps/web` ada di Fase 1
+- [x] Perbarui README (cara menjalankan dev)
 
 ## Fase 1 — Solo Playable ("first fun") 🎯
 
-- [ ] Engine aturan main di `packages/shared` (pure functions): spawn pixel, lifetime, skor + speed bonus, combo, kurva level, seeded RNG
-- [ ] Unit test engine (skor, combo reset, batas kurva kesulitan)
-- [ ] Halaman `/play/solo`: mount Phaser (dynamic import, ssr:false)
-- [ ] Renderer grid 8×8 + siklus hidup pixel (spawn → redup → expire)
-- [ ] Input pointer (mouse + touch satu jalur) + resolusi lewat engine shared
-- [ ] HUD **sebagai DOM/React**: warna target (+ kedip peringatan), skor, combo meter, 3 nyawa, level
-- [ ] **Layout mobile-first**: canvas `Scale.FIT` responsif, kolom tunggal, `touch-action: none`, viewport tanpa double-tap zoom, tombol ≥44px
-- [ ] Pause / resume (bekukan seluruh state) + game over + restart
-- [ ] High score di `localStorage`
-- [ ] Scaffold i18n `next-intl` (id default + en) — semua string UI lewat kamus
-- [ ] SFX dasar: klik benar / salah / game over + toggle mute
-- [ ] Landing page sederhana → tombol "Main Solo"
+- [x] Engine aturan main di `packages/shared` (pure functions): spawn pixel, lifetime, skor + speed bonus, combo, kurva level, seeded RNG
+- [x] Unit test engine (80 test: skor, combo reset, batas kurva kesulitan, determinisme, kemurnian fungsi)
+- [x] Halaman `/play/solo`: mount Phaser lewat dynamic import di dalam effect (tanpa SSR)
+- [x] Renderer grid 8×8 + siklus hidup pixel (spawn → redup → expire) + glyph buta warna
+- [x] Input pointer (mouse + touch satu jalur, hit-area selebar sel) + resolusi lewat engine shared
+- [x] HUD **sebagai DOM/React**: warna target (+ kedip peringatan), skor, combo meter, 3 nyawa, level
+- [x] **Layout mobile-first**: canvas `Scale.FIT` responsif dan dibatasi tinggi viewport, kolom tunggal, `touch-action: none`, viewport tanpa double-tap zoom, tombol ≥48px
+- [x] Pause / resume (membekukan seluruh state) + game over + restart
+- [x] High score di `localStorage`
+- [x] Scaffold i18n `next-intl` (id default + en) — semua string UI lewat kamus
+- [x] SFX dasar via WebAudio (tanpa file aset): klik benar / salah / game over + toggle mute + getar
+- [x] Landing page sederhana → tombol "Main Solo"
 
 **✅ Milestone:** kamu sendiri betah main ≥3 ronde berturut-turut, **dan dicoba langsung di HP** (bukan cuma DevTools). Kalau belum seru, ulik angka balancing di `shared/constants` sebelum lanjut — **jangan masuk Fase 2 dengan core loop yang hambar.**
+
+> Status: fungsinya sudah lengkap dan lolos uji otomatis di viewport HP (390×844). **Yang belum: penilaian "seru atau tidak" oleh kamu sendiri di HP nyata.** Itu gerbang menuju Fase 2 — angka di `packages/shared/src/constants/game.ts` (terutama `TARGET_COLOR_SPAWN_WEIGHT`, `INITIAL_SPAWN_INTERVAL_MS`, `INITIAL_LIFETIME_MS`) adalah yang paling layak diulik.
 
 ## Fase 2 — Multiplayer Vertical Slice 🎯
 

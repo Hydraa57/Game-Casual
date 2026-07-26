@@ -1,0 +1,52 @@
+import { SOLO_STARTING_LIVES } from '@pixelpulse/shared';
+import type { Color, GameStatus } from '@pixelpulse/shared';
+
+/**
+ * Data HUD yang dikirim scene Phaser ke React. Sengaja hanya nilai primitif
+ * supaya perbandingannya murah.
+ *
+ * Modul ini dipisah dari `BoardScene` dan TIDAK boleh meng-import Phaser:
+ * komponen React meng-import tipe ini secara statis, jadi kalau Phaser ikut
+ * tertarik ke sini, render di server akan gagal (`window is not defined`).
+ */
+export interface HudSnapshot {
+  readonly status: GameStatus;
+  readonly score: number;
+  readonly combo: number;
+  readonly multiplier: number;
+  readonly bestCombo: number;
+  readonly lives: number | null;
+  readonly level: number;
+  readonly targetColor: Color;
+  readonly targetImminent: boolean;
+  readonly accuracy: number;
+}
+
+/** Nilai awal supaya HUD sudah terlihat wajar sebelum Phaser selesai dimuat. */
+export const INITIAL_SNAPSHOT: HudSnapshot = {
+  status: 'idle',
+  score: 0,
+  combo: 0,
+  multiplier: 1,
+  bestCombo: 0,
+  lives: SOLO_STARTING_LIVES,
+  level: 1,
+  targetColor: 'red',
+  targetImminent: false,
+  accuracy: 1,
+};
+
+export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
+  return (
+    a.status === b.status &&
+    a.score === b.score &&
+    a.combo === b.combo &&
+    a.multiplier === b.multiplier &&
+    a.bestCombo === b.bestCombo &&
+    a.lives === b.lives &&
+    a.level === b.level &&
+    a.targetColor === b.targetColor &&
+    a.targetImminent === b.targetImminent &&
+    a.accuracy === b.accuracy
+  );
+}

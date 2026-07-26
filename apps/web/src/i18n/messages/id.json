@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "title": "Pixel Pulse — Otak Santai Bareng",
+    "description": "Game refleks pixel art yang bisa dimainkan sendiri atau bareng teman langsung dari browser HP."
+  },
+  "landing": {
+    "title": "Pixel Pulse",
+    "tagline": "Otak Santai Bareng",
+    "intro": "Klik pixel yang warnanya sama dengan warna target sebelum pudar. Makin cepat, makin banyak poin.",
+    "howToTitle": "Cara main",
+    "howTo": {
+      "step1": "Lihat warna target di bagian atas.",
+      "step2": "Tap pixel dengan warna itu sebelum memudar.",
+      "step3": "Warna target berganti sendiri — jangan sampai keliru.",
+      "step4": "Salah tap: kurang poin dan kurang satu nyawa."
+    },
+    "playSolo": "Main Solo",
+    "playMultiplayer": "Main Bareng Teman",
+    "comingSoon": "segera",
+    "switchLanguage": "English"
+  },
+  "solo": {
+    "title": "Solo",
+    "back": "Kembali",
+    "target": "Warna target",
+    "score": "Skor",
+    "combo": "Combo",
+    "level": "Level",
+    "lives": "Nyawa",
+    "highScore": "Rekor",
+    "tapToStart": "Tap untuk mulai",
+    "tapToStartHint": "3 nyawa. Salah tap kurang satu.",
+    "pause": "Jeda",
+    "resume": "Lanjut",
+    "paused": "Dijeda",
+    "muteOn": "Bunyi: nyala",
+    "muteOff": "Bunyi: mati",
+    "gameOver": "Habis!",
+    "finalScore": "Skor akhir",
+    "newRecord": "Rekor baru!",
+    "bestCombo": "Combo terbaik",
+    "accuracy": "Akurasi",
+    "playAgain": "Main lagi"
+  }
+}

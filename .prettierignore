@@ -6,3 +6,6 @@ coverage/
 
 # Dokumen ditulis manual (termasuk blueprint asli PRD/API) — jangan diformat ulang
 *.md
+
+# Dihasilkan otomatis oleh Next
+next-env.d.ts
