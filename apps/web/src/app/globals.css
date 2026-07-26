@@ -177,6 +177,197 @@ h3 {
   border-radius: 3px;
 }
 
+/* ------------------------------------------------- multiplayer: entry & lobby */
+
+.pageTitle {
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  color: var(--accent);
+  text-align: center;
+}
+
+.status {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.status--online {
+  color: var(--success);
+}
+
+.status--offline {
+  color: var(--danger);
+}
+
+.entry,
+.lobby {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input {
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  /* 48px: cukup besar untuk jempol, dan mencegah iOS auto-zoom saat fokus. */
+  min-height: 48px;
+  padding: 10px 14px;
+  width: 100%;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.input--code {
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.entry__divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.entry__divider::before,
+.entry__divider::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.hint--warn {
+  color: var(--danger);
+}
+
+.lobby__code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.lobby__codeValue {
+  font-size: clamp(2rem, 13vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--accent);
+}
+
+.playerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playerList__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-raised);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.playerList__item .badge {
+  margin-left: 8px;
+}
+
+.playerList__me {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.ready {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.ready--yes {
+  color: var(--success);
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  /* Tetap ≥44px supaya nyaman ditap dengan jempol. */
+  min-height: 44px;
+  min-width: 52px;
+  padding: 8px 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.chip--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f0e17;
+  font-weight: 700;
+}
+
+.controls--stack {
+  flex-direction: column;
+}
+
 /* ------------------------------------------------------------------ hud */
 
 .hud {

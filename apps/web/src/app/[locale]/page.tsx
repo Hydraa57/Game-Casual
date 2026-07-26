@@ -36,10 +36,9 @@ function Landing({ locale }: { locale: Locale }) {
         <Link className="btn btn--primary btn--block" href="/play/solo">
           {t('playSolo')}
         </Link>
-        <button className="btn btn--block" type="button" disabled>
+        <Link className="btn btn--block" href="/play/room">
           {t('playMultiplayer')}
-          <span className="badge">{t('comingSoon')}</span>
-        </button>
+        </Link>
       </div>
 
       <Link className="btn btn--small" href="/" locale={otherLocale}>

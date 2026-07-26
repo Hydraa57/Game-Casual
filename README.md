@@ -33,7 +33,7 @@ Next.js + Phaser (Vercel) · Node + Socket.IO (Render/Fly.io) · PostgreSQL + Pr
 
 ```
 apps/web/          Next.js + Phaser — landing page & solo mode
-apps/game-server/  Socket.IO game server (belum ada — Fase 2)
+apps/game-server/  Socket.IO game server — room, lobby, match otoritatif
 packages/shared/   Tipe, konstanta balancing, engine aturan main
 docs/              Blueprint & planning
 ```
@@ -46,7 +46,7 @@ Butuh Node ≥20 dan pnpm 10.
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:3000 (juga listen di 0.0.0.0)
+pnpm dev          # web :3000 + game-server :3001, keduanya listen di 0.0.0.0
 pnpm typecheck    # tsc di semua workspace
 pnpm lint         # eslint
 pnpm test         # vitest (engine aturan main)
@@ -58,6 +58,8 @@ pnpm format       # prettier --write
 
 `pnpm dev` sudah listen di semua interface, jadi buka `http://<IP-komputermu>:3000` dari HP yang satu WiFi (cek IP dengan `ip addr` / `ifconfig`). Kalau Next memblokir permintaannya, tambahkan IP-nya ke `allowedDevOrigins` di `apps/web/next.config.ts`.
 
+Client mencari game-server di host yang sama pada port 3001, jadi multiplayer dari HP jalan tanpa konfigurasi tambahan. Untuk menimpanya, set `NEXT_PUBLIC_GAME_SERVER_URL`.
+
 ## Mulai dari Mana?
 
-Lihat [ROADMAP.md](docs/ROADMAP.md) — Fase 0 selesai, lanjut Fase 1 (solo playable). Prinsip urutannya: **buktikan gamenya seru dulu, baru bangun infrastruktur.**
+Lihat [ROADMAP.md](docs/ROADMAP.md). Fase 0, 1, dan 1.5 selesai; Fase 2 (multiplayer) sedang dikerjakan. Prinsip urutannya: **buktikan gamenya seru dulu, baru bangun infrastruktur.**
