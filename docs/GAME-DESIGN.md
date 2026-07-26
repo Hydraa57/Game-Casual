@@ -94,6 +94,27 @@ Sekarang lifetime menjadi 1/3 sementara spawn menjadi 5/12, jadi "pixel hidup" m
 
 Kesulitan datang dari tiga arah sekaligus: **jendela reaksi menyusut 3×** (3000 → 1000 ms), **distraktor bertambah** (3 → 6 warna), dan **sasaran makin langka** (1,25 → 1,00 pixel target hidup). Plus mekanik di §4.1 dan §4.2.
 
+### 4.1 Pixel spesial
+
+Selain pixel biasa, papan bisa memunculkan tiga jenis pixel yang **tidak peduli warna target**:
+
+| Jenis | Muncul | Peluang | Umur | Efek di-tap | Dibiarkan pudar |
+|---|---|---|---|---|---|
+| **Bom ☠** | Lv 8+ | 8% → 15% di Lv 20 | normal | **−1 nyawa**, combo putus, shake + flash + getar. Di MP (tanpa nyawa): −15 poin | Tidak apa-apa — memang harus dihindari |
+| **Emas ★** | Lv 3+ | 4% | 60% dari normal | Poin **×5**, combo +1, warna apa pun boleh | Tidak ada penalti |
+| **Nyawa ♥** | Lv 5+ | 3%, hanya jika nyawa < 5 | 70% dari normal | **+1 nyawa** (maks 5), combo +1 | Tidak ada penalti (tapi sayang) |
+
+Pixel biasa tetap >70% dari seluruh spawn bahkan di Lv 20 — pixel spesial adalah bumbu, bukan mekanik utama.
+
+**Bom adalah satu-satunya pixel yang menghukum karena DISENTUH**, bukan karena diabaikan. Ini yang menambah dimensi menahan diri (*response inhibition*) ke gameplay yang tadinya murni refleks, dan yang paling mendekatkan game ini ke klaim "brain training" di PRD.
+
+Dua keputusan visual yang wajib dipertahankan, keduanya soal keadilan di layar HP:
+
+1. **Bom tidak boleh mungkin dikira pixel biasa** — warna gelap khusus di luar palet 6 warna, border merah tebal 4px, dan glyph ☠.
+2. **Bom tidak memudar sejauh pixel lain** (alpha minimum 0,7 vs 0,3). Warnanya gelap dan hampir menyatu dengan latar papan; kalau ia sampai nyaris tembus pandang, pemain bisa menyangka selnya kosong lalu menap-nya — dihukum untuk sesuatu yang tidak terlihat.
+
+Karena ★ direservasi untuk pixel emas, **glyph kuning dipindah dari ★ ke ▼**. Ada test yang gagal kalau glyph warna dan glyph pixel spesial bertabrakan lagi.
+
 ## 5. Multiplayer — Papan Rebutan (2–4 pemain)
 
 ### Prinsip

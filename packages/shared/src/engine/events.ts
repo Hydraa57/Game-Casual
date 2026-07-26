@@ -48,6 +48,15 @@ export type GameEvent =
       readonly penalty: number;
       readonly livesLeft: number | null;
     }
+  | {
+      /** Bom di-tap: satu-satunya pixel yang menghukum karena DISENTUH. */
+      readonly type: 'bombHit';
+      readonly pixelId: string;
+      readonly livesLeft: number | null;
+      /** Hanya terisi di mode tanpa nyawa (multiplayer). */
+      readonly scorePenalty: number;
+    }
+  | { readonly type: 'lifeGained'; readonly pixelId: string; readonly lives: number }
   | { readonly type: 'levelUp'; readonly level: number }
   | {
       readonly type: 'checkpointReached';

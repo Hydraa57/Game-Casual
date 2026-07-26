@@ -7,11 +7,26 @@ export interface Cell {
   readonly col: number;
 }
 
+/**
+ * Jenis pixel. `normal` mengikuti aturan warna target; sisanya punya aturannya
+ * sendiri dan tidak peduli warna target (GDD §4.1).
+ */
+export type PixelKind =
+  /** Pixel biasa — hanya memberi poin kalau warnanya sama dengan warna target. */
+  | 'normal'
+  /** Jangan ditap: mengurangi nyawa. Aman kalau dibiarkan pudar. */
+  | 'bomb'
+  /** Bonus poin besar, warna apa pun boleh ditap. */
+  | 'gold'
+  /** Menambah satu nyawa. */
+  | 'life';
+
 /** Pixel yang sedang hidup di papan. */
 export interface Pixel {
   readonly id: string;
   readonly cell: Cell;
   readonly color: Color;
+  readonly kind: PixelKind;
   /**
    * Waktu spawn dalam ms relatif terhadap awal match (`state.elapsedMs`),
    * BUKAN `Date.now()` — supaya state deterministik dan bisa di-replay di test.

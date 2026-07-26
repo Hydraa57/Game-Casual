@@ -7,6 +7,7 @@ import {
   COLOR_HEX,
   COLOR_UNLOCK_LEVELS,
   COMBO_MULTIPLIERS,
+  KIND_GLYPH,
   DEFAULT_ROOM_SETTINGS,
   GRID_SIZE,
   INITIAL_ACTIVE_COLORS,
@@ -38,6 +39,14 @@ describe('konstanta papan & warna', () => {
   it('glyph unik antar warna (agar tetap terbaca tanpa membedakan warna)', () => {
     const glyphs = Object.values(COLOR_GLYPH);
     expect(new Set(glyphs).size).toBe(glyphs.length);
+  });
+
+  it('glyph pixel spesial tidak bertabrakan dengan glyph warna', () => {
+    // ★ pernah dipakai warna kuning sebelum pixel emas ada. Dua bentuk mirip di
+    // papan yang sama merusak justru fungsi glyph itu sendiri, jadi kuning
+    // dipindah ke ▼ dan test ini menjaga agar tabrakan serupa tidak terulang.
+    const all = [...Object.values(COLOR_GLYPH), ...Object.values(KIND_GLYPH)];
+    expect(new Set(all).size).toBe(all.length);
   });
 
   it('warna awal + jumlah unlock tepat mencapai seluruh warna', () => {

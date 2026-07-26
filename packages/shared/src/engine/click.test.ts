@@ -14,6 +14,7 @@ const targetPixel: Pixel = {
   id: 'target-1',
   cell: { row: 2, col: 3 },
   color: 'red',
+  kind: 'normal',
   spawnedAtMs: 1000,
   lifetimeMs: 2000,
 };
@@ -22,6 +23,7 @@ const distractorPixel: Pixel = {
   id: 'distractor-1',
   cell: { row: 4, col: 5 },
   color: 'blue',
+  kind: 'normal',
   spawnedAtMs: 1000,
   lifetimeMs: 2000,
 };

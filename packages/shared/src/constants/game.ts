@@ -1,4 +1,4 @@
-import type { Color, RoomSettings } from '../types/index';
+import type { Color, PixelKind, RoomSettings } from '../types/index';
 
 // ---------------------------------------------------------------------------
 // Papan (GDD §2)
@@ -32,14 +32,29 @@ export const COLOR_HEX: Record<Color, number> = {
   orange: 0xf77622,
 };
 
-/** Glyph pembeda warna, dukungan buta warna (GDD §2). */
+/**
+ * Glyph pembeda warna, dukungan buta warna (GDD §2).
+ *
+ * Kuning memakai ▼ dan bukan ★: ★ direservasi untuk pixel emas, dan dua bentuk
+ * yang mirip di papan yang sama akan merusak justru fungsi glyph itu sendiri.
+ */
 export const COLOR_GLYPH: Record<Color, string> = {
   red: '▲',
   blue: '●',
   green: '■',
-  yellow: '★',
+  yellow: '▼',
   purple: '◆',
   orange: '✚',
+};
+
+/**
+ * Glyph untuk pixel spesial. Harus tidak bertabrakan dengan COLOR_GLYPH —
+ * dijaga oleh test keunikan di `game.test.ts`.
+ */
+export const KIND_GLYPH: Record<Exclude<PixelKind, 'normal'>, string> = {
+  bomb: '☠',
+  gold: '★',
+  life: '♥',
 };
 
 // ---------------------------------------------------------------------------
@@ -91,6 +106,36 @@ export const COLOR_UNLOCK_LEVELS = [3, 5, 8] as const;
  * ketahanan mengulang. Setel ke 1 untuk mematikan efeknya.
  */
 export const MAX_LEVEL_BONUS_MULTIPLIER = 2;
+
+// ---------------------------------------------------------------------------
+// Pixel spesial (GDD §4.1)
+// ---------------------------------------------------------------------------
+
+/** Warna papan untuk pixel bom — gelap dan jelas berbeda dari 6 warna biasa. */
+export const BOMB_HEX = 0x181425;
+export const BOMB_BORDER_HEX = 0xe43b44;
+export const GOLD_HEX = 0xffd700;
+export const LIFE_HEX = 0xff6b9d;
+
+/** Nyawa maksimum yang bisa dikumpulkan lewat pixel ♥. */
+export const MAX_LIVES = 5;
+
+export const BOMB_FIRST_LEVEL = 8;
+/** Peluang bom di BOMB_FIRST_LEVEL, naik mulus sampai BOMB_MAX_CHANCE di Lv MAX. */
+export const BOMB_MIN_CHANCE = 0.08;
+export const BOMB_MAX_CHANCE = 0.15;
+/** Kehilangan skor saat bom ditap di mode tanpa nyawa (multiplayer). */
+export const BOMB_SCORE_PENALTY = 15;
+
+export const GOLD_FIRST_LEVEL = 3;
+export const GOLD_CHANCE = 0.04;
+export const GOLD_POINT_MULTIPLIER = 5;
+/** Umur pixel emas relatif pixel biasa — pendek supaya terasa "rebutan waktu". */
+export const GOLD_LIFETIME_FACTOR = 0.6;
+
+export const LIFE_FIRST_LEVEL = 5;
+export const LIFE_CHANCE = 0.03;
+export const LIFE_LIFETIME_FACTOR = 0.7;
 
 // ---------------------------------------------------------------------------
 // Checkpoint & continue (solo)

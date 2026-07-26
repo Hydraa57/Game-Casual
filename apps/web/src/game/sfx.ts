@@ -48,6 +48,20 @@ export class Sfx {
     navigator.vibrate?.(40);
   }
 
+  /** Bom: lebih rendah, lebih panjang, dan getar lebih panjang dari klik salah. */
+  bomb(): void {
+    this.tone(90, 0.32, 'sawtooth', 0.13);
+    this.tone(60, 0.32, 'square', 0.09, 0.04);
+    navigator.vibrate?.([50, 40, 90]);
+  }
+
+  /** Nyawa: arpeggio naik supaya terasa jelas sebagai hadiah. */
+  life(): void {
+    this.tone(660, 0.1, 'triangle', 0.09, 0);
+    this.tone(880, 0.1, 'triangle', 0.09, 0.08);
+    this.tone(1180, 0.16, 'triangle', 0.09, 0.16);
+  }
+
   gameOver(): void {
     this.tone(420, 0.14, 'square', 0.09, 0);
     this.tone(320, 0.14, 'square', 0.09, 0.14);

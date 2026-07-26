@@ -20,6 +20,7 @@ const pixel: Pixel = {
   id: 'p1',
   cell: { row: 0, col: 0 },
   color: 'red',
+  kind: 'normal',
   spawnedAtMs: 1000,
   lifetimeMs: 2000,
 };

@@ -1,10 +1,21 @@
 import {
+  BOMB_FIRST_LEVEL,
+  BOMB_MAX_CHANCE,
+  BOMB_MIN_CHANCE,
+  GOLD_CHANCE,
+  GOLD_FIRST_LEVEL,
+  GOLD_LIFETIME_FACTOR,
+  LIFE_CHANCE,
+  LIFE_FIRST_LEVEL,
+  LIFE_LIFETIME_FACTOR,
+  MAX_CURVE_LEVEL,
+  MAX_LIVES,
   TARGET_CHANGE_AFTER_CORRECT_CLICKS,
   TARGET_COLOR_SPAWN_WEIGHT,
   TARGET_MAX_DURATION_MS,
   TARGET_MIN_DURATION_MS,
 } from '../constants/index';
-import type { Color, GameStatus, Pixel } from '../types/index';
+import type { Color, GameStatus, Pixel, PixelKind } from '../types/index';
 import { activeColors, lifetimeMs, spawnIntervalMs } from './difficulty';
 import type { GameEvent } from './events';
 import { nextInRange, nextRandom, pickOne } from './rng';
@@ -44,7 +55,10 @@ export function step(state: GameState, deltaMs: number): StepResult {
   let missedTargetPixel = false;
   for (const pixel of board.pixels) {
     if (pixel.spawnedAtMs + pixel.lifetimeMs <= elapsedMs) {
-      const wasTarget = pixel.color === board.targetColor;
+      // Hanya pixel biasa berwarna target yang dianggap "terlewat". Bom memang
+      // harus dibiarkan pudar, dan melewatkan emas/nyawa cuma sayang — bukan
+      // kesalahan yang layak memutus combo.
+      const wasTarget = pixel.kind === 'normal' && pixel.color === board.targetColor;
       if (wasTarget) missedTargetPixel = true;
       events.push({ type: 'pixelExpired', pixelId: pixel.id, wasTarget });
     } else {
@@ -79,7 +93,10 @@ export function step(state: GameState, deltaMs: number): StepResult {
   let spawnCount = 0;
   while (board.nextSpawnAtMs <= elapsedMs && spawnCount < MAX_SPAWNS_PER_STEP) {
     const spawnAtMs = board.nextSpawnAtMs;
-    const spawned = spawnPixel(board, level, state.config.gridSize, spawnAtMs);
+    // Pixel nyawa hanya masuk akal di mode bernyawa (solo), dan hanya kalau
+    // nyawanya belum penuh — kalau tidak, ia jadi pixel yang tidak berguna.
+    const canDropLife = score.lives !== null && score.lives < MAX_LIVES;
+    const spawned = spawnPixel(board, level, state.config.gridSize, spawnAtMs, canDropLife);
     board = {
       ...spawned.board,
       nextSpawnAtMs: spawnAtMs + spawnIntervalMs(level),
@@ -125,11 +142,60 @@ interface SpawnResult {
   readonly pixel: Pixel | null;
 }
 
+/**
+ * Peluang bom di level tertentu: 0 sebelum BOMB_FIRST_LEVEL, lalu naik mulus
+ * dari BOMB_MIN_CHANCE sampai BOMB_MAX_CHANCE di ujung kurva.
+ */
+export function bombChance(level: number): number {
+  if (level < BOMB_FIRST_LEVEL) return 0;
+  const span = Math.max(1, MAX_CURVE_LEVEL - BOMB_FIRST_LEVEL);
+  const progress = Math.min(1, (level - BOMB_FIRST_LEVEL) / span);
+  return BOMB_MIN_CHANCE + (BOMB_MAX_CHANCE - BOMB_MIN_CHANCE) * progress;
+}
+
+interface KindPick {
+  readonly kind: PixelKind;
+  readonly rngState: number;
+}
+
+/**
+ * Undi jenis pixel. Urutannya sengaja: nyawa dulu (paling langka dan paling
+ * berharga), lalu emas, lalu bom — supaya peluang masing-masing tidak saling
+ * memakan secara tak terduga.
+ */
+function pickKind(rngState: number, level: number, canDropLife: boolean): KindPick {
+  const roll = nextRandom(rngState);
+  let threshold = 0;
+
+  if (canDropLife && level >= LIFE_FIRST_LEVEL) {
+    threshold += LIFE_CHANCE;
+    if (roll.value < threshold) return { kind: 'life', rngState: roll.state };
+  }
+
+  if (level >= GOLD_FIRST_LEVEL) {
+    threshold += GOLD_CHANCE;
+    if (roll.value < threshold) return { kind: 'gold', rngState: roll.state };
+  }
+
+  threshold += bombChance(level);
+  if (roll.value < threshold) return { kind: 'bomb', rngState: roll.state };
+
+  return { kind: 'normal', rngState: roll.state };
+}
+
+function lifetimeForKind(kind: PixelKind, level: number): number {
+  const base = lifetimeMs(level);
+  if (kind === 'gold') return Math.round(base * GOLD_LIFETIME_FACTOR);
+  if (kind === 'life') return Math.round(base * LIFE_LIFETIME_FACTOR);
+  return base;
+}
+
 function spawnPixel(
   board: BoardState,
   level: number,
   gridSize: number,
   spawnAtMs: number,
+  canDropLife: boolean,
 ): SpawnResult {
   const occupied = new Set(board.pixels.map((pixel) => pixel.cell.row * gridSize + pixel.cell.col));
   const freeCells: number[] = [];
@@ -141,7 +207,10 @@ function spawnPixel(
   }
 
   const cellPick = pickOne(board.rngState, freeCells);
-  const colorPick = pickColor(cellPick.state, board.targetColor, activeColors(level));
+  const kindPick = pickKind(cellPick.state, level, canDropLife);
+  // Pixel spesial tidak ikut aturan warna target, tapi tetap punya warna supaya
+  // renderer bisa mewarnainya secara konsisten.
+  const colorPick = pickColor(kindPick.rngState, board.targetColor, activeColors(level));
 
   const pixel: Pixel = {
     id: `p${board.nextPixelSeq}`,
@@ -150,8 +219,9 @@ function spawnPixel(
       col: cellPick.value % gridSize,
     },
     color: colorPick.color,
+    kind: kindPick.kind,
     spawnedAtMs: spawnAtMs,
-    lifetimeMs: lifetimeMs(level),
+    lifetimeMs: lifetimeForKind(kindPick.kind, level),
   };
 
   return {

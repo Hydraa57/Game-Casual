@@ -6,8 +6,6 @@ import {
   canContinue,
   CLICKS_PER_LEVEL,
   continueFromCheckpoint,
-  COLOR_GLYPH,
-  COLOR_HEX,
   comboMultiplier,
   createGameState,
   currentLevel,
@@ -23,7 +21,7 @@ import {
 import type { GameEvent, GameState, Pixel } from '@pixelmatrix/shared';
 import { isSameSnapshot } from './hudSnapshot';
 import type { HudSnapshot } from './hudSnapshot';
-import { BOARD_BACKGROUND, GRID_LINE } from './palette';
+import { BOARD_BACKGROUND, GRID_LINE, pixelStyle } from './palette';
 import type { Sfx } from './sfx';
 
 /** Resolusi internal papan. Phaser men-scale-nya ke ukuran layar (Scale.FIT). */
@@ -189,6 +187,19 @@ export class BoardScene extends Phaser.Scene {
           }
           break;
 
+        case 'bombHit':
+          // Guncangan lebih keras daripada klik salah biasa: bom itu kesalahan
+          // yang paling mahal, dan pemain harus langsung tahu tanpa lihat HUD.
+          this.removeView(event.pixelId, 'pop');
+          this.options.sfx.bomb();
+          this.cameras.main.shake(260, 0.016);
+          this.cameras.main.flash(160, 228, 59, 68);
+          break;
+
+        case 'lifeGained':
+          this.options.sfx.life();
+          break;
+
         case 'gameOver':
           this.options.sfx.gameOver();
           break;
@@ -205,16 +216,18 @@ export class BoardScene extends Phaser.Scene {
     const centerX = pixel.cell.col * CELL + CELL / 2;
     const centerY = pixel.cell.row * CELL + CELL / 2;
     const size = CELL - PIXEL_INSET * 2;
+    const style = pixelStyle(pixel);
 
-    const rect = this.add.rectangle(centerX, centerY, size, size, COLOR_HEX[pixel.color]);
-    rect.setStrokeStyle(2, 0x000000, 0.35);
+    const rect = this.add.rectangle(centerX, centerY, size, size, style.fill);
+    rect.setStrokeStyle(style.strokeWidth, style.stroke, style.strokeAlpha);
 
-    // Glyph = pembeda warna untuk pemain buta warna (GDD §2). Ukurannya sengaja
-    // besar: di layar HP papan ini menyusut ke ~45% ukuran internalnya.
-    const glyph = this.add.text(centerX, centerY, COLOR_GLYPH[pixel.color], {
+    // Glyph = pembeda warna untuk pemain buta warna (GDD §2), dan untuk pixel
+    // spesial ia yang membedakan bom dari pixel biasa. Ukurannya sengaja besar:
+    // di layar HP papan ini menyusut ke ~45% ukuran internalnya.
+    const glyph = this.add.text(centerX, centerY, style.glyph, {
       fontFamily: 'monospace',
       fontSize: '40px',
-      color: 'rgba(0,0,0,0.6)',
+      color: style.glyphColor,
     });
     glyph.setOrigin(0.5);
 
@@ -272,7 +285,14 @@ export class BoardScene extends Phaser.Scene {
       const view = this.views.get(pixel.id);
       if (!view) continue;
       const ratio = remainingRatio(pixel, this.gameState.elapsedMs);
-      const alpha = 0.3 + 0.7 * ratio;
+
+      // Bom sengaja tidak pernah memudar sejauh pixel lain. Warnanya gelap dan
+      // hampir menyatu dengan latar papan, jadi kalau ia sampai nyaris tembus
+      // pandang pemain bisa menyangka selnya kosong lalu menap-nya — hukuman
+      // untuk sesuatu yang tidak terlihat.
+      const floor = pixel.kind === 'bomb' ? 0.7 : 0.3;
+      const alpha = floor + (1 - floor) * ratio;
+
       view.rect.setAlpha(alpha);
       view.glyph.setAlpha(alpha);
     }

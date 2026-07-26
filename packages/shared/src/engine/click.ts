@@ -1,4 +1,9 @@
-import { WRONG_CLICK_PENALTY } from '../constants/index';
+import {
+  BOMB_SCORE_PENALTY,
+  GOLD_POINT_MULTIPLIER,
+  MAX_LIVES,
+  WRONG_CLICK_PENALTY,
+} from '../constants/index';
 import type { ClickRejectReason, GameEvent } from './events';
 import { levelFor } from './difficulty';
 import { applyPenalty, comboMultiplier, pointsForClick, remainingRatio } from './scoring';
@@ -34,6 +39,14 @@ export function applyClick(state: GameState, pixelId: string): ClickResult {
   const ratio = remainingRatio(pixel, state.elapsedMs);
   if (ratio <= 0) {
     return rejectWithoutPenalty(state, pixelId, 'tooLate');
+  }
+
+  // Pixel spesial punya aturannya sendiri dan tidak peduli warna target.
+  if (pixel.kind === 'bomb') {
+    return applyBomb(state, pixelId);
+  }
+  if (pixel.kind === 'gold' || pixel.kind === 'life') {
+    return applyCorrectClick(state, pixelId, ratio);
   }
 
   if (pixel.color !== state.board.targetColor) {
@@ -101,13 +114,67 @@ function applyWrongColor(state: GameState, pixelId: string): ClickResult {
   return { state: { ...state, status, score }, events, claimed: false };
 }
 
+/**
+ * Bom: satu-satunya pixel yang menghukum karena DI-TAP, bukan karena diabaikan.
+ * Pixel-nya dihapus (meledak) supaya tidak bisa ditap dua kali.
+ */
+function applyBomb(state: GameState, pixelId: string): ClickResult {
+  const events: GameEvent[] = [];
+  const previousCombo = state.score.combo;
+  const hasLives = state.score.lives !== null;
+
+  const lives = hasLives ? Math.max(0, state.score.lives! - 1) : null;
+
+  let score = {
+    ...state.score,
+    // Tanpa sistem nyawa (multiplayer), hukumannya diambil dari skor supaya bom
+    // tetap punya taruhan.
+    score: hasLives ? state.score.score : Math.max(0, state.score.score - BOMB_SCORE_PENALTY),
+    combo: 0,
+    wrongClicks: state.score.wrongClicks + 1,
+    lives,
+  };
+
+  const board = {
+    ...state.board,
+    pixels: state.board.pixels.filter((candidate) => candidate.id !== pixelId),
+  };
+
+  events.push({
+    type: 'bombHit',
+    pixelId,
+    livesLeft: lives,
+    scorePenalty: hasLives ? 0 : BOMB_SCORE_PENALTY,
+  });
+
+  if (previousCombo > 0) {
+    events.push({ type: 'comboBroken', previousCombo });
+  }
+
+  let status = state.status;
+  if (lives !== null && lives <= 0) {
+    status = 'gameOver';
+    events.push({ type: 'gameOver', score: score.score });
+    score = { ...score, combo: 0 };
+  }
+
+  return { state: { ...state, status, board, score }, events, claimed: false };
+}
+
 function applyCorrectClick(state: GameState, pixelId: string, ratio: number): ClickResult {
   const events: GameEvent[] = [];
   const pixel = state.board.pixels.find((candidate) => candidate.id === pixelId)!;
 
   const combo = state.score.combo + 1;
-  const points = pointsForClick(ratio, combo, state.board.level);
+  const basePoints = pointsForClick(ratio, combo, state.board.level);
+  const points = pixel.kind === 'gold' ? basePoints * GOLD_POINT_MULTIPLIER : basePoints;
   const correctClicks = state.score.correctClicks + 1;
+
+  // Pixel ♥ menambah nyawa, tapi tidak pernah melewati batas.
+  const lives =
+    pixel.kind === 'life' && state.score.lives !== null
+      ? Math.min(MAX_LIVES, state.score.lives + 1)
+      : state.score.lives;
 
   const score = {
     ...state.score,
@@ -115,7 +182,12 @@ function applyCorrectClick(state: GameState, pixelId: string, ratio: number): Cl
     combo,
     bestCombo: Math.max(state.score.bestCombo, combo),
     correctClicks,
+    lives,
   };
+
+  if (pixel.kind === 'life' && lives !== state.score.lives) {
+    events.push({ type: 'lifeGained', pixelId, lives: lives! });
+  }
 
   // Di solo, level papan mengikuti progres pemain. Di multiplayer nanti server
   // yang menentukan level papan, jadi nilainya dibiarkan apa adanya.
