@@ -1,0 +1,158 @@
+import * as Phaser from 'phaser';
+import { chaosHidesGlyphs, MP_WRONG_CLICK_COOLDOWN_MS } from '@pixelmatrix/shared';
+import type { ChaosModifier, Cell, Color, Pixel } from '@pixelmatrix/shared';
+import { BoardRenderer } from './BoardRenderer';
+import { BOARD_BACKGROUND } from './palette';
+import type { Sfx } from './sfx';
+
+interface DebugWindow {
+  __pmRemote?: { pixels: () => Pixel[]; targets: () => Color[] };
+}
+
+export interface RemoteBoardOptions {
+  /** Dipanggil saat pemain menap sebuah pixel; pengirimannya diurus pemanggil. */
+  readonly onTapPixel: (pixelId: string) => void;
+  readonly sfx: Sfx;
+}
+
+/**
+ * Papan multiplayer.
+ *
+ * Bedanya dengan solo: scene ini TIDAK menjalankan engine. Ia hanya menggambar
+ * apa yang dikirim server dan meneruskan tap. Server yang memutuskan siapa
+ * mengklaim pixel — itulah yang membuat "siapa cepat dia dapat" adil dan tidak
+ * bisa dicurangi dari sisi client.
+ */
+export class RemoteBoardScene extends Phaser.Scene {
+  private boardView!: BoardRenderer;
+  private pixels = new Map<string, Pixel>();
+  private elapsedMs = 0;
+  private chaos: ChaosModifier | null = null;
+  private targets: readonly Color[] = [];
+  private interactive = false;
+  private cooldownUntil = 0;
+
+  constructor(private readonly options: RemoteBoardOptions) {
+    super('remote-board');
+  }
+
+  create(): void {
+    this.cameras.main.setBackgroundColor(BOARD_BACKGROUND);
+    this.boardView = new BoardRenderer(this);
+    this.boardView.drawGrid();
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
+
+    if (process.env.NODE_ENV !== 'production') {
+      // Kait untuk uji end-to-end: tes perlu tahu pixel mana yang berwarna
+      // target supaya bisa mengetuk sel yang sama dari dua device sekaligus.
+      (window as unknown as DebugWindow).__pmRemote = {
+        pixels: () => [...this.pixels.values()],
+        targets: () => [...this.targets],
+      };
+    }
+  }
+
+  /** Warna target saat ini — dikirim server lewat `game:started`/`targetChanged`. */
+  setTargets(colors: readonly Color[]): void {
+    this.targets = colors;
+  }
+
+  override update(_time: number, delta: number): void {
+    if (!this.interactive) return;
+    // Waktu dihitung lokal hanya untuk animasi memudar; skor sepenuhnya milik
+    // server, jadi selisih kecil di sini tidak berpengaruh ke permainan.
+    this.elapsedMs += delta;
+    this.boardView.refreshFade([...this.pixels.values()], this.elapsedMs);
+  }
+
+  // ---------------------------------------------------------------- dari server
+
+  beginMatch(): void {
+    this.interactive = true;
+    this.cooldownUntil = 0;
+    this.elapsedMs = 0;
+    this.pixels.clear();
+    this.boardView.clear();
+  }
+
+  endMatch(): void {
+    this.interactive = false;
+    this.pixels.clear();
+    this.boardView.clear();
+  }
+
+  setChaos(chaos: ChaosModifier | null): void {
+    if (chaos === this.chaos) return;
+    this.chaos = chaos;
+    // Glyph muncul/hilang saat modifier berganti, jadi papan digambar ulang.
+    this.boardView.redraw([...this.pixels.values()], chaosHidesGlyphs(chaos));
+  }
+
+  spawn(pixel: Pixel): void {
+    // Waktu spawn diselaraskan ke jam lokal scene supaya animasi memudarnya
+    // sesuai walau `elapsedMs` server dan client tidak persis sama.
+    const local: Pixel = { ...pixel, spawnedAtMs: this.elapsedMs };
+    this.pixels.set(pixel.id, local);
+    this.boardView.add(local, chaosHidesGlyphs(this.chaos) && pixel.kind === 'normal');
+  }
+
+  expire(pixelId: string): void {
+    this.pixels.delete(pixelId);
+    this.boardView.remove(pixelId, 'fade');
+  }
+
+  claimed(pixelId: string, cell: Cell, points: number, byMe: boolean, combo: number): void {
+    this.pixels.delete(pixelId);
+    this.boardView.remove(pixelId, 'pop');
+    // Poin lawan tetap ditampilkan tapi diredupkan: kamu perlu tahu pixel itu
+    // direbut, tanpa mengira itu poinmu.
+    this.boardView.floatingScore(cell, `+${points}`, byMe ? '#fffffe' : '#a7a4c4');
+    if (byMe) this.options.sfx.correct(combo);
+  }
+
+  rejected(reason: 'wrongColor' | 'tooLate' | 'notFound' | 'rateLimited' | 'notRunning'): void {
+    // `notFound` berarti pixelnya sudah direbut orang lain — itu bukan kesalahan
+    // pemain, jadi tidak ada efek apa pun.
+    if (reason !== 'wrongColor') return;
+    // Jeda singkat setelah salah warna. Tanpa ini, cara main paling efektif
+    // adalah menggeprek layar sembarangan: penalti skornya kecil, sementara
+    // peluang menyerobot pixel jadi jauh lebih besar.
+    this.cooldownUntil = Date.now() + MP_WRONG_CLICK_COOLDOWN_MS;
+    this.options.sfx.wrong();
+    this.cameras.main.shake(140, 0.008);
+  }
+
+  bomb(pixelId: string, byMe: boolean): void {
+    this.pixels.delete(pixelId);
+    this.boardView.remove(pixelId, 'pop');
+    if (!byMe) return;
+    this.options.sfx.bomb();
+    this.cameras.main.shake(260, 0.016);
+    this.cameras.main.flash(160, 228, 59, 68);
+  }
+
+  shuffle(pixels: readonly Pixel[]): void {
+    this.pixels.clear();
+    for (const pixel of pixels)
+      this.pixels.set(pixel.id, { ...pixel, spawnedAtMs: this.elapsedMs });
+    this.boardView.redraw([...this.pixels.values()], chaosHidesGlyphs(this.chaos));
+  }
+
+  // ---------------------------------------------------------------- internal
+
+  private handlePointerDown(pointer: Phaser.Input.Pointer): void {
+    if (!this.interactive || Date.now() < this.cooldownUntil) return;
+
+    const cell = this.boardView.cellAt(pointer.x, pointer.y);
+    if (!cell) return;
+
+    const pixel = [...this.pixels.values()].find(
+      (candidate) => candidate.cell.row === cell.row && candidate.cell.col === cell.col,
+    );
+    // Tap di sel kosong tidak dikirim ke server sama sekali — tidak ada yang
+    // perlu diputuskan, dan itu menghemat pesan di jaringan seluler.
+    if (!pixel) return;
+
+    this.options.onTapPixel(pixel.id);
+  }
+}

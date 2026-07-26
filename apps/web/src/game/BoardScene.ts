@@ -9,13 +9,11 @@ import {
   comboMultiplier,
   createGameState,
   currentLevel,
-  GRID_SIZE,
   chaosHidesGlyphs,
   chaosModifierFor,
   isAtMaxLevel,
   isTargetChangeImminent,
   pauseGame,
-  remainingRatio,
   resumeGame,
   startGame,
   step,
@@ -23,13 +21,9 @@ import {
 import type { GameEvent, GameState, Pixel } from '@pixelmatrix/shared';
 import { isSameSnapshot } from './hudSnapshot';
 import type { HudSnapshot } from './hudSnapshot';
-import { BOARD_BACKGROUND, GRID_LINE, pixelStyle } from './palette';
+import { BoardRenderer } from './BoardRenderer';
+import { BOARD_BACKGROUND } from './palette';
 import type { Sfx } from './sfx';
-
-/** Resolusi internal papan. Phaser men-scale-nya ke ukuran layar (Scale.FIT). */
-export const BOARD_SIZE = 640;
-const CELL = BOARD_SIZE / GRID_SIZE;
-const PIXEL_INSET = 6;
 
 /**
  * Kalau tab di-background, `delta` bisa melompat detik-detikan. Dijepit supaya
@@ -48,11 +42,6 @@ export interface BoardSceneOptions {
   readonly startLevel?: number;
 }
 
-interface PixelView {
-  readonly rect: Phaser.GameObjects.Rectangle;
-  readonly glyph: Phaser.GameObjects.Text;
-}
-
 interface DebugWindow {
   __pmScene?: BoardScene;
 }
@@ -64,7 +53,7 @@ interface DebugWindow {
  */
 export class BoardScene extends Phaser.Scene {
   private gameState: GameState;
-  private readonly views = new Map<string, PixelView>();
+  private boardView!: BoardRenderer;
   private lastSnapshot: HudSnapshot | null = null;
 
   constructor(private readonly options: BoardSceneOptions) {
@@ -76,7 +65,8 @@ export class BoardScene extends Phaser.Scene {
   // jadi tidak boleh diberi `override` — beda dengan `update` di bawah.
   create(): void {
     this.cameras.main.setBackgroundColor(BOARD_BACKGROUND);
-    this.drawGridLines();
+    this.boardView = new BoardRenderer(this);
+    this.boardView.drawGrid();
 
     // Satu handler untuk seluruh papan, bukan hit-area per pixel: tap dianggap
     // mengenai seluruh sel, jadi target sentuh tetap selebar sel walau
@@ -109,7 +99,7 @@ export class BoardScene extends Phaser.Scene {
 
   startRound(): void {
     this.options.sfx.unlock();
-    this.clearViews();
+    this.boardView?.clear();
     this.gameState = applyStartLevel(startGame(this.gameState), this.options.startLevel);
     this.emitSnapshot();
   }
@@ -117,7 +107,7 @@ export class BoardScene extends Phaser.Scene {
   /** Lanjut dari checkpoint terakhir tanpa mengulang ronde dari awal. */
   continueRound(): void {
     this.options.sfx.unlock();
-    this.clearViews();
+    this.boardView?.clear();
     this.gameState = continueFromCheckpoint(this.gameState);
     this.emitSnapshot();
   }
@@ -135,25 +125,14 @@ export class BoardScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- internal
 
-  private drawGridLines(): void {
-    const graphics = this.add.graphics();
-    graphics.lineStyle(1, GRID_LINE, 1);
-    for (let index = 1; index < GRID_SIZE; index += 1) {
-      const offset = index * CELL;
-      graphics.lineBetween(offset, 0, offset, BOARD_SIZE);
-      graphics.lineBetween(0, offset, BOARD_SIZE, offset);
-    }
-  }
-
   private handlePointerDown(pointer: Phaser.Input.Pointer): void {
     if (this.gameState.status !== 'running') return;
 
-    const col = Math.floor(pointer.x / CELL);
-    const row = Math.floor(pointer.y / CELL);
-    if (col < 0 || col >= GRID_SIZE || row < 0 || row >= GRID_SIZE) return;
+    const cell = this.boardView.cellAt(pointer.x, pointer.y);
+    if (!cell) return;
 
     const pixel = this.gameState.board.pixels.find(
-      (candidate) => candidate.cell.row === row && candidate.cell.col === col,
+      (candidate) => candidate.cell.row === cell.row && candidate.cell.col === cell.col,
     );
     // Tap di sel kosong sengaja tidak dihukum — di HP jempol sering meleset
     // sedikit, dan menghukumnya bikin game terasa jahat.
@@ -169,16 +148,16 @@ export class BoardScene extends Phaser.Scene {
     for (const event of events) {
       switch (event.type) {
         case 'pixelSpawned':
-          this.createView(event.pixel);
+          this.addPixelView(event.pixel);
           break;
 
         case 'pixelExpired':
-          this.removeView(event.pixelId, 'fade');
+          this.boardView.remove(event.pixelId, 'fade');
           break;
 
         case 'pixelClaimed':
-          this.removeView(event.pixelId, 'pop');
-          this.showFloatingScore(event.cell, event.points);
+          this.boardView.remove(event.pixelId, 'pop');
+          this.boardView.floatingScore(event.cell, `+${event.points}`);
           this.options.sfx.correct(event.combo);
           break;
 
@@ -192,7 +171,7 @@ export class BoardScene extends Phaser.Scene {
         case 'bombHit':
           // Guncangan lebih keras daripada klik salah biasa: bom itu kesalahan
           // yang paling mahal, dan pemain harus langsung tahu tanpa lihat HUD.
-          this.removeView(event.pixelId, 'pop');
+          this.boardView.remove(event.pixelId, 'pop');
           this.options.sfx.bomb();
           this.cameras.main.shake(260, 0.016);
           this.cameras.main.flash(160, 228, 59, 68);
@@ -204,7 +183,7 @@ export class BoardScene extends Phaser.Scene {
 
         case 'boardShuffled':
           // Pixel dipindah oleh engine; view lama dibuang dan digambar ulang.
-          this.redrawAllViews();
+          this.redraw();
           break;
 
         case 'gameOver':
@@ -219,115 +198,25 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
-  private createView(pixel: Pixel): void {
-    const centerX = pixel.cell.col * CELL + CELL / 2;
-    const centerY = pixel.cell.row * CELL + CELL / 2;
-    const size = CELL - PIXEL_INSET * 2;
-    const style = pixelStyle(pixel);
-
-    const rect = this.add.rectangle(centerX, centerY, size, size, style.fill);
-    rect.setStrokeStyle(style.strokeWidth, style.stroke, style.strokeAlpha);
-
-    // Glyph = pembeda warna untuk pemain buta warna (GDD §2), dan untuk pixel
-    // spesial ia yang membedakan bom dari pixel biasa. Ukurannya sengaja besar:
-    // di layar HP papan ini menyusut ke ~45% ukuran internalnya.
-    // Modifier chaos `blackout` menyembunyikan glyph, jadi pemain harus murni
-    // membedakan warna. Bom dikecualikan — menyembunyikannya berarti menghukum
-    // pemain untuk sesuatu yang tidak bisa dilihat.
-    const hideGlyph =
+  /** Glyph disembunyikan oleh modifier chaos `blackout` — kecuali untuk bom. */
+  private hidesGlyph(pixel: Pixel): boolean {
+    return (
       pixel.kind === 'normal' &&
-      chaosHidesGlyphs(
-        chaosModifierFor(this.gameState.board.chaosSeed, this.gameState.board.level),
-      );
-
-    const glyph = this.add.text(centerX, centerY, hideGlyph ? '' : style.glyph, {
-      fontFamily: 'monospace',
-      fontSize: '40px',
-      color: style.glyphColor,
-    });
-    glyph.setOrigin(0.5);
-
-    this.views.set(pixel.id, { rect, glyph });
-
-    // Muncul dengan sedikit "pop" supaya mata langsung tertarik.
-    rect.setScale(0.6);
-    glyph.setScale(0.6);
-    this.tweens.add({
-      targets: [rect, glyph],
-      scale: 1,
-      duration: 110,
-      ease: 'Back.easeOut',
-    });
-  }
-
-  private removeView(pixelId: string, style: 'fade' | 'pop'): void {
-    const view = this.views.get(pixelId);
-    if (!view) return;
-    this.views.delete(pixelId);
-
-    const targets = [view.rect, view.glyph];
-    this.tweens.add({
-      targets,
-      scale: style === 'pop' ? 1.4 : 0.7,
-      alpha: 0,
-      duration: style === 'pop' ? 130 : 180,
-      onComplete: () => {
-        view.rect.destroy();
-        view.glyph.destroy();
-      },
-    });
-  }
-
-  private showFloatingScore(cell: Pixel['cell'], points: number): void {
-    const label = this.add.text(
-      cell.col * CELL + CELL / 2,
-      cell.row * CELL + CELL / 2,
-      `+${points}`,
-      { fontFamily: 'monospace', fontSize: '26px', color: '#fffffe', fontStyle: 'bold' },
+      chaosHidesGlyphs(chaosModifierFor(this.gameState.board.chaosSeed, this.gameState.board.level))
     );
-    label.setOrigin(0.5);
-    this.tweens.add({
-      targets: label,
-      y: label.y - CELL * 0.7,
-      alpha: 0,
-      duration: 520,
-      onComplete: () => label.destroy(),
-    });
   }
 
-  /** Pixel meredup seiring umurnya, jadi urgensi terlihat tanpa perlu timer. */
+  private addPixelView(pixel: Pixel): void {
+    this.boardView.add(pixel, this.hidesGlyph(pixel));
+  }
+
+  private redraw(): void {
+    this.boardView.clear();
+    for (const pixel of this.gameState.board.pixels) this.addPixelView(pixel);
+  }
+
   private refreshFade(): void {
-    for (const pixel of this.gameState.board.pixels) {
-      const view = this.views.get(pixel.id);
-      if (!view) continue;
-      const ratio = remainingRatio(pixel, this.gameState.elapsedMs);
-
-      // Bom sengaja tidak pernah memudar sejauh pixel lain. Warnanya gelap dan
-      // hampir menyatu dengan latar papan, jadi kalau ia sampai nyaris tembus
-      // pandang pemain bisa menyangka selnya kosong lalu menap-nya — hukuman
-      // untuk sesuatu yang tidak terlihat.
-      const floor = pixel.kind === 'bomb' ? 0.7 : 0.3;
-      const alpha = floor + (1 - floor) * ratio;
-
-      view.rect.setAlpha(alpha);
-      view.glyph.setAlpha(alpha);
-    }
-  }
-
-  /** Gambar ulang seluruh view dari state (dipakai setelah papan diacak). */
-  private redrawAllViews(): void {
-    this.clearViews();
-    for (const pixel of this.gameState.board.pixels) {
-      this.createView(pixel);
-    }
-  }
-
-  private clearViews(): void {
-    for (const view of this.views.values()) {
-      view.rect.destroy();
-      view.glyph.destroy();
-    }
-    this.views.clear();
+    this.boardView.refreshFade(this.gameState.board.pixels, this.gameState.elapsedMs);
   }
 
   private emitSnapshot(): void {

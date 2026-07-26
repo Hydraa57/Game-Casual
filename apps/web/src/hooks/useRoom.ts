@@ -17,6 +17,7 @@ export interface UseRoom {
   createRoom(nickname: string, settings?: Partial<RoomSettings>): Promise<boolean>;
   joinRoom(code: string, nickname: string): Promise<boolean>;
   leaveRoom(): void;
+  backToLobby(): void;
   setReady(ready: boolean): void;
   updateSettings(settings: Partial<RoomSettings>): void;
   startMatch(): Promise<boolean>;
@@ -47,6 +48,11 @@ export function useRoom(): UseRoom {
     socket.on('connect_error', () => setStatus('offline'));
     socket.on('room:state', setRoom);
     socket.on('error', (payload) => setErrorCode(payload.code));
+
+    if (process.env.NODE_ENV !== 'production') {
+      // Kait uji end-to-end; tidak ada di build produksi.
+      (window as unknown as { __pmSocket?: GameSocket }).__pmSocket = socket;
+    }
 
     return () => {
       socket.removeAllListeners();
@@ -109,6 +115,14 @@ export function useRoom(): UseRoom {
     setErrorCode(null);
   }, []);
 
+  /**
+   * Menutup layar hasil. Server menahan room di status `finished` sampai ini
+   * dikirim — kalau tidak, lobby muncul kembali sebelum hasilnya sempat dibaca.
+   */
+  const backToLobby = useCallback(() => {
+    socketRef.current?.emit('room:backToLobby');
+  }, []);
+
   const setReady = useCallback((ready: boolean) => {
     socketRef.current?.emit('player:ready', { ready });
   }, []);
@@ -140,6 +154,7 @@ export function useRoom(): UseRoom {
       createRoom,
       joinRoom,
       leaveRoom,
+      backToLobby,
       setReady,
       updateSettings,
       startMatch,
@@ -154,6 +169,7 @@ export function useRoom(): UseRoom {
       createRoom,
       joinRoom,
       leaveRoom,
+      backToLobby,
       setReady,
       updateSettings,
       startMatch,

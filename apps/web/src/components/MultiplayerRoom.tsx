@@ -6,6 +6,7 @@ import type { RoomErrorCode } from '@pixelmatrix/shared';
 import { useRoom } from '@/hooks/useRoom';
 import { Link } from '@/i18n/navigation';
 import { readNickname, writeNickname } from '@/lib/nickname';
+import { MatchView } from './MatchView';
 import { RoomEntry } from './RoomEntry';
 import { RoomLobby } from './RoomLobby';
 
@@ -86,17 +87,15 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
           onStart={() => void room.startMatch()}
           onLeave={room.leaveRoom}
         />
-      ) : (
-        // Match loop-nya dibangun di patch berikutnya; sampai saat itu status
-        // non-waiting ditampilkan apa adanya supaya alur lobby tetap bisa diuji.
-        <div className="card">
-          <h2 className="card__title">{t('matchPending')}</h2>
-          <p className="hint">{t('matchPendingHint')}</p>
-          <button className="btn btn--small" type="button" onClick={room.leaveRoom}>
-            {t('leaveRoom')}
-          </button>
-        </div>
-      )}
+      ) : room.socket ? (
+        <MatchView
+          socket={room.socket}
+          playerId={room.playerId}
+          targetScore={room.room.settings.targetScore}
+          onLeave={room.leaveRoom}
+          onBackToLobby={room.backToLobby}
+        />
+      ) : null}
     </main>
   );
 }

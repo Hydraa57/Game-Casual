@@ -141,6 +141,14 @@ export interface ClientToServerEvents {
   'room:create': (payload: CreateRoomPayload, ack: (result: Ack<JoinedRoom>) => void) => void;
   'room:join': (payload: JoinRoomPayload, ack: (result: Ack<JoinedRoom>) => void) => void;
   'room:leave': () => void;
+  /**
+   * Pemain selesai melihat layar hasil dan mau kembali ke lobby.
+   *
+   * Dibuat eksplisit karena server TIDAK boleh mengembalikan room ke `waiting`
+   * begitu match selesai: client akan berpindah ke lobby sebelum sempat
+   * menampilkan hasilnya.
+   */
+  'room:backToLobby': () => void;
   'room:updateSettings': (
     payload: UpdateSettingsPayload,
     ack: (result: Ack<RoomState>) => void,

@@ -201,6 +201,25 @@ export const TARGET_WARNING_MS = 1000;
 export const MP_WRONG_CLICK_COOLDOWN_MS = 500;
 export const MAX_CLICKS_PER_SECOND = 8;
 
+/**
+ * Di multiplayer level papan naik menurut WAKTU, bukan jumlah klik.
+ *
+ * Papannya bersama sementara `correctClicks` milik masing-masing pemain, jadi
+ * menurunkan level dari klik akan membuat kesulitan bergantung pada siapa yang
+ * paling rajin — dan pemain yang tertinggal justru dihukum dua kali. Dengan
+ * waktu, semua orang menghadapi papan yang sama persis.
+ *
+ * Match 120 detik mencapai Lv 9; match 180 detik menembus Lv 12 sehingga dua
+ * warna target sempat aktif di menit terakhir.
+ */
+export const MP_LEVEL_DURATION_MS = 15_000;
+
+/** Seberapa sering scoreboard & sisa waktu disiarkan (loop tetap 20Hz). */
+export const MP_TICK_BROADCAST_MS = 250;
+
+/** Sudden death: papan dikosongkan, satu pixel target, siapa cepat dia menang. */
+export const SUDDEN_DEATH_LIFETIME_MS = 4000;
+
 export const SERVER_TICK_HZ = 20;
 export const SERVER_TICK_MS = 1000 / SERVER_TICK_HZ;
 

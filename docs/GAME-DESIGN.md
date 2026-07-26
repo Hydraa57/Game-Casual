@@ -175,6 +175,21 @@ Lobby (room code 6 karakter, ready check semua pemain)
 - **Disconnect = keluar dari match**; skor terakhirnya tetap tampil di hasil. Reconnect mid-match dicatat sebagai *stretch goal*, bukan MVP.
 - Multiplayer **tidak bisa di-pause** (sesuai constraint PRD).
 
+### Detail yang diputuskan saat implementasi server
+
+Semua ini muncul dari pertanyaan yang tidak terjawab oleh rencana awal, dan sengaja ditulis di sini karena mudah dilanggar tanpa sadar saat mengubah kode.
+
+1. **Level naik menurut waktu, bukan klik.** Satu level tiap `MP_LEVEL_DURATION_MS` (15 dtk). Kalau ikut jumlah klik seperti solo, kesulitan papan bersama akan ditentukan oleh pemain yang paling rajin mengetuk — pemain yang lebih santai dihukum atas kecepatan lawannya.
+2. **Papan bersama, skor terpisah.** Server memanggil engine yang sama dengan solo, dengan papan bersama dipasangkan sementara ke skor pemain yang mengklik; papan hasilnya langsung menjadi papan bersama yang baru. Itulah yang membuat first-arrival bekerja tanpa penguncian apa pun.
+3. **Kalah cepat bukan kesalahan.** Klik yang datang setelah pixelnya diklaim orang lain dijawab `notFound` **tanpa penalti apa pun** — tidak memotong skor, tidak memutus combo. Kalau tidak, pemain dengan koneksi lebih lambat dihukum dua kali.
+4. **Pixel target yang lewat tanpa diklaim siapa pun memutus combo SEMUA pemain.** Tidak ada yang berhasil mengambilnya, jadi tidak adil kalau hanya sebagian yang kehilangan combo.
+5. **Bom memotong 15 poin** (`BOMB_SCORE_PENALTY`), bukan nyawa — tidak ada sistem nyawa di MP. Pixel nyawa ♥ tidak pernah spawn di MP, dan checkpoint/continue tidak berlaku.
+6. **Batas akhir match dipegang `Match`, bukan engine.** Config papan MP memakai `timeLimitMs: null` dan `targetScore: null`. Kalau engine yang menghentikan papan saat waktu habis, sudden death — yang justru harus berjalan melewati batas itu — ikut mati.
+7. **Sudden death hanya dipicu seri di puncak.** Seri di posisi 2–3 tidak menahan match; yang diperebutkan hanya juara. Pixelnya berumur `SUDDEN_DEATH_LIFETIME_MS` (4 dtk) dan langsung diganti kalau habis, jadi tidak mungkin buntu.
+8. **Room ditahan di status `finished` sampai pemain menutup layar hasil.** Mengembalikannya ke `waiting` begitu match selesai membuat client berpindah ke lobby sebelum sempat menggambar hasilnya. Penutupnya event eksplisit `room:backToLobby`.
+9. **Tick 20 Hz, siaran skor 4 Hz.** Papan disimulasikan tiap `SERVER_TICK_MS` (50 ms) supaya spawn/expire presisi, tapi leaderboard hanya dikirim tiap `MP_TICK_BROADCAST_MS` (250 ms) — cukup untuk mata, jauh lebih hemat di jaringan seluler.
+10. **Waktu spawn diselaraskan ulang di client.** Pixel dari server dicatat memakai jam scene lokal, supaya animasi memudarnya tetap benar walau `elapsedMs` server dan client tidak persis sama.
+
 ## 6. Game Feel / Juice (Fase 4)
 
 - Partikel burst + SFX "ding" chiptune saat klik benar; nada naik seiring combo.

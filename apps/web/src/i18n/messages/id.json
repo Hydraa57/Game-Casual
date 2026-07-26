@@ -84,8 +84,6 @@
     "copied": "Tersalin!",
     "shareTitle": "Main Pixel Matrix bareng?",
     "shareText": "Gabung room {code} di Pixel Matrix:",
-    "matchPending": "Match sedang dimulai",
-    "matchPendingHint": "Papan rebutan dibangun di patch berikutnya.",
     "serverOffline": "Game server tidak terjangkau. Pastikan server-nya jalan.",
     "status": {
       "connecting": "menyambung",
@@ -101,6 +99,19 @@
     "errNotEnoughPlayers": "Belum cukup pemain yang siap.",
     "errNotInRoom": "Kamu belum ada di room.",
     "errRateLimited": "Terlalu cepat, coba lagi.",
-    "errInvalidPayload": "Permintaan tidak valid."
+    "errInvalidPayload": "Permintaan tidak valid.",
+    "timeLeft": "Sisa waktu",
+    "target": "Target",
+    "level": "Level",
+    "getReady": "Siap-siap...",
+    "suddenDeath": "SUDDEN DEATH",
+    "suddenDeathHint": "Skor seri! Satu pixel — siapa cepat dia menang.",
+    "youWin": "KAMU MENANG!",
+    "matchOver": "Match selesai",
+    "backToLobby": "Kembali ke lobby",
+    "chaosRush": "Serbuan",
+    "chaosBlackout": "Gelap",
+    "chaosBombRain": "Hujan Bom",
+    "chaosShuffle": "Acak"
   }
 }

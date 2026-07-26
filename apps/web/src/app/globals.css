@@ -368,6 +368,106 @@ h3 {
   flex-direction: column;
 }
 
+/* ------------------------------------------------- multiplayer: match */
+
+.match {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Leaderboard di ATAS papan saat mobile: di kolom tunggal, apa pun di samping
+   papan akan memaksa papannya mengecil. */
+.scoreboard {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scoreboard__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.scoreboard__row--me {
+  border-color: var(--accent);
+}
+
+.scoreboard__row--gone {
+  opacity: 0.45;
+}
+
+.scoreboard__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scoreboard__score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.matchbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.overlay--flash {
+  background: rgba(228, 59, 68, 0.35);
+  animation: blink 0.5s steps(2, start) infinite;
+}
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 260px;
+}
+
+.results li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  padding: 8px 10px;
+  background: var(--surface-raised);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.results__me {
+  outline: 2px solid var(--accent);
+}
+
+.results__detail {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+
 /* ------------------------------------------------------------------ hud */
 
 .hud {

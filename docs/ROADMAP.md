@@ -50,24 +50,31 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 
 > Konstanta yang paling layak diulik saat balancing ada di `packages/shared/src/constants/game.ts`: `TARGET_COLOR_SPAWN_WEIGHT` (0.5 — paling berpengaruh ke "rasa"), `MIN_LIFETIME_MS` (1000 — jendela reaksi tersulit), `BOMB_MIN_CHANCE`/`BOMB_MAX_CHANCE`, dan `MAX_LEVEL_BONUS_MULTIPLIER` (setel 1 untuk mematikan bonus level).
 
-## Fase 2 — Multiplayer Vertical Slice 🎯
+## Fase 2 — Multiplayer Vertical Slice ✅
 
-- [ ] `apps/game-server`: Express (`/health`) + Socket.IO + validasi payload (zod)
-- [ ] RoomManager: buat/join/leave room via kode 6 karakter, guest nickname, host reassignment, room bubar saat kosong
-- [ ] Error handling lobby: `ROOM_NOT_FOUND` / `ROOM_FULL` / `GAME_IN_PROGRESS` / `NICKNAME_TAKEN`
-- [ ] Lobby UI di `/play/room/[code]`: daftar pemain, ready check, pengaturan host (max players, target skor, waktu)
-- [ ] Game loop otoritatif 20Hz per room memakai engine shared: spawn, expire, ganti target
-- [ ] Resolusi klik rebutan first-arrival + `game:pixelClaimed` / `game:clickRejected`
-- [ ] Rate limit ~8 klik/dtk/pemain + cooldown lokal 500 ms saat klik salah
-- [ ] Leaderboard live (di atas papan saat mobile, di samping saat desktop)
-- [ ] Kondisi menang (target skor / waktu habis) + sudden death saat seri
-- [ ] Layar hasil (peringkat, akurasi, combo terbaik) + tombol rematch
-- [ ] Handle disconnect: pemain keluar dari match, skor terakhir tetap di hasil
-- [ ] Join room gampang dari HP: input kode besar-besaran + tombol share/copy link undangan
+- [x] `apps/game-server`: Express (`/health`) + Socket.IO + validasi payload (zod)
+- [x] RoomManager: buat/join/leave room via kode 6 karakter, guest nickname, host reassignment, room bubar saat kosong
+- [x] Error handling lobby: `ROOM_NOT_FOUND` / `ROOM_FULL` / `GAME_IN_PROGRESS` / `NICKNAME_TAKEN`
+- [x] Lobby UI: daftar pemain, ready check, pengaturan host (max players, target skor, waktu)
+- [x] Game loop otoritatif 20Hz per room memakai engine shared: spawn, expire, ganti target
+- [x] Resolusi klik rebutan first-arrival + `game:pixelClaimed` / `game:clickRejected`
+- [x] Rate limit ~8 klik/dtk/pemain + cooldown lokal 500 ms saat klik salah
+- [x] Leaderboard live (di atas papan saat mobile, di samping saat desktop)
+- [x] Kondisi menang (target skor / waktu habis) + sudden death saat seri
+- [x] Layar hasil (peringkat, akurasi, combo terbaik) + tombol rematch
+- [x] Handle disconnect: pemain keluar dari match, skor terakhir tetap di hasil
+- [x] Join room gampang dari HP: input kode besar-besaran + tombol share/copy link undangan
 
-**✅ Milestone:** 2 HP di jaringan yang sama main bareng lancar; dua tap hampir bersamaan pada pixel yang sama → hanya satu yang dapat poin.
+**✅ Milestone:** terverifikasi otomatis di dua konteks browser mobile (390×844): lima kali dua pemain menap pixel yang sama hampir bersamaan, **tidak sekali pun keduanya dapat poin**. Layar hasil, peringkat, dan rematch berjalan; nol console error.
 
 > **Ini fase paling bernilai di seluruh roadmap.** Riset pembanding menemukan bahwa solo mode punya banyak saingan yang sudah rilis (Tappy Tiles Colors Rush praktis game yang sama), sementara kombinasi "browser + kode room + 2-4 HP terpisah + satu papan rebutan" tidak ditemukan padanannya. Kalau harus memilih satu fase untuk diselesaikan, ini yang dipilih.
+
+**Dua deviasi dari rencana awal, keduanya disengaja:**
+
+1. **Route-nya `/play/room` dengan `?code=`, bukan `/play/room/[code]`.** Pindah route berarti memutus socket dan join ulang — pemain yang baru masuk lobby akan langsung terlempar keluar lagi. Kode room tetap muncul di URL untuk link undangan, tapi hanya sebagai query.
+2. **Room ditahan di status `finished` sampai pemain menutup layar hasil** lewat `room:backToLobby`. Versi pertama mengembalikan room ke `waiting` begitu match selesai — akibatnya client berpindah ke lobby sebelum sempat menggambar hasilnya, jadi layar hasil praktis tidak pernah terlihat.
+
+**Yang belum dikerjakan dan sengaja ditunda ke Fase 3:** hasil match belum disimpan ke mana pun (belum ada database), dan pemain yang koneksinya putus di tengah match tidak bisa masuk kembali ke match yang sama.
 
 ## Fase 3 — Akun & Persistensi
 

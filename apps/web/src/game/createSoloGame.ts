@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { BOARD_SIZE, BoardScene } from './BoardScene';
+import { BOARD_SIZE } from './BoardRenderer';
+import { BoardScene } from './BoardScene';
 import type { HudSnapshot } from './hudSnapshot';
 import { Sfx } from './sfx';
 

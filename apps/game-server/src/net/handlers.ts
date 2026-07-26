@@ -82,6 +82,15 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     leaveCurrentRoom(socket, deps);
   });
 
+  socket.on('room:backToLobby', () => {
+    const room = rooms.roomOf(socket.id);
+    if (!room || room.currentStatus !== 'finished') return;
+
+    room.setStatus('waiting');
+    room.resetReady();
+    broadcastState(room);
+  });
+
   socket.on('room:updateSettings', (payload, ack) => {
     const parsed = updateSettingsSchema.safeParse(payload);
     if (!parsed.success) {

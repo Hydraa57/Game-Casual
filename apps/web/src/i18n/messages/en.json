@@ -84,8 +84,6 @@
     "copied": "Copied!",
     "shareTitle": "Play Pixel Matrix together?",
     "shareText": "Join room {code} on Pixel Matrix:",
-    "matchPending": "Match starting",
-    "matchPendingHint": "The contested board arrives in the next patch.",
     "serverOffline": "Game server unreachable. Make sure it is running.",
     "status": {
       "connecting": "connecting",
@@ -101,6 +99,19 @@
     "errNotEnoughPlayers": "Not enough ready players yet.",
     "errRateLimited": "Slow down a little.",
     "errNotInRoom": "You are not in a room.",
-    "errInvalidPayload": "Invalid request."
+    "errInvalidPayload": "Invalid request.",
+    "timeLeft": "Time left",
+    "target": "Target",
+    "level": "Level",
+    "getReady": "Get ready...",
+    "suddenDeath": "SUDDEN DEATH",
+    "suddenDeathHint": "Tied! One pixel — first tap wins.",
+    "youWin": "YOU WIN!",
+    "matchOver": "Match over",
+    "backToLobby": "Back to lobby",
+    "chaosRush": "Rush",
+    "chaosBlackout": "Blackout",
+    "chaosBombRain": "Bomb Rain",
+    "chaosShuffle": "Shuffle"
   }
 }
