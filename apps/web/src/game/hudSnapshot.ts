@@ -1,5 +1,5 @@
 import { MAX_CONTINUES, SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
-import type { Color, GameStatus } from '@pixelmatrix/shared';
+import type { ChaosModifier, Color, GameStatus } from '@pixelmatrix/shared';
 
 /**
  * Data HUD yang dikirim scene Phaser ke React. Sengaja hanya nilai primitif
@@ -19,7 +19,10 @@ export interface HudSnapshot {
   readonly level: number;
   /** True saat kurva kesulitan sudah mentok — HUD menandainya "MAX". */
   readonly atMaxLevel: boolean;
-  readonly targetColor: Color;
+  /** Satu warna sampai Lv 11, dua warna dari Lv 12. */
+  readonly targetColors: readonly Color[];
+  /** Modifier chaos aktif (Lv 21+), `null` di bawahnya. */
+  readonly chaos: ChaosModifier | null;
   readonly targetImminent: boolean;
   readonly accuracy: number;
   /** Level checkpoint terakhir yang tersentuh; `null` kalau belum ada. */
@@ -39,7 +42,8 @@ export const INITIAL_SNAPSHOT: HudSnapshot = {
   lives: SOLO_STARTING_LIVES,
   level: 1,
   atMaxLevel: false,
-  targetColor: 'red',
+  targetColors: ['red'],
+  chaos: null,
   targetImminent: false,
   accuracy: 1,
   checkpointLevel: null,
@@ -57,11 +61,16 @@ export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
     a.lives === b.lives &&
     a.level === b.level &&
     a.atMaxLevel === b.atMaxLevel &&
-    a.targetColor === b.targetColor &&
+    a.chaos === b.chaos &&
+    sameColors(a.targetColors, b.targetColors) &&
     a.targetImminent === b.targetImminent &&
     a.accuracy === b.accuracy &&
     a.checkpointLevel === b.checkpointLevel &&
     a.continuesLeft === b.continuesLeft &&
     a.canContinue === b.canContinue
   );
+}
+
+function sameColors(a: readonly Color[], b: readonly Color[]): boolean {
+  return a.length === b.length && a.every((color, index) => color === b[index]);
 }

@@ -29,8 +29,8 @@ export type GameEvent =
     }
   | {
       readonly type: 'targetChanged';
-      readonly color: Color;
-      readonly previousColor: Color;
+      readonly colors: readonly Color[];
+      readonly previousColors: readonly Color[];
     }
   | {
       readonly type: 'pixelClaimed';
@@ -57,6 +57,7 @@ export type GameEvent =
       readonly scorePenalty: number;
     }
   | { readonly type: 'lifeGained'; readonly pixelId: string; readonly lives: number }
+  | { readonly type: 'boardShuffled' }
   | { readonly type: 'levelUp'; readonly level: number }
   | {
       readonly type: 'checkpointReached';

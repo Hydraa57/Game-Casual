@@ -49,7 +49,7 @@ export function applyClick(state: GameState, pixelId: string): ClickResult {
     return applyCorrectClick(state, pixelId, ratio);
   }
 
-  if (pixel.color !== state.board.targetColor) {
+  if (!state.board.targetColors.includes(pixel.color)) {
     return applyWrongColor(state, pixelId);
   }
 

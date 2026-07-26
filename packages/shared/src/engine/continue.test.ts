@@ -39,7 +39,7 @@ function soloGame(overrides: Partial<GameState> = {}): GameState {
     elapsedMs: 1000,
     board: {
       ...base.board,
-      targetColor: 'red',
+      targetColors: ['red'],
       nextSpawnAtMs: 999_999,
       pixels: [targetPixel, distractorPixel],
     },
@@ -117,7 +117,7 @@ describe('merekam checkpoint', () => {
       board: {
         ...base.board,
         level: CHECKPOINT_EVERY_LEVELS - 1,
-        targetColor: 'red',
+        targetColors: ['red'],
         nextSpawnAtMs: 999_999,
         pixels: [targetPixel],
       },

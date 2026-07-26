@@ -10,6 +10,8 @@ import {
   createGameState,
   currentLevel,
   GRID_SIZE,
+  chaosHidesGlyphs,
+  chaosModifierFor,
   isAtMaxLevel,
   isTargetChangeImminent,
   pauseGame,
@@ -200,6 +202,11 @@ export class BoardScene extends Phaser.Scene {
           this.options.sfx.life();
           break;
 
+        case 'boardShuffled':
+          // Pixel dipindah oleh engine; view lama dibuang dan digambar ulang.
+          this.redrawAllViews();
+          break;
+
         case 'gameOver':
           this.options.sfx.gameOver();
           break;
@@ -224,7 +231,16 @@ export class BoardScene extends Phaser.Scene {
     // Glyph = pembeda warna untuk pemain buta warna (GDD §2), dan untuk pixel
     // spesial ia yang membedakan bom dari pixel biasa. Ukurannya sengaja besar:
     // di layar HP papan ini menyusut ke ~45% ukuran internalnya.
-    const glyph = this.add.text(centerX, centerY, style.glyph, {
+    // Modifier chaos `blackout` menyembunyikan glyph, jadi pemain harus murni
+    // membedakan warna. Bom dikecualikan — menyembunyikannya berarti menghukum
+    // pemain untuk sesuatu yang tidak bisa dilihat.
+    const hideGlyph =
+      pixel.kind === 'normal' &&
+      chaosHidesGlyphs(
+        chaosModifierFor(this.gameState.board.chaosSeed, this.gameState.board.level),
+      );
+
+    const glyph = this.add.text(centerX, centerY, hideGlyph ? '' : style.glyph, {
       fontFamily: 'monospace',
       fontSize: '40px',
       color: style.glyphColor,
@@ -298,6 +314,14 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
+  /** Gambar ulang seluruh view dari state (dipakai setelah papan diacak). */
+  private redrawAllViews(): void {
+    this.clearViews();
+    for (const pixel of this.gameState.board.pixels) {
+      this.createView(pixel);
+    }
+  }
+
   private clearViews(): void {
     for (const view of this.views.values()) {
       view.rect.destroy();
@@ -319,7 +343,8 @@ export class BoardScene extends Phaser.Scene {
       lives: score.lives,
       level: currentLevel(this.gameState),
       atMaxLevel: isAtMaxLevel(this.gameState),
-      targetColor: board.targetColor,
+      targetColors: board.targetColors,
+      chaos: chaosModifierFor(board.chaosSeed, board.level),
       targetImminent: status === 'running' && isTargetChangeImminent(this.gameState),
       accuracy: totalClicks === 0 ? 1 : score.correctClicks / totalClicks,
       checkpointLevel: this.gameState.checkpoint?.level ?? null,

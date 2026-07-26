@@ -1,3 +1,12 @@
+export {
+  chaosBombFactor,
+  chaosHidesGlyphs,
+  chaosModifierFor,
+  chaosShufflesBoard,
+  chaosSpawnFactor,
+  isChaosLevel,
+} from './chaos';
+
 export { applyClick } from './click';
 export type { ClickResult } from './click';
 
@@ -36,6 +45,7 @@ export {
   isAtMaxLevel,
   isCheckpointLevel,
   isPlayable,
+  isTargetColor,
   isTargetChangeImminent,
   multiplayerConfig,
   pauseGame,
@@ -44,6 +54,7 @@ export {
   soloConfig,
   startGame,
   supportsContinues,
+  targetColorCount,
 } from './state';
 export type {
   BoardState,
@@ -54,5 +65,5 @@ export type {
   ScoreState,
 } from './state';
 
-export { breakCombo, step } from './step';
+export { bombChance, breakCombo, step } from './step';
 export type { StepResult } from './step';

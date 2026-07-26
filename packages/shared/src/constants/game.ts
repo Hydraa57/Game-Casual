@@ -169,6 +169,25 @@ export const TARGET_COLOR_SPAWN_WEIGHT = 0.5;
 // Warna target (GDD §2)
 // ---------------------------------------------------------------------------
 
+/** Level di mana warna target kedua mulai aktif (GDD §4.2). */
+export const DUAL_TARGET_FIRST_LEVEL = 12;
+
+/**
+ * Level pertama mode chaos. Di bawah ini progres selalu bisa diprediksi; di atas
+ * ini tiap level mengaktifkan satu modifier acak.
+ */
+export const CHAOS_FIRST_LEVEL = MAX_CURVE_LEVEL + 1;
+
+/** Modifier chaos yang mungkin aktif. Urutannya menentukan hasil undian. */
+export const CHAOS_MODIFIERS = ['rush', 'blackout', 'bombRain', 'shuffle'] as const;
+
+/** `rush`: jeda spawn dikali angka ini. */
+export const CHAOS_RUSH_SPAWN_FACTOR = 0.7;
+/** `bombRain`: peluang bom dikali angka ini. */
+export const CHAOS_BOMB_MULTIPLIER = 2;
+/** `shuffle`: posisi pixel hidup diacak setiap selang ini. */
+export const CHAOS_SHUFFLE_INTERVAL_MS = 4000;
+
 export const TARGET_MIN_DURATION_MS = 8000;
 export const TARGET_MAX_DURATION_MS = 12000;
 export const TARGET_CHANGE_AFTER_CORRECT_CLICKS = 8;

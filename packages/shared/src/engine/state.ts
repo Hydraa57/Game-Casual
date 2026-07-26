@@ -1,5 +1,7 @@
 import {
+  CHAOS_SHUFFLE_INTERVAL_MS,
   CHECKPOINT_EVERY_LEVELS,
+  DUAL_TARGET_FIRST_LEVEL,
   GRID_SIZE,
   MAX_CONTINUES,
   SOLO_STARTING_LIVES,
@@ -48,7 +50,11 @@ export interface BoardState {
    * server multiplayer nanti mengisinya dari waktu berjalan.
    */
   readonly level: number;
-  readonly targetColor: Color;
+  /**
+   * Warna yang memberi poin. Satu warna sampai Lv 11, dua warna dari
+   * DUAL_TARGET_FIRST_LEVEL — pemain harus melacak keduanya sekaligus.
+   */
+  readonly targetColors: readonly Color[];
   /** Waktu (dalam `elapsedMs`) saat warna target berikutnya berganti. */
   readonly targetChangesAtMs: number;
   readonly correctClicksSinceTargetChange: number;
@@ -56,6 +62,14 @@ export interface BoardState {
   readonly nextSpawnAtMs: number;
   readonly rngState: number;
   readonly nextPixelSeq: number;
+  /**
+   * Seed tetap untuk memilih modifier chaos. Dipisahkan dari `rngState` yang
+   * terus berubah, supaya modifier level tertentu selalu sama di ronde ini —
+   * termasuk kalau pemain melanjutkan dari checkpoint.
+   */
+  readonly chaosSeed: number;
+  /** Waktu pengacakan papan berikutnya (hanya dipakai modifier `shuffle`). */
+  readonly nextShuffleAtMs: number;
 }
 
 /**
@@ -143,12 +157,14 @@ export function createGameState({
     board: {
       pixels: [],
       level: 1,
-      targetColor: target.value,
+      targetColors: [target.value],
       targetChangesAtMs: Math.round(firstChange.value),
       correctClicksSinceTargetChange: 0,
       nextSpawnAtMs: 0,
       rngState: firstChange.state,
       nextPixelSeq: 1,
+      chaosSeed: seed,
+      nextShuffleAtMs: CHAOS_SHUFFLE_INTERVAL_MS,
     },
     score: createScoreState(config.startingLives),
     checkpoint: null,
@@ -194,6 +210,16 @@ export function currentLevel(state: GameState): number {
 /** True saat kesulitan sudah mentok — HUD menampilkan "MAX". */
 export function isAtMaxLevel(state: GameState): boolean {
   return isMaxCurveLevel(state.board.level);
+}
+
+/** Berapa warna target yang aktif di level tertentu. */
+export function targetColorCount(level: number): number {
+  return level >= DUAL_TARGET_FIRST_LEVEL ? 2 : 1;
+}
+
+/** True kalau warna ini salah satu warna target saat ini. */
+export function isTargetColor(board: BoardState, color: Color): boolean {
+  return board.targetColors.includes(color);
 }
 
 /** True saat HUD harus berkedip karena warna target akan segera berganti. */
@@ -260,7 +286,9 @@ export function continueFromCheckpoint(state: GameState): GameState {
     ...fresh,
     status: 'running',
     elapsedMs: state.elapsedMs,
-    board: { ...fresh.board, level: checkpoint.level },
+    // `chaosSeed` dipertahankan supaya modifier chaos per level tidak berubah
+    // di tengah ronde hanya karena pemain memakai continue.
+    board: { ...fresh.board, level: checkpoint.level, chaosSeed: state.board.chaosSeed },
     score: {
       ...fresh.score,
       score: checkpoint.score,

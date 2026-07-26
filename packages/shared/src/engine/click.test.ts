@@ -36,7 +36,7 @@ function gameWithBoard(overrides: Partial<GameState> = {}): GameState {
     elapsedMs: 1000,
     board: {
       ...base.board,
-      targetColor: 'red',
+      targetColors: ['red'],
       nextSpawnAtMs: 999_999,
       pixels: [targetPixel, distractorPixel],
     },
@@ -156,7 +156,7 @@ describe('klik salah warna', () => {
       score: { ...base.score, score: 50 },
       board: {
         ...base.board,
-        targetColor: 'red',
+        targetColors: ['red'],
         nextSpawnAtMs: 999_999,
         pixels: [distractorPixel],
       },
@@ -214,7 +214,12 @@ describe('target skor multiplayer', () => {
     const state: GameState = {
       ...base,
       elapsedMs: 1000,
-      board: { ...base.board, targetColor: 'red', nextSpawnAtMs: 999_999, pixels: [targetPixel] },
+      board: {
+        ...base.board,
+        targetColors: ['red'],
+        nextSpawnAtMs: 999_999,
+        pixels: [targetPixel],
+      },
     };
 
     const result = applyClick(state, 'target-1');

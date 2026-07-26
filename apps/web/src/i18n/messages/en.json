@@ -46,6 +46,11 @@
     "continuesLeft": "{count} left",
     "startOver": "Start over",
     "checkpoint": "Checkpoint",
-    "continues": "Continues"
+    "continues": "Continues",
+    "chaos": "Chaos",
+    "chaosRush": "Rush",
+    "chaosBlackout": "Blackout",
+    "chaosBombRain": "Bomb Rain",
+    "chaosShuffle": "Shuffle"
   }
 }

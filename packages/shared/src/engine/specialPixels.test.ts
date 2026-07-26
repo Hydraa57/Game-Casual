@@ -35,7 +35,7 @@ function gameWith(pixels: readonly Pixel[], overrides: Partial<GameState> = {}):
   return {
     ...base,
     elapsedMs: 1000,
-    board: { ...base.board, targetColor: 'red', nextSpawnAtMs: 999_999, pixels },
+    board: { ...base.board, targetColors: ['red'], nextSpawnAtMs: 999_999, pixels },
     ...overrides,
   };
 }
@@ -125,7 +125,12 @@ describe('pixel bom ☠', () => {
       ...base,
       elapsedMs: 1000,
       score: { ...base.score, score: 100 },
-      board: { ...base.board, targetColor: 'red', nextSpawnAtMs: 999_999, pixels: [pixel('bomb')] },
+      board: {
+        ...base.board,
+        targetColors: ['red'],
+        nextSpawnAtMs: 999_999,
+        pixels: [pixel('bomb')],
+      },
     };
 
     const result = applyClick(state, 'bomb-1');

@@ -115,6 +115,29 @@ Dua keputusan visual yang wajib dipertahankan, keduanya soal keadilan di layar H
 
 Karena ★ direservasi untuk pixel emas, **glyph kuning dipindah dari ★ ke ▼**. Ada test yang gagal kalau glyph warna dan glyph pixel spesial bertabrakan lagi.
 
+### 4.2 Dua warna target (Lv 12+)
+
+Sejak **Lv 12** ada **dua warna target aktif bersamaan**, keduanya memberi poin, dan HUD menampilkan dua swatch berdampingan.
+
+Yang penting: **bobot spawn total ke warna target tetap 0,5** — dibagi di antara kedua warna. Jadi kepadatan pixel yang bisa diklik tidak berubah sama sekali; kesulitan tambahannya **murni** karena pemain harus melacak dua warna sekaligus (beban memori kerja), bukan karena papan jadi lebih sibuk.
+
+Satu detail implementasi yang wajib dipertahankan: **jumlah warna target disinkronkan begitu level berubah**, bukan menunggu pergantian terjadwal berikutnya. Tanpa ini, pemain yang baru naik ke Lv 12 masih melihat satu warna target sampai 12 detik kemudian — levelnya naik tapi gamenya belum berubah, dan itu terasa seperti bug.
+
+### 4.3 Mode chaos (Lv 21+)
+
+Setelah menaklukkan seluruh kurva (Lv 20 = MAX), tiap level berikutnya mengaktifkan **satu modifier acak**. Ini yang menggantikan "tidak ada apa pun yang berubah lagi" di versi lama.
+
+| Modifier | Efek |
+|---|---|
+| **Serbuan** (`rush`) | Jeda spawn ×0,7 untuk level itu |
+| **Gelap** (`blackout`) | Glyph disembunyikan — murni bedakan warna. **Bom dikecualikan**: menyembunyikannya berarti menghukum pemain untuk sesuatu yang tidak bisa dilihat |
+| **Hujan Bom** (`bombRain`) | Peluang bom ×2 |
+| **Acak** (`shuffle`) | Posisi pixel yang hidup diacak setiap 4 detik |
+
+Modifier dipilih **deterministik dari seed match + level**, jadi ronde bisa di-replay dan nanti semua pemain multiplayer melihat modifier yang sama. Seed-nya (`board.chaosSeed`) dipisah dari `rngState` yang terus berubah, dan **dipertahankan saat continue** supaya modifier per level tidak berubah di tengah ronde.
+
+Progres utama (Lv 1–20) sengaja **selalu tanpa modifier** — pemain harus bisa mempelajari kurva dasarnya dulu sebelum dilempar ke keacakan.
+
 ## 5. Multiplayer — Papan Rebutan (2–4 pemain)
 
 ### Prinsip

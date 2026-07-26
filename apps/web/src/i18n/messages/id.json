@@ -46,6 +46,11 @@
     "continuesLeft": "{count} tersisa",
     "startOver": "Mulai dari awal",
     "checkpoint": "Checkpoint",
-    "continues": "Lanjut"
+    "continues": "Lanjut",
+    "chaos": "Chaos",
+    "chaosRush": "Serbuan",
+    "chaosBlackout": "Gelap",
+    "chaosBombRain": "Hujan Bom",
+    "chaosShuffle": "Acak"
   }
 }

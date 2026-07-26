@@ -46,7 +46,7 @@ describe('createGameState', () => {
 
   it('warna target awal diambil dari warna level 1', () => {
     const state = createGameState({ seed: 99 });
-    expect(activeColors(1)).toContain(state.board.targetColor);
+    expect(activeColors(1)).toContain(state.board.targetColors[0]);
   });
 
   it('nyawa awal mengikuti config (solo 3, multiplayer tanpa nyawa)', () => {
@@ -109,12 +109,12 @@ describe('spawn pixel', () => {
   it('spawn di-bias ke warna target supaya papan tidak terasa mati', () => {
     const { events } = runFor(newRunningGame(777), 600_000);
 
-    let target = createGameState({ seed: 777 }).board.targetColor;
+    let target = createGameState({ seed: 777 }).board.targetColors[0];
     let spawned = 0;
     let matchingTarget = 0;
     for (const event of events) {
       if (event.type === 'targetChanged') {
-        target = event.color;
+        target = event.colors[0]!;
       } else if (event.type === 'pixelSpawned') {
         spawned += 1;
         if (event.pixel.color === target) matchingTarget += 1;
@@ -154,7 +154,7 @@ describe('pixel kedaluwarsa', () => {
       score: { ...base.score, combo: 7 },
       board: {
         ...base.board,
-        targetColor: 'red',
+        targetColors: ['red'],
         nextSpawnAtMs: 999_999, // matikan spawn supaya test fokus
         pixels: [
           {
@@ -187,7 +187,7 @@ describe('pixel kedaluwarsa', () => {
       score: { ...base.score, combo: 7 },
       board: {
         ...base.board,
-        targetColor: 'red',
+        targetColors: ['red'],
         nextSpawnAtMs: 999_999,
         pixels: [
           {
@@ -227,7 +227,8 @@ describe('pergantian warna target', () => {
     );
     expect(changes.length).toBeGreaterThan(10);
     for (const change of changes) {
-      expect(change.color).not.toBe(change.previousColor);
+      // Setidaknya satu warna harus benar-benar berganti.
+      expect(change.colors).not.toEqual(change.previousColors);
     }
   });
 
@@ -253,7 +254,9 @@ describe('pergantian warna target', () => {
     const allowed: readonly Color[] = activeColors(1);
     for (const event of events) {
       if (event.type === 'targetChanged') {
-        expect(allowed).toContain(event.color);
+        for (const color of event.colors) {
+          expect(allowed).toContain(color);
+        }
       }
     }
   });

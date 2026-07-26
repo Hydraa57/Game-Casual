@@ -1,5 +1,6 @@
 import {
   BOMB_FIRST_LEVEL,
+  CHAOS_SHUFFLE_INTERVAL_MS,
   BOMB_MAX_CHANCE,
   BOMB_MIN_CHANCE,
   GOLD_CHANCE,
@@ -15,10 +16,12 @@ import {
   TARGET_MAX_DURATION_MS,
   TARGET_MIN_DURATION_MS,
 } from '../constants/index';
-import type { Color, GameStatus, Pixel, PixelKind } from '../types/index';
+import type { ChaosModifier, Color, GameStatus, Pixel, PixelKind } from '../types/index';
+import { chaosBombFactor, chaosModifierFor, chaosShufflesBoard, chaosSpawnFactor } from './chaos';
 import { activeColors, lifetimeMs, spawnIntervalMs } from './difficulty';
 import type { GameEvent } from './events';
 import { nextInRange, nextRandom, pickOne } from './rng';
+import { targetColorCount } from './state';
 import type { BoardState, GameState, ScoreState } from './state';
 
 export interface StepResult {
@@ -46,6 +49,7 @@ export function step(state: GameState, deltaMs: number): StepResult {
   const events: GameEvent[] = [];
   const elapsedMs = state.elapsedMs + deltaMs;
   const level = state.board.level;
+  const chaos = chaosModifierFor(state.board.chaosSeed, level);
 
   let board = state.board;
   let score = state.score;
@@ -58,7 +62,7 @@ export function step(state: GameState, deltaMs: number): StepResult {
       // Hanya pixel biasa berwarna target yang dianggap "terlewat". Bom memang
       // harus dibiarkan pudar, dan melewatkan emas/nyawa cuma sayang — bukan
       // kesalahan yang layak memutus combo.
-      const wasTarget = pixel.kind === 'normal' && pixel.color === board.targetColor;
+      const wasTarget = pixel.kind === 'normal' && board.targetColors.includes(pixel.color);
       if (wasTarget) missedTargetPixel = true;
       events.push({ type: 'pixelExpired', pixelId: pixel.id, wasTarget });
     } else {
@@ -76,15 +80,21 @@ export function step(state: GameState, deltaMs: number): StepResult {
     score = { ...score, combo: 0 };
   }
 
-  // 2. Warna target berganti karena waktunya habis atau sudah cukup klik benar.
+  // 2. Warna target berganti karena waktunya habis, sudah cukup klik benar, atau
+  //    karena jumlah warna target yang seharusnya aktif berubah.
+  //
+  //    Syarat ketiga itu penting: tanpanya, pemain yang baru naik ke Lv 12 masih
+  //    melihat satu warna target sampai pergantian terjadwal berikutnya — bisa
+  //    12 detik kemudian. Level naik tapi gamenya belum berubah.
   const timeToChange = elapsedMs >= board.targetChangesAtMs;
   const clicksToChange = board.correctClicksSinceTargetChange >= TARGET_CHANGE_AFTER_CORRECT_CLICKS;
-  if (timeToChange || clicksToChange) {
-    const changed = changeTargetColor(board, level, elapsedMs);
+  const countChanged = board.targetColors.length !== targetColorCount(level);
+  if (timeToChange || clicksToChange || countChanged) {
+    const changed = changeTargetColors(board, level, elapsedMs);
     events.push({
       type: 'targetChanged',
-      color: changed.targetColor,
-      previousColor: board.targetColor,
+      colors: changed.targetColors,
+      previousColors: board.targetColors,
     });
     board = changed;
   }
@@ -96,15 +106,21 @@ export function step(state: GameState, deltaMs: number): StepResult {
     // Pixel nyawa hanya masuk akal di mode bernyawa (solo), dan hanya kalau
     // nyawanya belum penuh — kalau tidak, ia jadi pixel yang tidak berguna.
     const canDropLife = score.lives !== null && score.lives < MAX_LIVES;
-    const spawned = spawnPixel(board, level, state.config.gridSize, spawnAtMs, canDropLife);
+    const spawned = spawnPixel(board, level, state.config.gridSize, spawnAtMs, canDropLife, chaos);
     board = {
       ...spawned.board,
-      nextSpawnAtMs: spawnAtMs + spawnIntervalMs(level),
+      nextSpawnAtMs: spawnAtMs + Math.round(spawnIntervalMs(level) * chaosSpawnFactor(chaos)),
     };
     if (spawned.pixel) {
       events.push({ type: 'pixelSpawned', pixel: spawned.pixel });
     }
     spawnCount += 1;
+  }
+
+  // 3b. Modifier `shuffle`: pindahkan pixel yang hidup ke sel lain.
+  if (chaosShufflesBoard(chaos) && elapsedMs >= board.nextShuffleAtMs) {
+    board = shuffleBoard(board, state.config.gridSize, elapsedMs);
+    events.push({ type: 'boardShuffled' });
   }
 
   // 4. Multiplayer: waktu habis → match selesai.
@@ -119,17 +135,29 @@ export function step(state: GameState, deltaMs: number): StepResult {
   };
 }
 
-function changeTargetColor(board: BoardState, level: number, elapsedMs: number): BoardState {
+function changeTargetColors(board: BoardState, level: number, elapsedMs: number): BoardState {
   const colors = activeColors(level);
-  const candidates = colors.filter((color) => color !== board.targetColor);
-  const pool = candidates.length > 0 ? candidates : colors;
+  const wanted = Math.min(targetColorCount(level), colors.length);
 
-  const picked = pickOne(board.rngState, pool);
-  const duration = nextInRange(picked.state, TARGET_MIN_DURATION_MS, TARGET_MAX_DURATION_MS);
+  // Warna baru diusahakan berbeda dari yang sedang aktif, supaya pergantiannya
+  // benar-benar terasa sebagai pergantian.
+  let pool = colors.filter((color) => !board.targetColors.includes(color));
+  if (pool.length < wanted) pool = [...colors];
+
+  const picked: Color[] = [];
+  let rngState = board.rngState;
+  while (picked.length < wanted && pool.length > 0) {
+    const choice = pickOne(rngState, pool);
+    picked.push(choice.value);
+    rngState = choice.state;
+    pool = pool.filter((color) => color !== choice.value);
+  }
+
+  const duration = nextInRange(rngState, TARGET_MIN_DURATION_MS, TARGET_MAX_DURATION_MS);
 
   return {
     ...board,
-    targetColor: picked.value,
+    targetColors: picked,
     targetChangesAtMs: elapsedMs + Math.round(duration.value),
     correctClicksSinceTargetChange: 0,
     rngState: duration.state,
@@ -163,7 +191,12 @@ interface KindPick {
  * berharga), lalu emas, lalu bom — supaya peluang masing-masing tidak saling
  * memakan secara tak terduga.
  */
-function pickKind(rngState: number, level: number, canDropLife: boolean): KindPick {
+function pickKind(
+  rngState: number,
+  level: number,
+  canDropLife: boolean,
+  chaos: ChaosModifier | null,
+): KindPick {
   const roll = nextRandom(rngState);
   let threshold = 0;
 
@@ -177,7 +210,7 @@ function pickKind(rngState: number, level: number, canDropLife: boolean): KindPi
     if (roll.value < threshold) return { kind: 'gold', rngState: roll.state };
   }
 
-  threshold += bombChance(level);
+  threshold += Math.min(0.6, bombChance(level) * chaosBombFactor(chaos));
   if (roll.value < threshold) return { kind: 'bomb', rngState: roll.state };
 
   return { kind: 'normal', rngState: roll.state };
@@ -196,6 +229,7 @@ function spawnPixel(
   gridSize: number,
   spawnAtMs: number,
   canDropLife: boolean,
+  chaos: ChaosModifier | null,
 ): SpawnResult {
   const occupied = new Set(board.pixels.map((pixel) => pixel.cell.row * gridSize + pixel.cell.col));
   const freeCells: number[] = [];
@@ -207,10 +241,10 @@ function spawnPixel(
   }
 
   const cellPick = pickOne(board.rngState, freeCells);
-  const kindPick = pickKind(cellPick.state, level, canDropLife);
+  const kindPick = pickKind(cellPick.state, level, canDropLife, chaos);
   // Pixel spesial tidak ikut aturan warna target, tapi tetap punya warna supaya
   // renderer bisa mewarnainya secara konsisten.
-  const colorPick = pickColor(kindPick.rngState, board.targetColor, activeColors(level));
+  const colorPick = pickColor(kindPick.rngState, board.targetColors, activeColors(level));
 
   const pixel: Pixel = {
     id: `p${board.nextPixelSeq}`,
@@ -235,20 +269,28 @@ function spawnPixel(
   };
 }
 
-/** Spawn di-bias ke warna target — lihat TARGET_COLOR_SPAWN_WEIGHT. */
+/**
+ * Spawn di-bias ke warna target — lihat TARGET_COLOR_SPAWN_WEIGHT.
+ *
+ * Bobot totalnya tetap sama walau ada dua warna target: bobotnya dibagi di
+ * antara keduanya. Jadi kepadatan pixel yang bisa diklik tidak berubah, dan
+ * kesulitan tambahan murni datang dari harus melacak dua warna sekaligus.
+ */
 function pickColor(
   rngState: number,
-  targetColor: Color,
+  targetColors: readonly Color[],
   colors: readonly Color[],
 ): { readonly color: Color; readonly rngState: number } {
   const roll = nextRandom(rngState);
-  if (roll.value < TARGET_COLOR_SPAWN_WEIGHT) {
-    return { color: targetColor, rngState: roll.state };
+  if (roll.value < TARGET_COLOR_SPAWN_WEIGHT && targetColors.length > 0) {
+    const picked = pickOne(roll.state, targetColors);
+    return { color: picked.value, rngState: picked.state };
   }
 
-  const others = colors.filter((color) => color !== targetColor);
+  const others = colors.filter((color) => !targetColors.includes(color));
   if (others.length === 0) {
-    return { color: targetColor, rngState: roll.state };
+    const picked = pickOne(roll.state, targetColors);
+    return { color: picked.value, rngState: picked.state };
   }
 
   const picked = pickOne(roll.state, others);
@@ -258,4 +300,36 @@ function pickColor(
 /** Dipakai test & renderer: ScoreState setelah combo diputus. */
 export function breakCombo(score: ScoreState): ScoreState {
   return score.combo === 0 ? score : { ...score, combo: 0 };
+}
+
+/** Pindahkan setiap pixel hidup ke sel acak lain (modifier chaos `shuffle`). */
+function shuffleBoard(board: BoardState, gridSize: number, elapsedMs: number): BoardState {
+  const total = gridSize * gridSize;
+  const available: number[] = [];
+  for (let index = 0; index < total; index += 1) available.push(index);
+
+  let rngState = board.rngState;
+  const pixels: Pixel[] = [];
+  let pool = available;
+
+  for (const pixel of board.pixels) {
+    if (pool.length === 0) {
+      pixels.push(pixel);
+      continue;
+    }
+    const choice = pickOne(rngState, pool);
+    rngState = choice.state;
+    pool = pool.filter((index) => index !== choice.value);
+    pixels.push({
+      ...pixel,
+      cell: { row: Math.floor(choice.value / gridSize), col: choice.value % gridSize },
+    });
+  }
+
+  return {
+    ...board,
+    pixels,
+    rngState,
+    nextShuffleAtMs: elapsedMs + CHAOS_SHUFFLE_INTERVAL_MS,
+  };
 }

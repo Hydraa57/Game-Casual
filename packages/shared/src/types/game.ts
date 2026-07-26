@@ -42,3 +42,9 @@ export type GameMode = 'solo' | 'multiplayer';
  * (target skor tercapai atau waktu habis).
  */
 export type GameStatus = 'idle' | 'running' | 'paused' | 'gameOver' | 'finished';
+
+/**
+ * Modifier yang aktif di mode chaos (level di atas ujung kurva). Satu modifier
+ * per level, dipilih deterministik dari seed.
+ */
+export type ChaosModifier = 'rush' | 'blackout' | 'bombRain' | 'shuffle';
