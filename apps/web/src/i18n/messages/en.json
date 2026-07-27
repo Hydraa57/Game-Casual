@@ -112,6 +112,7 @@
     "chaosRush": "Rush",
     "chaosBlackout": "Blackout",
     "chaosBombRain": "Bomb Rain",
-    "chaosShuffle": "Shuffle"
+    "chaosShuffle": "Shuffle",
+    "tapColor": "Tap this colour"
   }
 }

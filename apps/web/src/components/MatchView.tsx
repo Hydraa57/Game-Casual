@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { COLOR_GLYPH } from '@pixelmatrix/shared';
 import type {
   BombHitPayload,
   ChaosModifier,
   ClickRejectedPayload,
+  Color,
   GameStartedPayload,
   MatchEndedPayload,
   Pixel,
@@ -16,6 +18,7 @@ import type {
   TickPayload,
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
+import { cssColor } from '@/game/palette';
 import type { GameSocket } from '@/lib/socket';
 
 const CHAOS_LABEL: Record<ChaosModifier, string> = {
@@ -52,6 +55,8 @@ export function MatchView({
   const [chaos, setChaos] = useState<ChaosModifier | null>(null);
   const [suddenDeath, setSuddenDeath] = useState(false);
   const [result, setResult] = useState<MatchEndedPayload | null>(null);
+  const [targetColors, setTargetColors] = useState<readonly Color[]>([]);
+  const [targetImminent, setTargetImminent] = useState(false);
 
   // Phaser menyentuh `window` saat di-import, jadi di-import dinamis di effect.
   useEffect(() => {
@@ -81,6 +86,7 @@ export function MatchView({
 
     const onStarted = (payload: GameStartedPayload) => {
       scene()?.setTargets(payload.targetColors);
+      setTargetColors(payload.targetColors);
       setCountdown(null);
       setResult(null);
       setSuddenDeath(false);
@@ -93,6 +99,11 @@ export function MatchView({
       setLevel(payload.level);
       setChaos(payload.chaos);
       setScoreboard(payload.scoreboard);
+      // Tick membawa warna target juga, jadi HUD tetap benar walau satu event
+      // `targetChanged` hilang di jaringan.
+      setTargetColors(payload.targetColors);
+      setTargetImminent(payload.targetImminent);
+      scene()?.setTargets(payload.targetColors);
       scene()?.setChaos(payload.chaos);
     };
 
@@ -115,7 +126,13 @@ export function MatchView({
 
     const onShuffled = ({ pixels }: { readonly pixels: readonly Pixel[] }) =>
       scene()?.shuffle(pixels);
-    const onTargetChanged = ({ colors }: TargetChangedPayload) => scene()?.setTargets(colors);
+    const onTargetChanged = ({ colors }: TargetChangedPayload) => {
+      // Tidak menunggu tick berikutnya (bisa 250 ms lagi): pada level tinggi
+      // seperempat detik mengejar warna yang sudah kadaluarsa itu mahal.
+      scene()?.setTargets(colors);
+      setTargetColors(colors);
+      setTargetImminent(false);
+    };
     const onSuddenDeath = () => setSuddenDeath(true);
 
     const onEnded = (payload: MatchEndedPayload) => {
@@ -195,6 +212,32 @@ export function MatchView({
         </span>
         {chaos !== null && <span className="badge badge--chaos">{t(CHAOS_LABEL[chaos])}</span>}
       </div>
+
+      {/* Warna yang harus diketuk. Tanpa baris ini permainannya tidak bisa
+          dimainkan sama sekali — pemain hanya bisa menebak. Ditaruh menempel di
+          atas papan supaya mata tidak perlu bolak-balik ke ujung layar. */}
+      {targetColors.length > 0 && (
+        <div className={`hud__target${targetImminent ? ' hud__target--warning' : ''}`}>
+          <span className="hud__swatches">
+            {targetColors.map((color) => (
+              <span
+                key={color}
+                className="hud__swatch"
+                style={{ background: cssColor(color) }}
+                aria-hidden="true"
+              >
+                {COLOR_GLYPH[color]}
+              </span>
+            ))}
+          </span>
+          <span className="hud__targetText">
+            <span className="hud__label">{t('tapColor')}</span>
+            <div className="stat__value">
+              {targetColors.map((color) => color.toUpperCase()).join(' + ')}
+            </div>
+          </span>
+        </div>
+      )}
 
       <div className="board" ref={boardRef}>
         {countdown !== null && (

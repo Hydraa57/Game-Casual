@@ -126,6 +126,16 @@ export interface TickPayload {
   readonly level: number;
   readonly chaos: ChaosModifier | null;
   readonly scoreboard: readonly ScoreboardEntry[];
+  /**
+   * Warna target ikut di setiap tick, tidak hanya di `targetChanged`.
+   *
+   * Sengaja diulang: kalau satu event `targetChanged` hilang (koneksi seluler
+   * putus sekejap), pemain akan mengejar warna yang salah tanpa tahu kenapa.
+   * Tick membuat HUD selalu bisa pulih sendiri.
+   */
+  readonly targetColors: readonly Color[];
+  /** Warna target akan berganti sebentar lagi — HUD memberi peringatan. */
+  readonly targetImminent: boolean;
 }
 
 export interface MatchEndedPayload {

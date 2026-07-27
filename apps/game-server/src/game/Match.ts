@@ -5,6 +5,7 @@ import {
   createGameState,
   createScoreState,
   GRID_SIZE,
+  isTargetChangeImminent,
   MP_LEVEL_DURATION_MS,
   MP_TICK_BROADCAST_MS,
   SERVER_TICK_MS,
@@ -331,6 +332,10 @@ export class Match {
       remainingMs: Math.max(0, this.timeLimitMs - this.board.elapsedMs),
       level: this.board.board.level,
       chaos: chaosModifierFor(this.board.board.chaosSeed, this.board.board.level),
+      targetColors: this.board.board.targetColors,
+      // Saat sudden death warna tidak berganti lagi, jadi peringatannya
+      // dimatikan supaya tidak berkedip sia-sia di momen paling menegangkan.
+      targetImminent: this.status === 'running' && isTargetChangeImminent(this.board),
       scoreboard: [...this.players.entries()].map(([id, player]) => ({
         playerId: id,
         nickname: player.nickname,
