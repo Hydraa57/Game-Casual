@@ -494,7 +494,11 @@ export class Match {
     // mengirimkannya berarti setiap pemain di room bisa membaca id internal
     // lawannya — data yang tidak pernah perlu keluar dari server.
     const publicRanking = ranking.map(({ userId: _userId, ...entry }) => entry);
-    this.io.to(this.room.code).emit('game:ended', { ranking: publicRanking, reason });
+    // Diambil dari jam papan, bukan dari selisih Date: papan itulah yang
+    // menentukan kapan target tercapai, jadi hanya angka ini yang benar-benar
+    // cocok dengan apa yang dilihat pemain di layar.
+    const durationMs = this.board.elapsedMs;
+    this.io.to(this.room.code).emit('game:ended', { ranking: publicRanking, reason, durationMs });
 
     // Sengaja tidak di-await: pemain sudah melihat hasilnya, dan menunggu
     // round-trip database di sini hanya akan menunda layar hasil. Kegagalannya

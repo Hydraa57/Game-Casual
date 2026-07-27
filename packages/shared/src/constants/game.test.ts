@@ -22,6 +22,8 @@ import {
   MAX_PLAUSIBLE_SOLO_SECONDS,
   MAX_POINTS_PER_SECOND,
   MAX_PLAYERS_LIMIT,
+  MP_LEADER_POINTS_PER_SECOND,
+  MP_LEVEL_DURATION_MS,
   MIN_LIFETIME_MS,
   MIN_PLAYERS_TO_START,
   MIN_SPAWN_INTERVAL_MS,
@@ -149,5 +151,62 @@ describe('konstanta skor & multiplayer', () => {
     expect(ALLOWED_TIME_LIMITS_SEC).toContain(DEFAULT_ROOM_SETTINGS.timeLimitSec);
     expect(DEFAULT_ROOM_SETTINGS.maxPlayers).toBeLessThanOrEqual(MAX_PLAYERS_LIMIT);
     expect(DEFAULT_ROOM_SETTINGS.maxPlayers).toBeGreaterThanOrEqual(MIN_PLAYERS_TO_START);
+  });
+
+  it('pilihan target skor & batas waktu terurut menaik', () => {
+    // Keduanya ditampilkan apa adanya sebagai tombol pilihan host, jadi urutan
+    // di array ini adalah urutan yang dilihat pemain.
+    for (let i = 1; i < ALLOWED_TARGET_SCORES.length; i += 1) {
+      expect(ALLOWED_TARGET_SCORES[i]!).toBeGreaterThan(ALLOWED_TARGET_SCORES[i - 1]!);
+    }
+    for (let i = 1; i < ALLOWED_TIME_LIMITS_SEC.length; i += 1) {
+      expect(ALLOWED_TIME_LIMITS_SEC[i]!).toBeGreaterThan(ALLOWED_TIME_LIMITS_SEC[i - 1]!);
+    }
+  });
+
+  /**
+   * Ini menjaga hal yang sudah pernah rusak sekali, dan menjaga penyebabnya
+   * yang sebenarnya.
+   *
+   * Level multiplayer naik menurut WAKTU, jadi target skor menentukan seberapa
+   * jauh kurva kesulitan sempat berjalan. Dengan target lama (150) match
+   * berakhir di 23 detik pada level 2: warna keempat, bom, dan dua warna target
+   * tidak pernah sekali pun muncul di multiplayer — seluruh isi Fase 1.5 tidak
+   * ada di mode yang justru paling penting.
+   *
+   * Percobaan pertama test ini menguji BATAS WAKTU, dan itu tidak menangkap
+   * apa pun: batas lama 120 dtk sanggup mencapai 8 level, jadi angka yang rusak
+   * tetap lolos. Yang rusak target skornya. Karena itu di sini target skor
+   * diterjemahkan dulu ke durasi lewat MP_LEADER_POINTS_PER_SECOND.
+   */
+  it('target skor cukup tinggi untuk membuat kurva kesulitan berjalan', () => {
+    const levelReached = (target: number) =>
+      1 + Math.floor(((target / MP_LEADER_POINTS_PER_SECOND) * 1000) / MP_LEVEL_DURATION_MS);
+
+    // Pilihan tercepat pun harus melewati bukaan warna pertama, kalau tidak
+    // match selesai sebelum papan berubah sedikit pun.
+    expect(levelReached(ALLOWED_TARGET_SCORES[0])).toBeGreaterThanOrEqual(COLOR_UNLOCK_LEVELS[0]);
+    // Default harus melewati bukaan warna kedua.
+    expect(levelReached(DEFAULT_ROOM_SETTINGS.targetScore)).toBeGreaterThanOrEqual(
+      COLOR_UNLOCK_LEVELS[1],
+    );
+  });
+
+  /**
+   * Batas waktu adalah jaring pengaman, bukan cara normal match berakhir.
+   * Kalau ia lebih pendek dari waktu yang dibutuhkan untuk mencapai target,
+   * match habis waktu sebelum garis finis dan "siapa yang lebih cepat" tidak
+   * pernah terjawab.
+   */
+  it('batas waktu terpanjang memberi ruang untuk target tertinggi', () => {
+    const slowestTarget = ALLOWED_TARGET_SCORES[ALLOWED_TARGET_SCORES.length - 1]!;
+    const longestLimit = ALLOWED_TIME_LIMITS_SEC[ALLOWED_TIME_LIMITS_SEC.length - 1]!;
+    expect(longestLimit).toBeGreaterThan(slowestTarget / MP_LEADER_POINTS_PER_SECOND);
+  });
+
+  it('batas waktu default memberi ruang untuk target default', () => {
+    expect(DEFAULT_ROOM_SETTINGS.timeLimitSec).toBeGreaterThan(
+      DEFAULT_ROOM_SETTINGS.targetScore / MP_LEADER_POINTS_PER_SECOND,
+    );
   });
 });

@@ -110,6 +110,7 @@
     "suddenDeathHint": "Skor seri! Satu pixel — siapa cepat dia menang.",
     "youWin": "KAMU MENANG!",
     "matchOver": "Match selesai",
+    "finishedIn": "Selesai dalam {time}",
     "backToLobby": "Kembali ke lobby",
     "chaosRush": "Serbuan",
     "chaosBlackout": "Gelap",

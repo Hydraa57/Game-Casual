@@ -23,6 +23,12 @@ import { cssColor } from '@/game/palette';
 import { readMuted, writeMuted } from '@/lib/mute';
 import type { GameSocket } from '@/lib/socket';
 
+/** Waktu tempuh sebagai M:SS — "1:33" jauh lebih mudah dibandingkan daripada "93 dtk". */
+function formatDuration(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
 const CHAOS_LABEL: Record<ChaosModifier, string> = {
   rush: 'chaosRush',
   blackout: 'chaosBlackout',
@@ -343,6 +349,14 @@ export function MatchView({
             <h2 className="overlay__title">
               {result.ranking[0]?.playerId === playerId ? t('youWin') : t('matchOver')}
             </h2>
+            {/* Catatan waktunya, yang membuat match terasa seperti balapan dan
+                bukan sekadar daftar angka. Disembunyikan saat match habis
+                waktu: di situ angkanya cuma mengulang batas waktu room. */}
+            {result.reason !== 'timeUp' && (
+              <p className="overlay__time">
+                {t('finishedIn', { time: formatDuration(result.durationMs) })}
+              </p>
+            )}
             <ol className="results">
               {result.ranking.map((entry) => (
                 <li

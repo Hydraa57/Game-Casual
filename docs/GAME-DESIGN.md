@@ -197,10 +197,27 @@ Avatar tidak dikirim di dalam `game:pixelClaimed`. Client memetakan `byPlayerId`
 | Setting | Pilihan | Default |
 |---|---|---|
 | Max players | 2 / 3 / 4 | 4 |
-| Target skor | 100 / 150 / 200 | 150 |
-| Batas waktu | 60 / 90 / 120 / 180 dtk | 120 dtk |
+| Target skor | 500 / 1000 / 1500 | 1000 |
+| Batas waktu | 90 / 120 / 180 / 300 dtk | 180 dtk |
 
-**Kondisi menang**: pemain pertama yang mencapai target skor, ATAU skor tertinggi saat waktu habis (FR-08). **Seri → sudden death**: papan dikosongkan, satu pixel warna target muncul — siapa cepat dia menang.
+**Kondisi menang**: pemain pertama yang mencapai target skor, ATAU skor tertinggi saat waktu habis (FR-08). **Seri → sudden death**: papan dikosongkan, satu pixel warna target muncul — siapa cepat dia menang. Layar hasil menampilkan **waktu tempuh** match (M:SS) — itu yang membuat setiap ronde jadi rekor yang bisa dikejar ronde berikutnya, bukan cuma daftar angka.
+
+#### Kenapa angkanya sebesar itu — panjang match ADALAH kurva kesulitan
+
+Level multiplayer naik menurut waktu (`MP_LEVEL_DURATION_MS`, 15 dtk/level), bukan menurut klik. Konsekuensinya langsung: **target skor menentukan seberapa jauh kurva kesulitan sempat berjalan.**
+
+Angka pertama (100/150/200, default 150) melewatkan itu sepenuhnya. Diukur dengan mensimulasikan engine yang sama persis dengan server — pemain berebut satu papan, urutan kedatangan acak, 8 seed, nilai median:
+
+| Target | 2 pemain | 4 pemain |
+|---|---|---|
+| **150** (lama) | **23 dtk → Lv 2** | **30 dtk → Lv 3** |
+| 500 | 50 dtk → Lv 4 | 76 dtk → Lv 6 |
+| **1000** (default) | **93 dtk → Lv 7** | **123 dtk → Lv 9** |
+| 1500 | 122 dtk → Lv 9 | 173 dtk → Lv 12 |
+
+Dengan target 150, match berakhir di level 2. Warna keempat (Lv 3), bom (Lv 8), dan dua warna target (Lv 12) **tidak pernah muncul sama sekali di multiplayer** — seluruh isi Fase 1.5 praktis tidak ada di mode yang justru paling penting.
+
+Batas waktu adalah **jaring pengaman, bukan cara normal match berakhir**. Kalau batasnya lebih pendek dari waktu yang dibutuhkan untuk mencapai target, hampir semua match habis waktu dan "siapa yang lebih cepat" tidak pernah terjawab. Itu alasan 300 dtk ditambahkan: target 1500 dengan 4 pemain butuh ~173 dtk dan bisa menyentuh 188 dtk.
 
 ### Alur match
 

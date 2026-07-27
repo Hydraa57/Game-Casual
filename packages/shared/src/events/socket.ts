@@ -176,6 +176,16 @@ export interface MatchEndedPayload {
   readonly ranking: readonly MatchResultEntry[];
   /** `elimination`: pemain tersisa tinggal satu karena yang lain tereliminasi. */
   readonly reason: 'targetScore' | 'timeUp' | 'suddenDeath' | 'elimination';
+  /**
+   * Lama match berjalan, dihitung dari akhir hitung mundur.
+   *
+   * Yang membuat match terasa seperti balapan: peringkat memberi tahu SIAPA
+   * yang menang, angka ini memberi tahu SECEPAT APA — dan itu yang bisa dikejar
+   * di ronde berikutnya. Selalu dikirim, tapi hanya bermakna sebagai catatan
+   * waktu ketika `reason` adalah `targetScore`; kalau match habis waktu,
+   * angkanya cuma sama dengan batas waktunya.
+   */
+  readonly durationMs: number;
 }
 
 // ---------------------------------------------------------------------------

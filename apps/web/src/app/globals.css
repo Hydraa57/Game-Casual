@@ -637,6 +637,17 @@ h3 {
   line-height: 1;
 }
 
+/* Catatan waktu di layar hasil. Tabular-nums supaya angkanya tidak bergeser
+   saat dibandingkan antar ronde — itu justru kegunaannya. */
+.overlay__time {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
 .overlay__record {
   color: var(--success);
   font-size: 0.8rem;

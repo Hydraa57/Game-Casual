@@ -110,6 +110,7 @@
     "suddenDeathHint": "Tied! One pixel — first tap wins.",
     "youWin": "YOU WIN!",
     "matchOver": "Match over",
+    "finishedIn": "Finished in {time}",
     "backToLobby": "Back to lobby",
     "chaosRush": "Rush",
     "chaosBlackout": "Blackout",

@@ -321,13 +321,57 @@ export const COUNTDOWN_SECONDS = 3;
 export const NICKNAME_MIN_LENGTH = 2;
 export const NICKNAME_MAX_LENGTH = 12;
 
-export const ALLOWED_TARGET_SCORES = [100, 150, 200] as const;
-export const ALLOWED_TIME_LIMITS_SEC = [60, 90, 120, 180] as const;
+/**
+ * Target skor multiplayer, diukur bukan ditebak.
+ *
+ * Angka lama (100/150/200) membuat match selesai dalam 23 detik di level 2 —
+ * kurva kesulitannya tidak pernah sempat jalan sama sekali, dan pemain tidak
+ * pernah melihat warna keempat, bom, apalagi dua warna target. Level MP naik
+ * tiap MP_LEVEL_DURATION_MS, jadi panjang match ADALAH kurva kesulitannya:
+ * menaikkan target skor satu-satunya cara memberi papan waktu untuk berkembang.
+ *
+ * Diukur dengan mensimulasikan engine yang sama persis dengan server, pemain
+ * berebut satu papan dengan urutan kedatangan acak, 8 seed, nilai median:
+ *
+ * | target | 2 pemain      | 4 pemain       |
+ * |--------|---------------|----------------|
+ * |    500 |  50 dtk, Lv 4 |  76 dtk, Lv 6  |
+ * |   1000 |  93 dtk, Lv 7 | 123 dtk, Lv 9  |
+ * |   1500 | 122 dtk, Lv 9 | 173 dtk, Lv 12 |
+ */
+export const ALLOWED_TARGET_SCORES = [500, 1000, 1500] as const;
+
+/**
+ * Batas waktu di sini adalah JARING PENGAMAN, bukan cara normal match berakhir.
+ *
+ * Kalau batasnya lebih pendek dari waktu yang dibutuhkan untuk mencapai target,
+ * hampir semua match akan berakhir karena kehabisan waktu — dan "siapa yang
+ * lebih cepat" tidak pernah terjawab. Karena itu 300 ditambahkan: target 1500
+ * dengan 4 pemain butuh ~173 dtk dan bisa menyentuh 188 dtk, jadi 180 saja
+ * akan memotong sebagian match tepat sebelum garis finis.
+ */
+export const ALLOWED_TIME_LIMITS_SEC = [90, 120, 180, 300] as const;
+
+/**
+ * Laju skor pemain TERDEPAN di match rebutan — hasil pengukuran, bukan desain.
+ *
+ * Diperoleh dari simulasi engine yang sama dengan server (pemain berebut satu
+ * papan, urutan kedatangan acak, 8 seed): 1000 poin tercapai di 93 detik dengan
+ * 2 pemain. Dipakai HANYA untuk menerjemahkan target skor menjadi perkiraan
+ * durasi match, dan dari situ menjadi level yang tercapai.
+ *
+ * Ada di sini supaya hubungan "target skor → level yang tercapai" bisa diuji.
+ * Tanpa angka ini, tidak ada cara menahan seseorang menurunkan target skor
+ * kembali ke nilai yang membuat match berakhir sebelum kurvanya jalan — dan itu
+ * persis kegagalan yang pernah terjadi. Bukan untuk dipakai logika permainan:
+ * pemain sungguhan lebih cepat atau lebih lambat dari ini.
+ */
+export const MP_LEADER_POINTS_PER_SECOND = 10.7;
 
 export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   maxPlayers: 4,
-  targetScore: 150,
-  timeLimitSec: 120,
+  targetScore: 1000,
+  timeLimitSec: 180,
 };
 
 // ---------------------------------------------------------------------------
