@@ -12,6 +12,8 @@ export type {
   PixelClaimedPayload,
   PixelSpawnedPayload,
   ReadyPayload,
+  ReconnectPayload,
+  ResyncPayload,
   RoomErrorCode,
   ScoreboardEntry,
   ServerToClientEvents,

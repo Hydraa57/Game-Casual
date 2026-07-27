@@ -94,6 +94,43 @@ export class Room {
     return [...this.players.values()];
   }
 
+  /**
+   * Pemain yang socket-nya sedang hidup.
+   *
+   * Dibedakan dari `allPlayers()` karena pemain yang sedang putus TETAP menempati
+   * kursinya — itu inti dari reconnect. Tapi ia tidak bisa menekan tombol siap,
+   * jadi setiap aturan lobby yang menuntut tindakan pemain harus memakai daftar
+   * ini, bukan daftar semua.
+   */
+  connectedPlayers(): readonly RoomPlayer[] {
+    return this.allPlayers().filter((player) => player.connected);
+  }
+
+  /**
+   * Tandai koneksi pemain. Mengembalikan `false` kalau pemainnya sudah tidak ada.
+   *
+   * Host yang putus DIPINDAHKAN ke pemain lain yang masih tersambung: kalau
+   * tidak, seluruh room macet menunggu orang yang tidak bisa menekan apa pun.
+   * Ia tidak mendapatkannya kembali saat reconnect — merebut host dari orang
+   * yang sudah memegangnya justru lebih mengagetkan daripada membiarkannya.
+   */
+  setConnected(playerId: string, connected: boolean): boolean {
+    const player = this.players.get(playerId);
+    if (!player) return false;
+
+    player.connected = connected;
+    if (!connected) {
+      // Pemain yang putus tidak bisa membatalkan kesiapannya sendiri. Dibiarkan
+      // "siap", match yang belum mulai bisa berjalan tanpa dia hadir.
+      player.isReady = false;
+      if (this.hostId === playerId) {
+        const next = this.connectedPlayers()[0];
+        if (next) this.hostId = next.id;
+      }
+    }
+    return true;
+  }
+
   hasNickname(nickname: string): boolean {
     const wanted = nickname.trim().toLowerCase();
     return this.allPlayers().some((player) => player.nickname.trim().toLowerCase() === wanted);
@@ -122,7 +159,9 @@ export class Room {
   remove(playerId: string): void {
     this.players.delete(playerId);
     if (this.hostId === playerId) {
-      const next = this.allPlayers()[0];
+      // Yang tersambung didahulukan: menyerahkan host ke pemain yang sedang
+      // putus akan membuat room macet sampai masa tenggangnya habis.
+      const next = this.connectedPlayers()[0] ?? this.allPlayers()[0];
       if (next) this.hostId = next.id;
     }
   }
@@ -141,12 +180,19 @@ export class Room {
     this.status = status;
   }
 
-  /** Semua pemain siap dan jumlahnya cukup — syarat host boleh memulai. */
+  /**
+   * Semua pemain siap dan jumlahnya cukup — syarat host boleh memulai.
+   *
+   * Hanya pemain yang TERSAMBUNG yang dihitung. Kalau tidak, satu orang yang
+   * kehilangan sinyal di lobby akan menyandera seluruh room selama masa
+   * tenggang: ia tidak bisa menekan siap, dan tidak ada yang bisa memulai.
+   */
   canStart(): boolean {
+    const ready = this.connectedPlayers();
     return (
       this.status === 'waiting' &&
-      this.players.size >= MIN_PLAYERS_TO_START &&
-      this.allPlayers().every((player) => player.isReady)
+      ready.length >= MIN_PLAYERS_TO_START &&
+      ready.every((player) => player.isReady)
     );
   }
 

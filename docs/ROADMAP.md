@@ -121,7 +121,7 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 - [ ] Kosmetik + IAP (FR-10) — kaji gateway: **Midtrans/Xendit untuk pasar Indonesia**, bukan hanya USD seperti contoh API.md
 - [ ] Admin dashboard: DAU, CCU, total games (FR-11) + user management & ban (FR-12)
 - [ ] Leaderboard global solo
-- [ ] Reconnect mid-match (stretch goal dari Fase 2)
+- [x] **Reconnect mid-match.** Kursi pemain dipisahkan dari `socket.id` (lihat `rooms/sessions.ts`): client menyimpan `sessionKey` di localStorage, server menahan kursinya `RECONNECT_GRACE_MS` (45 dtk) setelah koneksi putus, lalu `game:requestResync` mengirim potret papan utuh. Skor, nyawa, dan combo bertahan
 - [ ] Load test k6/Artillery, lalu jalur scale-out (Redis adapter + sticky session) bila perlu
 
 ## Cara Verifikasi per Fase

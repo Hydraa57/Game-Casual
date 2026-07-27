@@ -126,7 +126,10 @@
     "knockedOutHint": "Back with full lives in a moment.",
     "eliminated": "ELIMINATED",
     "eliminatedHint": "Knocked out three times. You are a spectator until the match ends.",
-    "eliminatedShort": "OUT"
+    "eliminatedShort": "OUT",
+    "reconnecting": "Disconnected…",
+    "reconnectedNotice": "You're back — the match continues.",
+    "dismiss": "OK"
   },
   "auth": {
     "title": "Account",

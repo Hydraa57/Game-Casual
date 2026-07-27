@@ -1,7 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Ack, AvatarId, RoomErrorCode, RoomSettings, RoomState } from '@pixelmatrix/shared';
+import type {
+  Ack,
+  AvatarId,
+  JoinedRoom,
+  RoomErrorCode,
+  RoomSettings,
+  RoomState,
+} from '@pixelmatrix/shared';
+import { clearRoomSession, readRoomSession, writeRoomSession } from '@/lib/roomSession';
 import { createSocket } from '@/lib/socket';
 import type { GameSocket } from '@/lib/socket';
 
@@ -14,6 +22,14 @@ export interface UseRoom {
   readonly errorCode: RoomErrorCode | null;
   readonly busy: boolean;
   readonly socket: GameSocket | null;
+  /**
+   * Pemain baru saja kembali ke match yang sudah berjalan.
+   *
+   * Dipakai UI untuk memberi tahu bahwa ia melanjutkan, bukan memulai — tanpa
+   * itu, papan yang tiba-tiba terisi di tengah permainan terasa seperti bug.
+   */
+  readonly reconnected: boolean;
+  acknowledgeReconnect(): void;
   createRoom(
     nickname: string,
     avatar: AvatarId,
@@ -42,12 +58,42 @@ export function useRoom(): UseRoom {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<RoomErrorCode | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reconnected, setReconnected] = useState(false);
 
   useEffect(() => {
     const socket = createSocket();
     socketRef.current = socket;
 
-    socket.on('connect', () => setStatus('online'));
+    /**
+     * Coba klaim kembali kursi lama SETIAP kali socket tersambung.
+     *
+     * Bukan sekali saat mount: Socket.IO menyambung ulang sendiri setelah
+     * jaringan pulih, dan socket baru itu tidak tahu apa-apa soal kursi lama.
+     * Tanpa dijalankan di setiap `connect`, pemain yang kehilangan sinyal
+     * sebentar akan tetap terlihat "online" tapi tidak lagi terhubung ke
+     * match-nya — keadaan paling membingungkan dari semua kemungkinan.
+     */
+    const reclaimSeat = (): void => {
+      const saved = readRoomSession();
+      if (saved === null) return;
+
+      socket.emit('room:reconnect', { sessionKey: saved.sessionKey }, (result) => {
+        if (!result.ok) {
+          // Kursinya sudah hangus (masa tenggang habis, atau server restart).
+          // Sisa sesi dibuang supaya tidak dicoba lagi setiap kali menyambung.
+          clearRoomSession();
+          return;
+        }
+        setPlayerId(result.data.playerId);
+        setRoom(result.data.roomState);
+        setReconnected(true);
+      });
+    };
+
+    socket.on('connect', () => {
+      setStatus('online');
+      reclaimSeat();
+    });
     socket.on('disconnect', () => setStatus('offline'));
     socket.on('connect_error', () => setStatus('offline'));
     socket.on('room:state', setRoom);
@@ -108,13 +154,13 @@ export function useRoom(): UseRoom {
   const createRoom = useCallback(
     async (nickname: string, avatar: AvatarId, settings?: Partial<RoomSettings>) => {
       const token = await playerToken();
-      const result = await request<{ roomCode: string; playerId: string; roomState: RoomState }>(
-        (socket, resolve) =>
-          socket.emit('room:create', { nickname, avatar, settings, playerToken: token }, resolve),
+      const result = await request<JoinedRoom>((socket, resolve) =>
+        socket.emit('room:create', { nickname, avatar, settings, playerToken: token }, resolve),
       );
       if (!result?.ok) return false;
       setPlayerId(result.data.playerId);
       setRoom(result.data.roomState);
+      writeRoomSession({ sessionKey: result.data.sessionKey, roomCode: result.data.roomCode });
       return true;
     },
     [request, playerToken],
@@ -123,17 +169,13 @@ export function useRoom(): UseRoom {
   const joinRoom = useCallback(
     async (code: string, nickname: string, avatar: AvatarId) => {
       const token = await playerToken();
-      const result = await request<{ roomCode: string; playerId: string; roomState: RoomState }>(
-        (socket, resolve) =>
-          socket.emit(
-            'room:join',
-            { roomCode: code, nickname, avatar, playerToken: token },
-            resolve,
-          ),
+      const result = await request<JoinedRoom>((socket, resolve) =>
+        socket.emit('room:join', { roomCode: code, nickname, avatar, playerToken: token }, resolve),
       );
       if (!result?.ok) return false;
       setPlayerId(result.data.playerId);
       setRoom(result.data.roomState);
+      writeRoomSession({ sessionKey: result.data.sessionKey, roomCode: result.data.roomCode });
       return true;
     },
     [request, playerToken],
@@ -141,9 +183,14 @@ export function useRoom(): UseRoom {
 
   const leaveRoom = useCallback(() => {
     socketRef.current?.emit('room:leave');
+    // Sesi dibuang di sini dan BUKAN saat disconnect: keluar atas kemauan
+    // sendiri berarti kursinya memang dilepas, sementara koneksi yang putus
+    // justru kasus yang sesi ini ada untuk menanganinya.
+    clearRoomSession();
     setRoom(null);
     setPlayerId(null);
     setErrorCode(null);
+    setReconnected(false);
   }, []);
 
   /**
@@ -174,6 +221,8 @@ export function useRoom(): UseRoom {
 
   const clearError = useCallback(() => setErrorCode(null), []);
 
+  const acknowledgeReconnect = useCallback(() => setReconnected(false), []);
+
   return useMemo(
     () => ({
       status,
@@ -182,6 +231,8 @@ export function useRoom(): UseRoom {
       errorCode,
       busy,
       socket: socketRef.current,
+      reconnected,
+      acknowledgeReconnect,
       createRoom,
       joinRoom,
       leaveRoom,
@@ -197,6 +248,8 @@ export function useRoom(): UseRoom {
       playerId,
       errorCode,
       busy,
+      reconnected,
+      acknowledgeReconnect,
       createRoom,
       joinRoom,
       leaveRoom,

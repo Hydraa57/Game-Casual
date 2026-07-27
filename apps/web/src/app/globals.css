@@ -272,6 +272,22 @@ h3 {
   color: var(--danger);
 }
 
+.hint--ok {
+  color: var(--accent);
+}
+
+/* Pemain yang koneksinya putus tapi kursinya masih ditahan. Diredupkan, tidak
+   dihapus: menghilangkannya dari daftar akan terbaca sebagai "dia sudah
+   keluar", padahal justru sedang ditunggu. */
+.playerList__item--gone {
+  opacity: 0.5;
+}
+
+.ready--gone {
+  color: var(--muted);
+  font-style: italic;
+}
+
 .lobby__code {
   display: flex;
   flex-direction: column;

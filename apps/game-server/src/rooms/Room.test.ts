@@ -6,7 +6,7 @@ import {
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
-import { normalizeSettings } from './Room';
+import { normalizeSettings, Room } from './Room';
 
 describe('normalizeSettings', () => {
   /**
@@ -59,5 +59,98 @@ describe('normalizeSettings', () => {
     expect(settings.maxPlayers).toBe(MIN_PLAYERS_TO_START);
     expect(settings.targetScore).toBe(Math.min(...ALLOWED_TARGET_SCORES));
     expect(settings.timeLimitSec).toBe(Math.min(...ALLOWED_TIME_LIMITS_SEC));
+  });
+});
+
+describe('koneksi pemain & masa tenggang', () => {
+  const lobby = () => {
+    const room = new Room('ABC123', 'p1', 'Budi', 'fox');
+    room.add('p2', 'Siti', 'cat');
+    return room;
+  };
+
+  it('pemain yang putus TETAP menempati kursinya', () => {
+    // Inti dari reconnect. Kalau ia hilang dari room, tidak ada yang bisa
+    // diklaim kembali dan skornya di match ikut lenyap.
+    const room = lobby();
+    room.setConnected('p2', false);
+    expect(room.has('p2')).toBe(true);
+    expect(room.playerCount).toBe(2);
+    expect(room.get('p2')?.connected).toBe(false);
+  });
+
+  it('pemain yang putus tidak dihitung sebagai tersambung', () => {
+    const room = lobby();
+    room.setConnected('p2', false);
+    expect(room.connectedPlayers().map((p) => p.id)).toEqual(['p1']);
+  });
+
+  /**
+   * Test terpenting di blok ini.
+   *
+   * Kalau canStart menghitung SEMUA pemain, satu orang yang kehilangan sinyal
+   * menyandera seluruh room selama masa tenggang: ia tidak bisa menekan siap,
+   * dan tidak ada seorang pun yang bisa memulai match.
+   */
+  it('pemain yang putus tidak menghalangi match dimulai', () => {
+    const room = new Room('ABC123', 'p1', 'Budi', 'fox');
+    room.add('p2', 'Siti', 'cat');
+    room.add('p3', 'Andi', 'frog');
+    room.setReady('p1', true);
+    room.setReady('p2', true);
+    // p3 belum siap dan koneksinya putus.
+    room.setConnected('p3', false);
+    expect(room.canStart()).toBe(true);
+  });
+
+  it('match tidak bisa dimulai kalau yang tersambung kurang dari dua', () => {
+    const room = lobby();
+    room.setReady('p1', true);
+    room.setReady('p2', true);
+    room.setConnected('p2', false);
+    expect(room.canStart()).toBe(false);
+  });
+
+  it('kesiapan dicabut saat koneksi putus', () => {
+    // Pemain yang putus tidak bisa membatalkan kesiapannya sendiri. Dibiarkan
+    // "siap", match bisa berjalan tanpa dia benar-benar hadir.
+    const room = lobby();
+    room.setReady('p2', true);
+    room.setConnected('p2', false);
+    expect(room.get('p2')?.isReady).toBe(false);
+  });
+
+  it('host yang putus dipindahkan ke pemain yang tersambung', () => {
+    const room = lobby();
+    room.setConnected('p1', false);
+    expect(room.host).toBe('p2');
+  });
+
+  it('host tidak diambil kembali saat pemiliknya tersambung lagi', () => {
+    const room = lobby();
+    room.setConnected('p1', false);
+    room.setConnected('p1', true);
+    expect(room.host).toBe('p2');
+  });
+
+  it('host tidak diserahkan ke pemain yang juga sedang putus', () => {
+    const room = new Room('ABC123', 'p1', 'Budi', 'fox');
+    room.add('p2', 'Siti', 'cat');
+    room.add('p3', 'Andi', 'frog');
+    room.setConnected('p2', false);
+    room.setConnected('p1', false);
+    expect(room.host).toBe('p3');
+  });
+
+  it('menandai pemain yang tidak ada mengembalikan false', () => {
+    expect(lobby().setConnected('hantu', false)).toBe(false);
+  });
+
+  it('toState membawa status koneksi ke client', () => {
+    const room = lobby();
+    room.setConnected('p2', false);
+    const state = room.toState();
+    expect(state.players.find((p) => p.id === 'p2')?.connected).toBe(false);
+    expect(state.players.find((p) => p.id === 'p1')?.connected).toBe(true);
   });
 });

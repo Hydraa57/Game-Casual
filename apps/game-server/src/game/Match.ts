@@ -23,6 +23,8 @@ import type {
   GameState,
   MatchResultEntry,
   Pixel,
+  ResyncPayload,
+  ScoreboardEntry,
   ScoreState,
 } from '@pixelmatrix/shared';
 import type { Room } from '../rooms/Room';
@@ -424,30 +426,63 @@ export class Match {
     }
   }
 
+  private scoreboard(): ScoreboardEntry[] {
+    return [...this.players.entries()].map(([id, player]) => ({
+      playerId: id,
+      nickname: player.nickname,
+      avatar: player.avatar,
+      score: player.score.score,
+      combo: player.score.combo,
+      lives: player.score.lives,
+      knockouts: player.knockouts,
+      eliminated: player.eliminated,
+      // Sisa beku dikirim sebagai durasi, bukan timestamp: jam client dan
+      // server tidak pernah sama, dan selisihnya akan terlihat sebagai
+      // hitungan mundur yang salah.
+      frozenMs: Math.max(0, player.frozenUntil - Date.now()),
+      // Kursi yang masih ada TIDAK berarti koneksinya hidup. Selama masa
+      // tenggang reconnect, pemain tetap ada di room justru karena socket-nya
+      // putus — memakai `room.has(id)` di sini akan menampilkan semua orang
+      // sebagai tersambung dan menyembunyikan satu-satunya hal yang ingin
+      // diketahui pemain lain.
+      connected: this.room.get(id)?.connected === true,
+    }));
+  }
+
+  private remainingMs(): number {
+    return Math.max(0, this.timeLimitMs - this.board.elapsedMs);
+  }
+
+  /**
+   * Potret papan untuk pemain yang baru kembali di tengah match.
+   *
+   * `game:started` sudah lewat dan seluruh riwayat spawn hilang bersama koneksi
+   * lamanya, jadi tanpa ini papannya akan kosong sampai pixel yang sekarang
+   * hidup kedaluwarsa satu per satu — dan selama itu ia tidak punya apa pun
+   * untuk ditekan.
+   */
+  snapshot(): ResyncPayload {
+    return {
+      pixels: this.board.board.pixels,
+      targetColors: this.board.board.targetColors,
+      level: this.board.board.level,
+      chaos: chaosModifierFor(this.board.board.chaosSeed, this.board.board.level),
+      remainingMs: this.remainingMs(),
+      suddenDeath: this.status === 'suddenDeath',
+      scoreboard: this.scoreboard(),
+    };
+  }
+
   private broadcastTick(): void {
     this.io.to(this.room.code).emit('game:tick', {
-      remainingMs: Math.max(0, this.timeLimitMs - this.board.elapsedMs),
+      remainingMs: this.remainingMs(),
       level: this.board.board.level,
       chaos: chaosModifierFor(this.board.board.chaosSeed, this.board.board.level),
       targetColors: this.board.board.targetColors,
       // Saat sudden death warna tidak berganti lagi, jadi peringatannya
       // dimatikan supaya tidak berkedip sia-sia di momen paling menegangkan.
       targetImminent: this.status === 'running' && isTargetChangeImminent(this.board),
-      scoreboard: [...this.players.entries()].map(([id, player]) => ({
-        playerId: id,
-        nickname: player.nickname,
-        avatar: player.avatar,
-        score: player.score.score,
-        combo: player.score.combo,
-        lives: player.score.lives,
-        knockouts: player.knockouts,
-        eliminated: player.eliminated,
-        // Sisa beku dikirim sebagai durasi, bukan timestamp: jam client dan
-        // server tidak pernah sama, dan selisihnya akan terlihat sebagai
-        // hitungan mundur yang salah.
-        frozenMs: Math.max(0, player.frozenUntil - Date.now()),
-        connected: this.room.has(id),
-      })),
+      scoreboard: this.scoreboard(),
     });
   }
 

@@ -166,11 +166,23 @@ export class RemoteBoardScene extends Phaser.Scene {
     this.cameras.main.flash(160, 228, 59, 68);
   }
 
-  shuffle(pixels: readonly Pixel[]): void {
+  /**
+   * Ganti SELURUH isi papan dengan kumpulan pixel ini.
+   *
+   * Dipakai dua hal yang kelihatan berbeda tapi operasinya sama: modifier chaos
+   * `shuffle` yang mengacak posisi, dan resync saat pemain kembali di tengah
+   * match. Keduanya sama-sama berarti "lupakan yang sekarang ada di papan,
+   * inilah keadaan yang benar".
+   */
+  replaceBoard(pixels: readonly Pixel[]): void {
     this.pixels.clear();
     for (const pixel of pixels)
       this.pixels.set(pixel.id, { ...pixel, spawnedAtMs: this.elapsedMs });
     this.boardView.redraw([...this.pixels.values()], chaosHidesGlyphs(this.chaos));
+  }
+
+  shuffle(pixels: readonly Pixel[]): void {
+    this.replaceBoard(pixels);
   }
 
   // ---------------------------------------------------------------- internal

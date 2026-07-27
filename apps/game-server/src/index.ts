@@ -7,6 +7,7 @@ import { registerHandlers } from './net/handlers';
 import type { MatchHooks } from './net/handlers';
 import { hasDatabase } from '@pixelmatrix/db';
 import { RoomManager } from './rooms/RoomManager';
+import { SessionRegistry } from './rooms/sessions';
 import type { Room } from './rooms/Room';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -18,6 +19,11 @@ const PORT = Number(process.env.PORT ?? 3001);
 const CORS_ORIGIN = process.env.CORS_ORIGIN ?? '*';
 
 const rooms = new RoomManager();
+/**
+ * Kursi pemain, terpisah dari koneksinya. Hidup selama proses server berjalan;
+ * satu entri dihapus begitu pemainnya benar-benar keluar dari room.
+ */
+const sessions = new SessionRegistry();
 /** Match yang sedang berjalan, satu per kode room. */
 const matches = new Map<string, Match>();
 
@@ -27,6 +33,7 @@ app.get('/health', (_req, res) => {
     ok: true,
     rooms: rooms.roomCount,
     players: rooms.playerCount,
+    seats: sessions.size,
     matches: matches.size,
     // Terlihat di /health supaya tidak perlu menebak apakah env-nya sudah
     // terpasang benar di hosting. `false` bukan error — game tetap jalan.
@@ -66,10 +73,12 @@ const match: MatchHooks = {
   },
 
   scoresOf: (room) => matches.get(room.code)?.scores() ?? new Map(),
+
+  snapshotOf: (room) => matches.get(room.code)?.snapshot() ?? null,
 };
 
 io.on('connection', (socket) => {
-  registerHandlers(socket, { io, rooms, match });
+  registerHandlers(socket, { io, rooms, match, sessions });
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {

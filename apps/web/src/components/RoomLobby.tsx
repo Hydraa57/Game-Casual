@@ -76,7 +76,14 @@ export function RoomLobby({
         </h2>
         <ul className="playerList">
           {room.players.map((player) => (
-            <li key={player.id} className="playerList__item">
+            <li
+              key={player.id}
+              // Pemain yang koneksinya putus tetap menempati kursinya selama
+              // masa tenggang. Tanpa penanda ini, pemain lain hanya melihat
+              // seseorang yang tidak pernah menekan "siap" dan tidak tahu
+              // kenapa — lalu menyimpulkan lobby-nya rusak.
+              className={`playerList__item${player.connected ? '' : ' playerList__item--gone'}`}
+            >
               <span className={player.id === playerId ? 'playerList__me' : undefined}>
                 {/* Avatar ditampilkan di sini supaya pemain melihat karakter
                     yang BENAR-BENAR dipakai — server bisa menggantinya kalau
@@ -87,9 +94,13 @@ export function RoomLobby({
                 {player.nickname}
                 {player.isHost && <span className="badge">{t('host')}</span>}
               </span>
-              <span className={player.isReady ? 'ready ready--yes' : 'ready'}>
-                {player.isReady ? t('ready') : t('notReady')}
-              </span>
+              {player.connected ? (
+                <span className={player.isReady ? 'ready ready--yes' : 'ready'}>
+                  {player.isReady ? t('ready') : t('notReady')}
+                </span>
+              ) : (
+                <span className="ready ready--gone">{t('reconnecting')}</span>
+              )}
             </li>
           ))}
         </ul>

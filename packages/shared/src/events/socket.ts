@@ -86,9 +86,47 @@ export interface ClickPayload {
 
 export interface JoinedRoom {
   readonly roomCode: string;
-  /** Id socket pemain ini — dipakai client untuk menyorot dirinya di leaderboard. */
+  /**
+   * Id pemain ini di dalam room — dipakai client untuk menyorot dirinya di
+   * leaderboard.
+   *
+   * BUKAN id socket. Id socket berganti setiap kali koneksi terputus, dan kalau
+   * kursi pemain dipatok padanya maka reconnect tidak mungkin ada: pemain yang
+   * kembali akan selalu dianggap orang baru. Yang ini bertahan selama kursinya
+   * masih ada di room.
+   */
   readonly playerId: string;
   readonly roomState: RoomState;
+  /**
+   * Kunci untuk mengklaim kursi ini lagi setelah koneksi putus. Client
+   * menyimpannya dan mengirimkannya lewat `room:reconnect`.
+   *
+   * Rahasia dan hanya dikirim ke pemiliknya — siapa pun yang memegangnya
+   * ADALAH pemain itu. Karena itu ia tidak pernah ikut di `RoomState`, yang
+   * disiarkan ke seluruh room.
+   */
+  readonly sessionKey: string;
+}
+
+export interface ReconnectPayload {
+  readonly sessionKey: string;
+}
+
+/**
+ * Keadaan papan lengkap untuk pemain yang baru kembali di tengah match.
+ *
+ * Ada karena `game:started` sudah lewat dan tidak akan terulang: pemain yang
+ * kembali melewatkan seluruh riwayat spawn, jadi tanpa potret utuh papannya
+ * akan kosong sampai pixel-pixel yang sekarang hidup kedaluwarsa satu per satu.
+ */
+export interface ResyncPayload {
+  readonly pixels: readonly Pixel[];
+  readonly targetColors: readonly Color[];
+  readonly level: number;
+  readonly chaos: ChaosModifier | null;
+  readonly remainingMs: number | null;
+  readonly suddenDeath: boolean;
+  readonly scoreboard: readonly ScoreboardEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -195,6 +233,22 @@ export interface MatchEndedPayload {
 export interface ClientToServerEvents {
   'room:create': (payload: CreateRoomPayload, ack: (result: Ack<JoinedRoom>) => void) => void;
   'room:join': (payload: JoinRoomPayload, ack: (result: Ack<JoinedRoom>) => void) => void;
+  /**
+   * Klaim kembali kursi yang masih ditahan setelah koneksi putus.
+   *
+   * Dibuat event tersendiri, bukan menumpang `room:join`: join yang gagal
+   * karena room penuh atau match sudah jalan adalah keadaan normal yang perlu
+   * ditampilkan ke pemain, sementara reconnect yang gagal berarti kursinya
+   * sudah hangus dan pemain harus masuk dari awal. Menyatukan keduanya membuat
+   * kedua kegagalan itu tidak bisa dibedakan.
+   */
+  'room:reconnect': (payload: ReconnectPayload, ack: (result: Ack<JoinedRoom>) => void) => void;
+  /**
+   * Minta potret papan saat ini. DIMINTA client, bukan dikirim server begitu
+   * reconnect berhasil — kalau server yang mendorong, potretnya bisa tiba
+   * sebelum komponen match terpasang dan listener-nya siap, lalu hilang.
+   */
+  'game:requestResync': (ack: (result: Ack<ResyncPayload | null>) => void) => void;
   'room:leave': () => void;
   /**
    * Pemain selesai melihat layar hasil dan mau kembali ke lobby.

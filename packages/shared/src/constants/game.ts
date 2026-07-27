@@ -304,6 +304,25 @@ export const MAX_CLICKS_PER_SECOND = 8;
  */
 export const MP_LEVEL_DURATION_MS = 15_000;
 
+/**
+ * Berapa lama kursi pemain ditahan setelah socket-nya putus.
+ *
+ * Selama tenggang ini pemain masih ada di room, skornya utuh, dan match jalan
+ * terus tanpa dia. Kalau ia kembali sebelum waktunya habis, ia melanjutkan
+ * match yang sama — bukan memulai dari awal.
+ *
+ * 45 detik dipilih dari tiga hal yang benar-benar terjadi di HP: berpindah
+ * aplikasi sebentar, WiFi berganti ke seluler, dan layar mati lalu dinyalakan
+ * lagi. Ketiganya biasanya selesai jauh di bawah setengah menit.
+ *
+ * Kenapa tidak lebih lama: papannya rebutan. Pemain yang tersisa menunggu
+ * lawan yang mungkin tidak akan kembali, dan di match 2 orang itu berarti
+ * bermain sendirian. Batas waktu match tetap berjalan selama tenggang, jadi
+ * situasinya selalu selesai sendiri — tapi 45 detik menjaga agar tidak ada
+ * yang menunggu lebih lama dari yang wajar.
+ */
+export const RECONNECT_GRACE_MS = 45_000;
+
 /** Seberapa sering scoreboard & sisa waktu disiarkan (loop tetap 20Hz). */
 export const MP_TICK_BROADCAST_MS = 250;
 

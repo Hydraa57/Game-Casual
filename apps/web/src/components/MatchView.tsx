@@ -107,6 +107,37 @@ export function MatchView({
       // bunyi di sana tidak seharusnya dikejutkan saat masuk multiplayer.
       controller.setMuted(readMuted());
       controllerRef.current = controller;
+
+      /**
+       * Minta keadaan papan sekarang, bukan menunggu event berikutnya.
+       *
+       * Komponen ini bisa terpasang di TENGAH match — pemain yang koneksinya
+       * putus lalu kembali melewatkan `game:started` dan seluruh riwayat spawn.
+       * Tanpa langkah ini papannya kosong sampai pixel yang sedang hidup
+       * kedaluwarsa satu per satu, dan selama itu tidak ada yang bisa ditekan.
+       *
+       * Diminta dari sini dan bukan didorong server begitu reconnect berhasil,
+       * karena di titik ini listener-nya pasti sudah siap: potret yang dikirim
+       * lebih awal akan tiba sebelum komponen ada dan hilang tanpa jejak.
+       */
+      socket.emit('game:requestResync', (result) => {
+        if (!result.ok || result.data === null) return;
+        const snapshot = result.data;
+        const scene = controller?.scene;
+
+        scene?.beginMatch();
+        scene?.setTargets(snapshot.targetColors);
+        scene?.setChaos(snapshot.chaos);
+        scene?.replaceBoard(snapshot.pixels);
+
+        setCountdown(null);
+        setTargetColors(snapshot.targetColors);
+        setLevel(snapshot.level);
+        setChaos(snapshot.chaos);
+        setRemainingMs(snapshot.remainingMs);
+        setSuddenDeath(snapshot.suddenDeath);
+        setScoreboard(snapshot.scoreboard);
+      });
     });
 
     return () => {

@@ -79,6 +79,18 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
 
       <h1 className="pageTitle">{t('title')}</h1>
 
+      {/* Papan yang tiba-tiba terisi di tengah permainan terasa seperti bug
+          kalau tidak dijelaskan. Pesan ini yang memberi tahu bahwa ia
+          MELANJUTKAN match, bukan memulai yang baru. */}
+      {room.reconnected && (
+        <p className="hint hint--ok" role="status">
+          {t('reconnectedNotice')}{' '}
+          <button className="btn btn--small" type="button" onClick={room.acknowledgeReconnect}>
+            {t('dismiss')}
+          </button>
+        </p>
+      )}
+
       {room.errorCode !== null && (
         <p className="hint hint--warn" role="alert">
           {t(ERROR_LABEL[room.errorCode])}

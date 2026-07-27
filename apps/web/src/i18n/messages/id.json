@@ -126,7 +126,10 @@
     "knockedOutHint": "Hidup lagi dengan nyawa penuh sebentar lagi.",
     "eliminated": "TERELIMINASI",
     "eliminatedHint": "KO tiga kali. Kamu jadi penonton sampai match selesai.",
-    "eliminatedShort": "OUT"
+    "eliminatedShort": "OUT",
+    "reconnecting": "Terputus…",
+    "reconnectedNotice": "Kamu tersambung lagi — match dilanjutkan.",
+    "dismiss": "Oke"
   },
   "auth": {
     "title": "Akun",

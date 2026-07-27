@@ -65,6 +65,21 @@ export const updateSettingsSchema = z.object({
 
 export const readySchema = z.object({ ready: z.boolean() });
 
+/**
+ * Kunci sesi untuk mengklaim ulang kursi.
+ *
+ * Panjangnya dibatasi ketat: kunci yang sah selalu 48 karakter heksadesimal
+ * (24 byte acak), jadi tidak ada alasan memproses string yang lebih panjang.
+ * Bentuknya juga diperiksa supaya percobaan menebak dengan payload aneh
+ * berhenti di sini, bukan di pencarian peta.
+ */
+export const reconnectSchema = z.object({
+  sessionKey: z
+    .string()
+    .length(48)
+    .regex(/^[0-9a-f]+$/),
+});
+
 export const clickSchema = z.object({
   pixelId: z.string().min(1).max(32),
   clientTs: z.number().finite(),
