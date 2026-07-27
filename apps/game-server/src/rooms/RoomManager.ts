@@ -34,14 +34,21 @@ export class RoomManager {
     nickname: string,
     avatar: AvatarId,
     settings?: Partial<RoomSettings>,
+    userId: string | null = null,
   ): Room {
-    const room = new Room(this.nextCode(), hostId, nickname, avatar, settings);
+    const room = new Room(this.nextCode(), hostId, nickname, avatar, settings, userId);
     this.rooms.set(room.code, room);
     this.playerRooms.set(hostId, room.code);
     return room;
   }
 
-  join(rawCode: string, playerId: string, nickname: string, avatar: AvatarId): JoinResult {
+  join(
+    rawCode: string,
+    playerId: string,
+    nickname: string,
+    avatar: AvatarId,
+    userId: string | null = null,
+  ): JoinResult {
     const code = normalizeRoomCode(rawCode);
     if (!isValidRoomCode(code)) return { ok: false, code: 'ROOM_NOT_FOUND' };
 
@@ -53,7 +60,7 @@ export class RoomManager {
     if (room.isFull) return { ok: false, code: 'ROOM_FULL' };
     if (room.hasNickname(nickname)) return { ok: false, code: 'NICKNAME_TAKEN' };
 
-    room.add(playerId, nickname, resolveAvatar(avatar, room.takenAvatars()));
+    room.add(playerId, nickname, resolveAvatar(avatar, room.takenAvatars()), userId);
     this.playerRooms.set(playerId, room.code);
     return { ok: true, room };
   }

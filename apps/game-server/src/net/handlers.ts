@@ -1,5 +1,11 @@
 import type { Server, Socket } from 'socket.io';
-import type { ClientToServerEvents, RoomState, ServerToClientEvents } from '@pixelmatrix/shared';
+import { verifyPlayerToken } from '@pixelmatrix/shared';
+import type {
+  ClientToServerEvents,
+  PlayerIdentity,
+  RoomState,
+  ServerToClientEvents,
+} from '@pixelmatrix/shared';
 import type { RoomManager } from '../rooms/RoomManager';
 import type { Room } from '../rooms/Room';
 import { fail, socketError, succeed } from './errors';
@@ -31,6 +37,18 @@ export interface HandlerDeps {
   readonly match: MatchHooks;
 }
 
+/**
+ * Identitas terbukti dari token, atau `null` untuk guest.
+ *
+ * Tanpa `AUTH_SECRET` semua orang dianggap guest — dan itu keadaan yang sah,
+ * bukan kegagalan: game harus tetap bisa dimainkan tanpa konfigurasi apa pun.
+ */
+async function identify(token: string | undefined): Promise<PlayerIdentity | null> {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret || token === undefined) return null;
+  return verifyPlayerToken(token, secret);
+}
+
 export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
   const { io, rooms, match } = deps;
 
@@ -47,15 +65,21 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     // Satu socket hanya boleh berada di satu room; tinggalkan yang lama dulu.
     leaveCurrentRoom(socket, deps);
 
-    const room = rooms.create(
-      socket.id,
-      parsed.data.nickname,
-      parsed.data.avatar,
-      parsed.data.settings,
-    );
-    void socket.join(room.code);
-    ack(succeed({ roomCode: room.code, playerId: socket.id, roomState: stateOf(room, match) }));
-    broadcastState(room);
+    void identify(parsed.data.playerToken).then((account) => {
+      const room = rooms.create(
+        socket.id,
+        // Nama dari TOKEN menang atas nickname yang dikirim client. Kalau tidak,
+        // pemain bisa login sebagai satu akun tapi tercatat di riwayat dengan
+        // nama lain — dan papan skor jadi tidak cocok dengan riwayatnya.
+        account?.username ?? parsed.data.nickname,
+        account?.avatar ?? parsed.data.avatar,
+        parsed.data.settings,
+        account?.userId ?? null,
+      );
+      void socket.join(room.code);
+      ack(succeed({ roomCode: room.code, playerId: socket.id, roomState: stateOf(room, match) }));
+      broadcastState(room);
+    });
   });
 
   socket.on('room:join', (payload, ack) => {
@@ -66,26 +90,29 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     }
     leaveCurrentRoom(socket, deps);
 
-    const result = rooms.join(
-      parsed.data.roomCode,
-      socket.id,
-      parsed.data.nickname,
-      parsed.data.avatar,
-    );
-    if (!result.ok) {
-      ack(fail(result.code));
-      return;
-    }
+    void identify(parsed.data.playerToken).then((account) => {
+      const result = rooms.join(
+        parsed.data.roomCode,
+        socket.id,
+        account?.username ?? parsed.data.nickname,
+        account?.avatar ?? parsed.data.avatar,
+        account?.userId ?? null,
+      );
+      if (!result.ok) {
+        ack(fail(result.code));
+        return;
+      }
 
-    void socket.join(result.room.code);
-    ack(
-      succeed({
-        roomCode: result.room.code,
-        playerId: socket.id,
-        roomState: stateOf(result.room, match),
-      }),
-    );
-    broadcastState(result.room);
+      void socket.join(result.room.code);
+      ack(
+        succeed({
+          roomCode: result.room.code,
+          playerId: socket.id,
+          roomState: stateOf(result.room, match),
+        }),
+      );
+      broadcastState(result.room);
+    });
   });
 
   socket.on('room:leave', () => {

@@ -40,9 +40,10 @@ export async function saveMatch(match: FinishedMatch): Promise<boolean> {
         endedAt: match.endedAt,
         players: {
           create: match.ranking.map((entry) => ({
-            // userId tetap null sampai auth masuk (Fase 3 bagian NextAuth).
-            // Guest sengaja tetap dicatat: itu cara main yang paling umum, dan
-            // membuang match tanpa login berarti membuang hampir semua riwayat.
+            // Guest sengaja tetap dicatat dengan userId null: itu cara main
+            // yang paling umum, dan membuang match tanpa login berarti
+            // membuang hampir seluruh riwayat.
+            userId: entry.userId ?? null,
             nickname: entry.nickname,
             avatar: entry.avatar,
             score: entry.score,

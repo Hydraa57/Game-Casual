@@ -1,3 +1,4 @@
+export * from './auth/index';
 export * from './constants/index';
 export * from './engine/index';
 export type * from './events/index';

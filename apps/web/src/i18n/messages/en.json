@@ -18,7 +18,8 @@
     "playMultiplayer": "Play With Friends",
     "comingSoon": "soon",
     "switchLanguage": "Bahasa Indonesia",
-    "leaderboard": "Leaderboard"
+    "leaderboard": "Leaderboard",
+    "profile": "Profile"
   },
   "solo": {
     "title": "Solo",
@@ -130,7 +131,7 @@
     "title": "Account",
     "login": "Log in",
     "signup": "Sign up",
-    "username": "Player ID",
+    "username": "Username",
     "password": "Password",
     "avatar": "Character",
     "createAccount": "Create account",
@@ -141,11 +142,11 @@
     "playAsGuest": "Play as guest",
     "highScore": "Solo record",
     "err": {
-      "usernameLength": "Player ID must be 3–16 characters.",
-      "usernameChars": "Player ID can only use letters, numbers and underscores.",
+      "usernameLength": "Username must be 3–16 characters.",
+      "usernameChars": "Username can only use letters, numbers and underscores.",
       "passwordLength": "Password must be at least {min} characters.",
-      "usernameTaken": "That player ID is taken. Try another.",
-      "invalidCredentials": "Wrong player ID or password.",
+      "usernameTaken": "That username is taken. Try another.",
+      "invalidCredentials": "Wrong username or password.",
       "noDatabase": "Accounts are not enabled on this server. You can still play as a guest.",
       "badRequest": "Something went wrong. Try again.",
       "network": "Could not reach the server. Check your connection."
@@ -169,5 +170,18 @@
     "loading": "Loading…",
     "error": "Could not load the leaderboard.",
     "empty": "Nobody has scored yet. Be the first!"
+  },
+  "profile": {
+    "title": "Profile",
+    "back": "Back",
+    "soloRecord": "Solo record",
+    "matches": "Matches",
+    "wins": "Wins",
+    "recentMatches": "Recent matches",
+    "noMatches": "No saved matches yet. Go play with friends!",
+    "ofPlayers": "of {count} players",
+    "out": "OUT",
+    "guestOnly": "You are playing as a guest, so nothing is saved. Create an account from the home page if you want your history recorded.",
+    "goHome": "Go home"
   }
 }

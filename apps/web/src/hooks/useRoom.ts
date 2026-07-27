@@ -65,6 +65,25 @@ export function useRoom(): UseRoom {
     };
   }, []);
 
+  /**
+   * Ambil token identitas sesaat sebelum create/join.
+   *
+   * Diambil di titik pemakaian, bukan disimpan saat mount: umurnya cuma satu
+   * menit, dan pemain bisa duduk di halaman ini jauh lebih lama dari itu
+   * sebelum menekan tombolnya.
+   */
+  const playerToken = useCallback(async (): Promise<string | undefined> => {
+    try {
+      const response = await fetch('/api/auth/socket-token');
+      const data = (await response.json()) as { token: string | null };
+      return data.token ?? undefined;
+    } catch {
+      // Gagal mengambil token = main sebagai guest. Bukan alasan untuk
+      // menggagalkan pembuatan room.
+      return undefined;
+    }
+  }, []);
+
   /** Bungkus satu panggilan ber-ack: kelola flag busy dan kode error di satu tempat. */
   const request = useCallback(
     async <T>(
@@ -88,29 +107,36 @@ export function useRoom(): UseRoom {
 
   const createRoom = useCallback(
     async (nickname: string, avatar: AvatarId, settings?: Partial<RoomSettings>) => {
+      const token = await playerToken();
       const result = await request<{ roomCode: string; playerId: string; roomState: RoomState }>(
-        (socket, resolve) => socket.emit('room:create', { nickname, avatar, settings }, resolve),
+        (socket, resolve) =>
+          socket.emit('room:create', { nickname, avatar, settings, playerToken: token }, resolve),
       );
       if (!result?.ok) return false;
       setPlayerId(result.data.playerId);
       setRoom(result.data.roomState);
       return true;
     },
-    [request],
+    [request, playerToken],
   );
 
   const joinRoom = useCallback(
     async (code: string, nickname: string, avatar: AvatarId) => {
+      const token = await playerToken();
       const result = await request<{ roomCode: string; playerId: string; roomState: RoomState }>(
         (socket, resolve) =>
-          socket.emit('room:join', { roomCode: code, nickname, avatar }, resolve),
+          socket.emit(
+            'room:join',
+            { roomCode: code, nickname, avatar, playerToken: token },
+            resolve,
+          ),
       );
       if (!result?.ok) return false;
       setPlayerId(result.data.playerId);
       setRoom(result.data.roomState);
       return true;
     },
-    [request],
+    [request, playerToken],
   );
 
   const leaveRoom = useCallback(() => {

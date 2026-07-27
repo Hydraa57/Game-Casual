@@ -33,6 +33,11 @@ export function LandingMenu() {
         <Link className="btn btn--block" href="/leaderboard">
           {t('leaderboard')}
         </Link>
+        {identity.kind === 'account' && (
+          <Link className="btn btn--block" href="/profile">
+            {t('profile')}
+          </Link>
+        )}
       </div>
     </IdentityGate>
   );

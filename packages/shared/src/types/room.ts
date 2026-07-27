@@ -54,4 +54,11 @@ export interface MatchResultEntry {
    * angka, dan tanpa aturan ini "bunuh diri sambil unggul skor" jadi strategi.
    */
   readonly eliminated: boolean;
+  /**
+   * Akun pemilik hasil ini, kalau pemainnya login. `null` untuk guest.
+   *
+   * Tidak dikirim ke client mana pun — hanya dipakai server saat menulis
+   * riwayat. Lihat catatan di `matchStore`.
+   */
+  readonly userId?: string | null;
 }

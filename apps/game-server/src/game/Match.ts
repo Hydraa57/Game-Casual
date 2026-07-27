@@ -42,6 +42,8 @@ type MatchStatus = 'countdown' | 'running' | 'suddenDeath' | 'ended';
 interface PlayerStats {
   nickname: string;
   avatar: AvatarId;
+  /** Akun pemilik, atau null untuk guest. */
+  userId: string | null;
   score: ScoreState;
   /**
    * Waktu (epoch ms) sampai pemain bisa mengetuk lagi setelah nyawanya habis;
@@ -86,6 +88,7 @@ export class Match {
       this.players.set(player.id, {
         nickname: player.nickname,
         avatar: player.avatar,
+        userId: player.userId,
         score: createScoreState(MP_STARTING_LIVES),
         frozenUntil: 0,
         knockouts: 0,
@@ -467,6 +470,9 @@ export class Match {
             bestCombo: player.score.bestCombo,
             knockouts: player.knockouts,
             eliminated: player.eliminated,
+            // Ikut ke sini semata-mata supaya `saveMatch` bisa menautkan baris
+            // riwayat ke akun. Tidak pernah dikirim ke client mana pun.
+            userId: player.userId,
           };
         })
         // Yang bertahan SELALU di atas yang tereliminasi, berapa pun skornya.
@@ -483,7 +489,12 @@ export class Match {
     this.stop();
 
     const ranking = this.ranking();
-    this.io.to(this.room.code).emit('game:ended', { ranking, reason });
+
+    // Id akun dibuang sebelum disiarkan. Layar hasil tidak membutuhkannya, dan
+    // mengirimkannya berarti setiap pemain di room bisa membaca id internal
+    // lawannya — data yang tidak pernah perlu keluar dari server.
+    const publicRanking = ranking.map(({ userId: _userId, ...entry }) => entry);
+    this.io.to(this.room.code).emit('game:ended', { ranking: publicRanking, reason });
 
     // Sengaja tidak di-await: pemain sudah melihat hasilnya, dan menunggu
     // round-trip database di sini hanya akan menunda layar hasil. Kegagalannya

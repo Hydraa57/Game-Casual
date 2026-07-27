@@ -46,6 +46,15 @@ export interface CreateRoomPayload {
   readonly nickname: string;
   readonly avatar: AvatarId;
   readonly settings?: Partial<RoomSettings>;
+  /**
+   * Bukti identitas dari web (lihat `signPlayerToken`). Opsional: guest tidak
+   * punya, dan tanpa AUTH_SECRET di game-server semua orang dianggap guest.
+   *
+   * Kalau sah, server memakai username dari TOKEN — bukan `nickname` di atas.
+   * Kalau tidak, riwayat match bisa tercatat atas nama yang berbeda dari akun
+   * yang mengklaimnya.
+   */
+  readonly playerToken?: string;
 }
 
 export interface JoinRoomPayload {
@@ -57,6 +66,8 @@ export interface JoinRoomPayload {
    * Nilai yang benar-benar dipakai selalu ada di `roomState`.
    */
   readonly avatar: AvatarId;
+  /** Lihat `CreateRoomPayload.playerToken`. */
+  readonly playerToken?: string;
 }
 
 export interface UpdateSettingsPayload {

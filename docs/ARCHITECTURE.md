@@ -172,7 +172,20 @@ Tiga hal kecil yang mudah terlewat dan sudah ditangani:
 2. **Password tetap di-hash walau username tidak ditemukan**, memakai hash boneka. Tanpa itu, respons untuk username asing jauh lebih cepat dan selisih waktunya membocorkan hal yang sama.
 3. **Keunikan username dijaga database** lewat kolom `usernameLower` yang unik, bukan lewat cek-lalu-insert. Dua pendaftaran bersamaan bisa lolos pemeriksaan aplikasi berdua, lalu "Budi" dan "budi" hidup berdampingan di leaderboard.
 
-**Auth socket (belum)**: handshake Socket.IO nanti membawa session token supaya `MatchPlayer.userId` terisi. Guest (tanpa token) tetap boleh join room.
+**Identitas ke game-server: token bertanda tangan, bukan cookie sesi.**
+
+Cookie sesi `httpOnly` tidak bisa dibaca JavaScript — itu memang gunanya — jadi client tidak bisa meneruskannya sendiri. Alternatif "kirim cookie ke origin lain" juga buruk untuk audiens kita: web di Vercel dan game-server di Render adalah dua origin, dan cookie lintas-situs diblokir agresif oleh Safari/iOS.
+
+Jadi web menukar sesinya dengan token terpisah lewat `GET /api/auth/socket-token`: HMAC-SHA256, berumur **1 menit**, isinya hanya `userId`, `username`, `avatar`, dan `exp`. Client menyertakannya di payload `room:create`/`room:join`; game-server memverifikasinya dengan `AUTH_SECRET` yang sama.
+
+Empat sifat yang menentukan bentuknya:
+
+1. **Nama dari TOKEN menang atas `nickname` yang dikirim client.** Kalau tidak, pemain bisa login sebagai satu akun tapi tercatat di riwayat dengan nama lain — dan papan skor tidak akan cocok dengan riwayatnya.
+2. **Umurnya satu menit** karena token ini bisa dibaca JavaScript. Kalau ada celah XSS, yang tercuri hanyalah izin bergabung ke room selama semenit, bukan sesi 30 hari.
+3. **Token tak sah = guest**, bukan error. Token cacat, tanda tangan palsu, dan token kedaluwarsa diperlakukan sama.
+4. **`AUTH_SECRET` kosong = semua orang guest.** Game tetap jalan penuh; hanya penautan riwayat yang mati.
+
+`userId` **dibuang sebelum hasil match disiarkan** ke client. Layar hasil tidak membutuhkannya, dan mengirimkannya berarti setiap pemain bisa membaca id internal lawannya.
 
 ## 6. Deployment & Skalabilitas
 

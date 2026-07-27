@@ -18,7 +18,8 @@
     "playMultiplayer": "Main Bareng Teman",
     "comingSoon": "segera",
     "switchLanguage": "English",
-    "leaderboard": "Papan Skor"
+    "leaderboard": "Papan Skor",
+    "profile": "Profil"
   },
   "solo": {
     "title": "Solo",
@@ -130,7 +131,7 @@
     "title": "Akun",
     "login": "Masuk",
     "signup": "Daftar",
-    "username": "Nama ID",
+    "username": "Username",
     "password": "Password",
     "avatar": "Karakter",
     "createAccount": "Buat Akun",
@@ -141,11 +142,11 @@
     "playAsGuest": "Main sebagai guest",
     "highScore": "Rekor solo",
     "err": {
-      "usernameLength": "Nama ID harus 3–16 karakter.",
-      "usernameChars": "Nama ID hanya boleh huruf, angka, dan garis bawah.",
+      "usernameLength": "Username harus 3–16 karakter.",
+      "usernameChars": "Username hanya boleh huruf, angka, dan garis bawah.",
       "passwordLength": "Password minimal {min} karakter.",
-      "usernameTaken": "Nama ID itu sudah dipakai. Coba yang lain.",
-      "invalidCredentials": "Nama ID atau password salah.",
+      "usernameTaken": "Username itu sudah dipakai. Coba yang lain.",
+      "invalidCredentials": "Username atau password salah.",
       "noDatabase": "Fitur akun belum aktif di server ini. Kamu tetap bisa main sebagai guest.",
       "badRequest": "Ada yang salah. Coba lagi.",
       "network": "Gagal menghubungi server. Cek koneksimu."
@@ -169,5 +170,18 @@
     "loading": "Memuat…",
     "error": "Gagal memuat papan skor.",
     "empty": "Belum ada yang mencetak skor. Jadilah yang pertama!"
+  },
+  "profile": {
+    "title": "Profil",
+    "back": "Kembali",
+    "soloRecord": "Rekor solo",
+    "matches": "Match",
+    "wins": "Menang",
+    "recentMatches": "Match terakhir",
+    "noMatches": "Belum ada match yang tersimpan. Main bareng teman dulu!",
+    "ofPlayers": "dari {count} pemain",
+    "out": "OUT",
+    "guestOnly": "Kamu sedang main sebagai guest, jadi tidak ada riwayat yang tersimpan. Buat akun dari beranda kalau mau riwayatnya dicatat.",
+    "goHome": "Ke beranda"
   }
 }

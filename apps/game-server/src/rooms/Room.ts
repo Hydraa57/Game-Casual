@@ -11,6 +11,11 @@ export interface RoomPlayer {
   avatar: AvatarId;
   isReady: boolean;
   connected: boolean;
+  /**
+   * Akun pemilik, kalau identitasnya terbukti lewat token bertanda tangan.
+   * `null` untuk guest — dan guest adalah cara main yang sepenuhnya sah.
+   */
+  userId: string | null;
 }
 
 /**
@@ -32,6 +37,7 @@ export class Room {
     hostNickname: string,
     hostAvatar: AvatarId,
     settings?: Partial<RoomSettings>,
+    hostUserId: string | null = null,
   ) {
     this.code = code;
     this.hostId = hostId;
@@ -42,6 +48,7 @@ export class Room {
       avatar: hostAvatar,
       isReady: false,
       connected: true,
+      userId: hostUserId,
     });
   }
 
@@ -95,8 +102,15 @@ export class Room {
     return this.allPlayers().map((player) => player.avatar);
   }
 
-  add(playerId: string, nickname: string, avatar: AvatarId): void {
-    this.players.set(playerId, { id: playerId, nickname, avatar, isReady: false, connected: true });
+  add(playerId: string, nickname: string, avatar: AvatarId, userId: string | null = null): void {
+    this.players.set(playerId, {
+      id: playerId,
+      nickname,
+      avatar,
+      isReady: false,
+      connected: true,
+      userId,
+    });
   }
 
   /**

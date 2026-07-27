@@ -40,7 +40,11 @@ const settings = z
   })
   .optional();
 
-export const createRoomSchema = z.object({ nickname, avatar, settings });
+/** Token identitas dari web. Panjangnya dibatasi supaya payload raksasa tidak
+ *  ikut diproses; isinya tetap diverifikasi tanda tangannya. */
+const playerToken = z.string().max(2048).optional();
+
+export const createRoomSchema = z.object({ nickname, avatar, settings, playerToken });
 
 export const joinRoomSchema = z.object({
   // Panjangnya lebih longgar dari 6 karena kode dinormalisasi dulu (spasi/tanda
@@ -48,6 +52,7 @@ export const joinRoomSchema = z.object({
   roomCode: z.string().trim().min(1).max(24),
   nickname,
   avatar,
+  playerToken,
 });
 
 export const updateSettingsSchema = z.object({

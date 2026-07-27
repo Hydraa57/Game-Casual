@@ -24,6 +24,12 @@ services:
       - key: CORS_ORIGIN
         # Ganti kalau domain web-mu berubah. Jangan biarkan `*` di produksi.
         value: https://game-casual-web.vercel.app
+      - key: AUTH_SECRET
+        # HARUS sama persis dengan AUTH_SECRET di Vercel: web yang
+        # menandatangani token identitas, game-server yang memverifikasinya.
+        # Kalau beda (atau kosong), semua pemain dianggap guest dan riwayat
+        # match tidak tertaut ke akun mana pun — game tetap jalan normal.
+        sync: false
       - key: DATABASE_URL
         # sync: false = Render menanyakannya saat blueprint dipasang dan tidak
         # menyimpannya di repo. Boleh dikosongkan: tanpa DATABASE_URL game

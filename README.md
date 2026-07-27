@@ -85,6 +85,8 @@ Yang wajib dicek:
 |---|---|---|
 | `CORS_ORIGIN` | origin web-nya, misal `https://pixel-matrix.vercel.app` | Default-nya `*` — aman untuk dev, tidak untuk produksi |
 | `PORT` | biasanya diisi otomatis oleh host | Server membacanya dari env |
+| `AUTH_SECRET` | string acak panjang, **sama persis dengan di Vercel** | Web menandatangani token identitas, game-server memverifikasinya. Beda atau kosong = semua pemain dianggap guest |
+| `DATABASE_URL` | opsional | Tanpa ini game jalan penuh, hanya riwayat match yang tidak tersimpan |
 
 Pastikan host-nya memberi **HTTPS**. Halaman web yang https tidak boleh membuka koneksi ke `ws://` biasa — browser memblokirnya sebagai mixed content, dan gejalanya sama persis dengan server mati.
 
@@ -94,7 +96,11 @@ Di Vercel: **Settings → Environment Variables**, tambahkan untuk environment P
 
 ```
 NEXT_PUBLIC_GAME_SERVER_URL=https://<nama-service>.onrender.com
+DATABASE_URL=<connection string Supabase/Neon>
+AUTH_SECRET=<string acak panjang, sama persis dengan di game-server>
 ```
+
+Buat `AUTH_SECRET` dengan `openssl rand -hex 32`. Ini yang menautkan hasil match ke akun: web menandatangani identitas pemain, game-server memverifikasinya. Kalau nilainya beda di kedua tempat, tidak ada yang rusak — semua pemain sekadar dianggap guest.
 
 **Deploy ulang setelah menyetelnya** (Deployments → ⋯ → Redeploy). Variabel `NEXT_PUBLIC_*` dibaca saat build, bukan saat halaman dibuka — mengubahnya di dashboard saja tidak berpengaruh sampai ada build baru. Ini penyebab paling umum "sudah diset kok masih error".
 
