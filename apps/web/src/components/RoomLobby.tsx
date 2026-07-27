@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import {
   ALLOWED_TARGET_SCORES,
   ALLOWED_TIME_LIMITS_SEC,
+  AVATAR_GLYPH,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
@@ -72,6 +73,12 @@ export function RoomLobby({
           {room.players.map((player) => (
             <li key={player.id} className="playerList__item">
               <span className={player.id === playerId ? 'playerList__me' : undefined}>
+                {/* Avatar ditampilkan di sini supaya pemain melihat karakter
+                    yang BENAR-BENAR dipakai — server bisa menggantinya kalau
+                    pilihannya sudah diambil orang lain. */}
+                <span className="avatarMark" aria-hidden="true">
+                  {AVATAR_GLYPH[player.avatar]}
+                </span>
                 {player.nickname}
                 {player.isHost && <span className="badge">{t('host')}</span>}
               </span>

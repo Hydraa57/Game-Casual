@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { COLOR_GLYPH } from '@pixelmatrix/shared';
+import { AVATAR_GLYPH, COLOR_GLYPH } from '@pixelmatrix/shared';
 import type {
+  AvatarId,
   BombHitPayload,
   ChaosModifier,
   ClickRejectedPayload,
@@ -31,6 +32,14 @@ const CHAOS_LABEL: Record<ChaosModifier, string> = {
 export interface MatchViewProps {
   readonly socket: GameSocket;
   readonly playerId: string | null;
+  /**
+   * Avatar per pemain, dari `room:state`.
+   *
+   * Diambil dari state room dan bukan dari payload klik supaya avatar tidak
+   * ikut dikirim di jalur terpanas permainan — `game:pixelClaimed` bisa terbang
+   * beberapa kali per detik ke setiap pemain.
+   */
+  readonly avatars: ReadonlyMap<string, AvatarId>;
   readonly targetScore: number;
   readonly onLeave: () => void;
   /** Menutup layar hasil dan mengembalikan room ke lobby (untuk rematch). */
@@ -40,6 +49,7 @@ export interface MatchViewProps {
 export function MatchView({
   socket,
   playerId,
+  avatars,
   targetScore,
   onLeave,
   onBackToLobby,
@@ -57,6 +67,18 @@ export function MatchView({
   const [result, setResult] = useState<MatchEndedPayload | null>(null);
   const [targetColors, setTargetColors] = useState<readonly Color[]>([]);
   const [targetImminent, setTargetImminent] = useState(false);
+
+  /**
+   * Avatar disimpan di ref, bukan dipakai langsung sebagai dependency effect.
+   *
+   * Kalau ia menjadi dependency, setiap `room:state` yang masuk akan melepas
+   * lalu memasang ulang SELURUH listener di tengah match — dan event yang tiba
+   * di celah itu hilang.
+   */
+  const avatarsRef = useRef(avatars);
+  useEffect(() => {
+    avatarsRef.current = avatars;
+  }, [avatars]);
 
   // Phaser menyentuh `window` saat di-import, jadi di-import dinamis di effect.
   useEffect(() => {
@@ -117,6 +139,7 @@ export function MatchView({
         payload.points,
         payload.byPlayerId === playerId,
         payload.combo,
+        avatarsRef.current.get(payload.byPlayerId) ?? null,
       );
 
     const onRejected = ({ reason }: ClickRejectedPayload) => scene()?.rejected(reason);
@@ -192,6 +215,9 @@ export function MatchView({
               entry.connected ? '' : ' scoreboard__row--gone'
             }`}
           >
+            <span className="avatarMark" aria-hidden="true">
+              {AVATAR_GLYPH[entry.avatar]}
+            </span>
             <span className="scoreboard__name">{entry.nickname}</span>
             {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}
             <span className="scoreboard__score">{entry.score}</span>
@@ -266,7 +292,11 @@ export function MatchView({
                   className={entry.playerId === playerId ? 'results__me' : undefined}
                 >
                   <span>
-                    {entry.rank}. {entry.nickname}
+                    {entry.rank}.{' '}
+                    <span className="avatarMark" aria-hidden="true">
+                      {AVATAR_GLYPH[entry.avatar]}
+                    </span>{' '}
+                    {entry.nickname}
                   </span>
                   <span>{entry.score}</span>
                   <span className="results__detail">

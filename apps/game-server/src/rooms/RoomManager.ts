@@ -1,4 +1,5 @@
-import type { RoomSettings } from '@pixelmatrix/shared';
+import type { AvatarId, RoomSettings } from '@pixelmatrix/shared';
+import { resolveAvatar } from './avatar';
 import { Room } from './Room';
 import { generateRoomCode, isValidRoomCode, normalizeRoomCode } from './roomCode';
 
@@ -28,14 +29,19 @@ export class RoomManager {
     return this.playerRooms.size;
   }
 
-  create(hostId: string, nickname: string, settings?: Partial<RoomSettings>): Room {
-    const room = new Room(this.nextCode(), hostId, nickname, settings);
+  create(
+    hostId: string,
+    nickname: string,
+    avatar: AvatarId,
+    settings?: Partial<RoomSettings>,
+  ): Room {
+    const room = new Room(this.nextCode(), hostId, nickname, avatar, settings);
     this.rooms.set(room.code, room);
     this.playerRooms.set(hostId, room.code);
     return room;
   }
 
-  join(rawCode: string, playerId: string, nickname: string): JoinResult {
+  join(rawCode: string, playerId: string, nickname: string, avatar: AvatarId): JoinResult {
     const code = normalizeRoomCode(rawCode);
     if (!isValidRoomCode(code)) return { ok: false, code: 'ROOM_NOT_FOUND' };
 
@@ -47,7 +53,7 @@ export class RoomManager {
     if (room.isFull) return { ok: false, code: 'ROOM_FULL' };
     if (room.hasNickname(nickname)) return { ok: false, code: 'NICKNAME_TAKEN' };
 
-    room.add(playerId, nickname);
+    room.add(playerId, nickname, resolveAvatar(avatar, room.takenAvatars()));
     this.playerRooms.set(playerId, room.code);
     return { ok: true, room };
   }

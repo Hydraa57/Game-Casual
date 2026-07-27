@@ -1,4 +1,5 @@
 import type {
+  AvatarId,
   Cell,
   ChaosModifier,
   Color,
@@ -43,12 +44,19 @@ export type Ack<T> =
 
 export interface CreateRoomPayload {
   readonly nickname: string;
+  readonly avatar: AvatarId;
   readonly settings?: Partial<RoomSettings>;
 }
 
 export interface JoinRoomPayload {
   readonly roomCode: string;
   readonly nickname: string;
+  /**
+   * Pilihan pemain. Server boleh MENGGANTINYA kalau sudah dipakai orang lain di
+   * room itu — avatar yang kembar akan membuat cap di sel papan tidak berarti.
+   * Nilai yang benar-benar dipakai selalu ada di `roomState`.
+   */
+  readonly avatar: AvatarId;
 }
 
 export interface UpdateSettingsPayload {
@@ -116,6 +124,7 @@ export interface TargetChangedPayload {
 export interface ScoreboardEntry {
   readonly playerId: string;
   readonly nickname: string;
+  readonly avatar: AvatarId;
   readonly score: number;
   readonly combo: number;
   readonly connected: boolean;

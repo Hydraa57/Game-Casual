@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
-import { chaosHidesGlyphs, MP_WRONG_CLICK_COOLDOWN_MS } from '@pixelmatrix/shared';
-import type { ChaosModifier, Cell, Color, Pixel } from '@pixelmatrix/shared';
+import { AVATAR_GLYPH, chaosHidesGlyphs, MP_WRONG_CLICK_COOLDOWN_MS } from '@pixelmatrix/shared';
+import type { AvatarId, ChaosModifier, Cell, Color, Pixel } from '@pixelmatrix/shared';
 import { BoardRenderer } from './BoardRenderer';
 import { BOARD_BACKGROUND } from './palette';
 import type { Sfx } from './sfx';
@@ -101,12 +101,22 @@ export class RemoteBoardScene extends Phaser.Scene {
     this.boardView.remove(pixelId, 'fade');
   }
 
-  claimed(pixelId: string, cell: Cell, points: number, byMe: boolean, combo: number): void {
+  claimed(
+    pixelId: string,
+    cell: Cell,
+    points: number,
+    byMe: boolean,
+    combo: number,
+    avatar: AvatarId | null,
+  ): void {
     this.pixels.delete(pixelId);
     this.boardView.remove(pixelId, 'pop');
     // Poin lawan tetap ditampilkan tapi diredupkan: kamu perlu tahu pixel itu
     // direbut, tanpa mengira itu poinmu.
     this.boardView.floatingScore(cell, `+${points}`, byMe ? '#fffffe' : '#a7a4c4');
+    // `avatar` null hanya kalau event datang sebelum daftar pemain sampai —
+    // capnya dilewati, tapi poin dan suaranya tetap jalan.
+    if (avatar !== null) this.boardView.claimMark(cell, AVATAR_GLYPH[avatar], byMe);
     if (byMe) this.options.sfx.correct(combo);
   }
 

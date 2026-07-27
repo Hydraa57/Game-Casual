@@ -3,11 +3,14 @@ import {
   ALL_COLORS,
   ALLOWED_TARGET_SCORES,
   ALLOWED_TIME_LIMITS_SEC,
+  AVATAR_GLYPH,
+  AVATAR_IDS,
   COLOR_GLYPH,
   COLOR_HEX,
   COLOR_UNLOCK_LEVELS,
   COMBO_MULTIPLIERS,
   KIND_GLYPH,
+  DEFAULT_AVATAR,
   DEFAULT_ROOM_SETTINGS,
   GRID_SIZE,
   INITIAL_ACTIVE_COLORS,
@@ -47,6 +50,35 @@ describe('konstanta papan & warna', () => {
     // dipindah ke ▼ dan test ini menjaga agar tabrakan serupa tidak terulang.
     const all = [...Object.values(COLOR_GLYPH), ...Object.values(KIND_GLYPH)];
     expect(new Set(all).size).toBe(all.length);
+  });
+
+  it('setiap avatar punya glyph, dan glyph-nya unik antar avatar', () => {
+    // Avatar dipakai untuk tahu SIAPA yang merebut sebuah sel. Dua avatar
+    // dengan glyph sama membuat informasi itu menyesatkan, bukan cuma
+    // membingungkan.
+    for (const id of AVATAR_IDS) {
+      expect(AVATAR_GLYPH[id]).toBeTypeOf('string');
+    }
+    const glyphs = AVATAR_IDS.map((id) => AVATAR_GLYPH[id]);
+    expect(new Set(glyphs).size).toBe(AVATAR_IDS.length);
+  });
+
+  it('glyph avatar tidak bertabrakan dengan glyph papan', () => {
+    // Avatar dicap DI ATAS papan yang penuh bentuk geometris. Kalau salah satu
+    // avatar memakai bentuk yang sama, pemain akan membacanya sebagai warna
+    // target atau pixel spesial.
+    const boardGlyphs = new Set([...Object.values(COLOR_GLYPH), ...Object.values(KIND_GLYPH)]);
+    for (const id of AVATAR_IDS) {
+      expect(boardGlyphs.has(AVATAR_GLYPH[id])).toBe(false);
+    }
+  });
+
+  it('jumlah avatar cukup untuk room yang paling penuh', () => {
+    expect(AVATAR_IDS.length).toBeGreaterThanOrEqual(MAX_PLAYERS_LIMIT);
+  });
+
+  it('avatar default ada di dalam daftar', () => {
+    expect(AVATAR_IDS).toContain(DEFAULT_AVATAR);
   });
 
   it('warna awal + jumlah unlock tepat mencapai seluruh warna', () => {

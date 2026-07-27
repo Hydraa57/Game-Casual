@@ -113,6 +113,8 @@
     "chaosBlackout": "Gelap",
     "chaosBombRain": "Hujan Bom",
     "chaosShuffle": "Acak",
-    "tapColor": "Ketuk warna"
+    "tapColor": "Ketuk warna",
+    "avatar": "Pilih karakter",
+    "avatarHint": "Karaktermu muncul di kotak yang berhasil kamu rebut."
   }
 }

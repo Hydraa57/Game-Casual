@@ -1,4 +1,4 @@
-import type { Color, PixelKind, RoomSettings } from '../types/index';
+import type { AvatarId, Color, PixelKind, RoomSettings } from '../types/index';
 
 // ---------------------------------------------------------------------------
 // Papan (GDD §2)
@@ -56,6 +56,46 @@ export const KIND_GLYPH: Record<Exclude<PixelKind, 'normal'>, string> = {
   gold: '★',
   life: '♥',
 };
+
+// ---------------------------------------------------------------------------
+// Avatar pemain (multiplayer)
+// ---------------------------------------------------------------------------
+
+/**
+ * Urutannya menentukan tampilan pemilih DAN urutan pencarian avatar pengganti
+ * saat pilihan pemain sudah dipakai orang lain di room yang sama.
+ */
+export const AVATAR_IDS = [
+  'fox',
+  'cat',
+  'frog',
+  'owl',
+  'panda',
+  'bee',
+  'shark',
+  'robot',
+] as const satisfies readonly AvatarId[];
+
+/**
+ * Emoji, bukan glyph geometris seperti COLOR_GLYPH.
+ *
+ * Alasannya justru supaya TIDAK bisa tertukar: avatar dicap di atas sel papan
+ * yang penuh bentuk ▲●■▼◆✚☠★♥, dan kalau avatarnya juga bentuk geometris,
+ * pemain akan salah membacanya sebagai warna target atau pixel spesial.
+ */
+export const AVATAR_GLYPH: Record<AvatarId, string> = {
+  fox: '🦊',
+  cat: '🐱',
+  frog: '🐸',
+  owl: '🦉',
+  panda: '🐼',
+  bee: '🐝',
+  shark: '🦈',
+  robot: '🤖',
+};
+
+/** Jumlah avatar harus ≥ MAX_PLAYERS_LIMIT — dijaga test di `game.test.ts`. */
+export const DEFAULT_AVATAR: AvatarId = 'fox';
 
 // ---------------------------------------------------------------------------
 // Skor (GDD §3)

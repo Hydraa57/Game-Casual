@@ -2,12 +2,20 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { NICKNAME_MAX_LENGTH, ROOM_CODE_LENGTH } from '@pixelmatrix/shared';
+import {
+  AVATAR_GLYPH,
+  AVATAR_IDS,
+  NICKNAME_MAX_LENGTH,
+  ROOM_CODE_LENGTH,
+} from '@pixelmatrix/shared';
+import type { AvatarId } from '@pixelmatrix/shared';
 import { isValidNickname } from '@/lib/nickname';
 
 export interface RoomEntryProps {
   readonly nickname: string;
   readonly onNicknameChange: (value: string) => void;
+  readonly avatar: AvatarId;
+  readonly onAvatarChange: (value: AvatarId) => void;
   readonly initialCode: string;
   readonly busy: boolean;
   readonly onCreate: () => void;
@@ -17,6 +25,8 @@ export interface RoomEntryProps {
 export function RoomEntry({
   nickname,
   onNicknameChange,
+  avatar,
+  onAvatarChange,
   initialCode,
   busy,
   onCreate,
@@ -45,6 +55,27 @@ export function RoomEntry({
           spellCheck={false}
         />
       </label>
+
+      <fieldset className="field avatarPicker">
+        <legend className="hud__label">{t('avatar')}</legend>
+        <div className="avatarPicker__grid">
+          {AVATAR_IDS.map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              className={`avatarPicker__option${
+                candidate === avatar ? ' avatarPicker__option--active' : ''
+              }`}
+              aria-pressed={candidate === avatar}
+              aria-label={candidate}
+              onClick={() => onAvatarChange(candidate)}
+            >
+              {AVATAR_GLYPH[candidate]}
+            </button>
+          ))}
+        </div>
+        <p className="hint">{t('avatarHint')}</p>
+      </fieldset>
 
       <button
         className="btn btn--primary btn--block"

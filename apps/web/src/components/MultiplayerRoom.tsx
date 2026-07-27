@@ -1,10 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { RoomErrorCode } from '@pixelmatrix/shared';
+import { DEFAULT_AVATAR } from '@pixelmatrix/shared';
+import type { AvatarId, RoomErrorCode } from '@pixelmatrix/shared';
 import { useRoom } from '@/hooks/useRoom';
 import { Link } from '@/i18n/navigation';
+import { readAvatar, writeAvatar } from '@/lib/avatar';
 import { readNickname, writeNickname } from '@/lib/nickname';
 import { gameServerUrl } from '@/lib/socket';
 import { MatchView } from './MatchView';
@@ -29,9 +31,13 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
   const t = useTranslations('room');
   const room = useRoom();
   const [nickname, setNickname] = useState('');
+  // Dibaca di effect, bukan saat inisialisasi state: localStorage tidak ada
+  // saat render di server.
+  const [avatar, setAvatar] = useState<AvatarId>(DEFAULT_AVATAR);
 
   useEffect(() => {
     setNickname(readNickname());
+    setAvatar(readAvatar());
   }, []);
 
   const remember = useCallback((value: string) => {
@@ -39,15 +45,27 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
     writeNickname(value.trim());
   }, []);
 
+  const rememberAvatar = useCallback((value: AvatarId) => {
+    setAvatar(value);
+    writeAvatar(value);
+  }, []);
+
   const create = useCallback(() => {
-    void room.createRoom(nickname.trim());
-  }, [room, nickname]);
+    void room.createRoom(nickname.trim(), avatar);
+  }, [room, nickname, avatar]);
 
   const join = useCallback(
     (code: string) => {
-      void room.joinRoom(code, nickname.trim());
+      void room.joinRoom(code, nickname.trim(), avatar);
     },
-    [room, nickname],
+    [room, nickname, avatar],
+  );
+
+  // Avatar yang BENAR-BENAR dipakai tiap pemain datang dari server, bukan dari
+  // pilihan lokal: server boleh menggantinya kalau sudah diambil orang lain.
+  const avatars = useMemo(
+    () => new Map((room.room?.players ?? []).map((player) => [player.id, player.avatar])),
+    [room.room],
   );
 
   return (
@@ -77,6 +95,8 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
         <RoomEntry
           nickname={nickname}
           onNicknameChange={remember}
+          avatar={avatar}
+          onAvatarChange={rememberAvatar}
           initialCode={initialCode}
           busy={room.busy || room.status !== 'online'}
           onCreate={create}
@@ -96,6 +116,7 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
         <MatchView
           socket={room.socket}
           playerId={room.playerId}
+          avatars={avatars}
           targetScore={room.room.settings.targetScore}
           onLeave={room.leaveRoom}
           onBackToLobby={room.backToLobby}

@@ -69,6 +69,11 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 
 > **Ini fase paling bernilai di seluruh roadmap.** Riset pembanding menemukan bahwa solo mode punya banyak saingan yang sudah rilis (Tappy Tiles Colors Rush praktis game yang sama), sementara kombinasi "browser + kode room + 2-4 HP terpisah + satu papan rebutan" tidak ditemukan padanannya. Kalau harus memilih satu fase untuk diselesaikan, ini yang dipilih.
 
+**Ditambahkan setelah playtest pertama di HP (di luar rencana awal):**
+
+- [x] **Indikator warna target di multiplayer** — versi pertama tidak menampilkannya sama sekali, jadi pemain harus menebak warna mana yang benar. Bug, bukan fitur yang tertunda
+- [x] **Avatar pemain** (8 karakter) yang dicap di sel yang berhasil direbut, supaya terasa memperebutkan papan yang sama dan bukan main sendiri-sendiri. Lihat [GAME-DESIGN §5](./GAME-DESIGN.md)
+
 **Dua deviasi dari rencana awal, keduanya disengaja:**
 
 1. **Route-nya `/play/room` dengan `?code=`, bukan `/play/room/[code]`.** Pindah route berarti memutus socket dan join ulang — pemain yang baru masuk lobby akan langsung terlempar keluar lagi. Kode room tetap muncul di URL untuk link undangan, tapi hanya sebagai query.

@@ -1,5 +1,6 @@
 import {
   ALLOWED_TARGET_SCORES,
+  AVATAR_IDS,
   ALLOWED_TIME_LIMITS_SEC,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
@@ -24,6 +25,13 @@ const nickname = z
   // Tanpa karakter kontrol supaya nickname tidak bisa merusak tampilan HUD.
   .regex(/^[\p{L}\p{N} _.-]+$/u);
 
+/**
+ * Avatar dibatasi ke daftar yang dikenal, bukan string bebas. Kalau tidak,
+ * client bisa mengirim teks apa pun dan teks itu akan dicap di papan pemain
+ * lain — jalan pintas paling gampang untuk merusak tampilan orang.
+ */
+const avatar = z.enum(AVATAR_IDS);
+
 const settings = z
   .object({
     maxPlayers: z.number().int().min(MIN_PLAYERS_TO_START).max(MAX_PLAYERS_LIMIT).optional(),
@@ -32,13 +40,14 @@ const settings = z
   })
   .optional();
 
-export const createRoomSchema = z.object({ nickname, settings });
+export const createRoomSchema = z.object({ nickname, avatar, settings });
 
 export const joinRoomSchema = z.object({
   // Panjangnya lebih longgar dari 6 karena kode dinormalisasi dulu (spasi/tanda
   // hubung dibuang) sebelum diuji sah atau tidak.
   roomCode: z.string().trim().min(1).max(24),
   nickname,
+  avatar,
 });
 
 export const updateSettingsSchema = z.object({

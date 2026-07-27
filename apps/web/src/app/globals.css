@@ -655,3 +655,49 @@ h3 {
 .controls .btn {
   flex: 1;
 }
+
+/* --------------------------------------------------------------- avatar */
+
+.avatarPicker {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.avatarPicker__grid {
+  display: grid;
+  /* Empat kolom di HP sempit, delapan kalau ada ruang — tanpa media query. */
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.avatarPicker__option {
+  /* 56px: di atas ambang 44px yang nyaman ditekan jempol di HP. */
+  min-height: 56px;
+  font-size: 1.75rem;
+  line-height: 1;
+  background: var(--surface-raised);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  /* Emoji tidak boleh ikut memilih ulang saat ditekan lama di HP. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.avatarPicker__option--active {
+  border-color: var(--accent);
+  background: var(--surface);
+  transform: scale(1.06);
+}
+
+.avatarMark {
+  /* Emoji punya baseline sendiri; inline-block menjaga barisnya tidak bergeser. */
+  display: inline-block;
+  font-size: 1.1em;
+  line-height: 1;
+  margin-right: 6px;
+  vertical-align: -0.1em;
+}

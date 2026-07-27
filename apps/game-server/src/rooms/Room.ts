@@ -3,11 +3,12 @@ import {
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
-import type { Player, RoomSettings, RoomState, RoomStatus } from '@pixelmatrix/shared';
+import type { AvatarId, Player, RoomSettings, RoomState, RoomStatus } from '@pixelmatrix/shared';
 
 export interface RoomPlayer {
   readonly id: string;
   nickname: string;
+  avatar: AvatarId;
   isReady: boolean;
   connected: boolean;
 }
@@ -29,6 +30,7 @@ export class Room {
     code: string,
     hostId: string,
     hostNickname: string,
+    hostAvatar: AvatarId,
     settings?: Partial<RoomSettings>,
   ) {
     this.code = code;
@@ -37,6 +39,7 @@ export class Room {
     this.players.set(hostId, {
       id: hostId,
       nickname: hostNickname,
+      avatar: hostAvatar,
       isReady: false,
       connected: true,
     });
@@ -87,8 +90,13 @@ export class Room {
     return this.allPlayers().some((player) => player.nickname.trim().toLowerCase() === wanted);
   }
 
-  add(playerId: string, nickname: string): void {
-    this.players.set(playerId, { id: playerId, nickname, isReady: false, connected: true });
+  /** Avatar yang sudah dipakai di room ini — dipakai untuk menjaga keunikannya. */
+  takenAvatars(): readonly AvatarId[] {
+    return this.allPlayers().map((player) => player.avatar);
+  }
+
+  add(playerId: string, nickname: string, avatar: AvatarId): void {
+    this.players.set(playerId, { id: playerId, nickname, avatar, isReady: false, connected: true });
   }
 
   /**
@@ -135,6 +143,7 @@ export class Room {
     const players: Player[] = this.allPlayers().map((player) => ({
       id: player.id,
       nickname: player.nickname,
+      avatar: player.avatar,
       isHost: player.id === this.hostId,
       isReady: player.isReady,
       score: scores.get(player.id)?.score ?? 0,

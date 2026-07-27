@@ -47,7 +47,12 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     // Satu socket hanya boleh berada di satu room; tinggalkan yang lama dulu.
     leaveCurrentRoom(socket, deps);
 
-    const room = rooms.create(socket.id, parsed.data.nickname, parsed.data.settings);
+    const room = rooms.create(
+      socket.id,
+      parsed.data.nickname,
+      parsed.data.avatar,
+      parsed.data.settings,
+    );
     void socket.join(room.code);
     ack(succeed({ roomCode: room.code, playerId: socket.id, roomState: stateOf(room, match) }));
     broadcastState(room);
@@ -61,7 +66,12 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     }
     leaveCurrentRoom(socket, deps);
 
-    const result = rooms.join(parsed.data.roomCode, socket.id, parsed.data.nickname);
+    const result = rooms.join(
+      parsed.data.roomCode,
+      socket.id,
+      parsed.data.nickname,
+      parsed.data.avatar,
+    );
     if (!result.ok) {
       ack(fail(result.code));
       return;

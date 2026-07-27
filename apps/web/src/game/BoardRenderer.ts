@@ -111,6 +111,43 @@ export class BoardRenderer {
     });
   }
 
+  /**
+   * Cap avatar di sel yang baru direbut — inti dari "rasa main bareng".
+   *
+   * Ditahan sebentar sebelum memudar (bukan langsung naik seperti angka poin)
+   * supaya pemain punya waktu membacanya: yang ingin diketahui bukan "ada poin
+   * keluar", tapi "SIAPA yang menyerobot pixel itu".
+   */
+  claimMark(cell: Cell, glyph: string, byMe: boolean): void {
+    const mark = this.scene.add.text(
+      cell.col * CELL + CELL / 2,
+      cell.row * CELL + CELL / 2,
+      glyph,
+      { fontFamily: 'sans-serif', fontSize: `${Math.round(CELL * 0.62)}px` },
+    );
+    mark.setOrigin(0.5);
+    // Cap sendiri lebih tegas daripada cap lawan: kamu perlu bisa membedakan
+    // keduanya dalam sekejap tanpa membaca nama.
+    mark.setAlpha(byMe ? 1 : 0.75);
+    mark.setScale(byMe ? 0.6 : 0.5);
+
+    this.scene.tweens.add({
+      targets: mark,
+      scale: byMe ? 1 : 0.85,
+      duration: 140,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: mark,
+          alpha: 0,
+          delay: 260,
+          duration: 240,
+          onComplete: () => mark.destroy(),
+        });
+      },
+    });
+  }
+
   /** Pixel meredup seiring umurnya, jadi urgensi terlihat tanpa perlu timer. */
   refreshFade(pixels: readonly Pixel[], elapsedMs: number): void {
     for (const pixel of pixels) {

@@ -151,6 +151,21 @@ Semua pemain melihat **papan yang sama** dan berebut pixel yang sama. **Server o
 - Server melakukan **rate limit ~8 klik/detik/pemain** — klik berlebih diabaikan (mitigasi spam & cheat, sesuai analisis risiko PRD).
 - Combo dan speed bonus berlaku sama seperti solo.
 
+### Avatar & umpan balik "siapa yang merebut"
+
+Ditambahkan setelah playtest pertama di HP. Keluhannya: papannya terasa seperti main sendiri-sendiri, karena tidak ada tanda apa pun bahwa pixel yang hilang itu direbut orang lain.
+
+- Sebelum masuk room, pemain memilih satu dari **8 avatar** (🦊 🐱 🐸 🦉 🐼 🐝 🦈 🤖). Pilihannya diingat di `localStorage`.
+- Saat sebuah pixel diklaim, **glyph avatar perebutnya dicap di sel itu** selama ±0,6 detik. Cap sendiri tampil penuh dan lebih besar; cap lawan diredupkan — supaya bisa dibedakan sekejap tanpa membaca nama.
+- Avatar juga tampil di daftar lobby, leaderboard, dan layar hasil.
+
+Dua aturan yang tidak boleh dilanggar:
+
+1. **Avatar wajib unik dalam satu room.** Kalau kembar, cap di sel berhenti menjawab "siapa" dan justru menyesatkan. Kalau pilihan pemain sudah diambil, server **menggantinya** dengan avatar bebas pertama — bukan menolak join. Menolak hanya karena teman lebih dulu menekan tombol yang sama itu gesekan yang tidak ada gunanya di tongkrongan. Avatar yang benar-benar dipakai selalu dikirim balik lewat `room:state`.
+2. **Avatar memakai emoji, bukan bentuk geometris.** Capnya muncul di atas papan yang sudah penuh ▲●■▼◆✚☠★♥; avatar berbentuk geometris akan terbaca sebagai warna target atau pixel spesial. Dijaga oleh test tabrakan glyph di `constants/game.test.ts`.
+
+Avatar tidak dikirim di dalam `game:pixelClaimed`. Client memetakan `byPlayerId` → avatar dari `room:state`, supaya jalur terpanas permainan tetap ringan.
+
 ### Pengaturan room (dipilih host)
 
 | Setting | Pilihan | Default |

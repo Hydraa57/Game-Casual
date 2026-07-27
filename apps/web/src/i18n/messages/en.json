@@ -113,6 +113,8 @@
     "chaosBlackout": "Blackout",
     "chaosBombRain": "Bomb Rain",
     "chaosShuffle": "Shuffle",
-    "tapColor": "Tap this colour"
+    "tapColor": "Tap this colour",
+    "avatar": "Pick a character",
+    "avatarHint": "Your character appears on tiles you claim."
   }
 }

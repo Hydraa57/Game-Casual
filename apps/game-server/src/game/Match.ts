@@ -13,6 +13,7 @@ import {
   SUDDEN_DEATH_LIFETIME_MS,
 } from '@pixelmatrix/shared';
 import type {
+  AvatarId,
   GameConfig,
   GameEvent,
   GameState,
@@ -28,6 +29,7 @@ type MatchStatus = 'countdown' | 'running' | 'suddenDeath' | 'ended';
 
 interface PlayerStats {
   nickname: string;
+  avatar: AvatarId;
   score: ScoreState;
 }
 
@@ -61,6 +63,7 @@ export class Match {
     for (const player of room.allPlayers()) {
       this.players.set(player.id, {
         nickname: player.nickname,
+        avatar: player.avatar,
         score: createScoreState(null),
       });
     }
@@ -339,6 +342,7 @@ export class Match {
       scoreboard: [...this.players.entries()].map(([id, player]) => ({
         playerId: id,
         nickname: player.nickname,
+        avatar: player.avatar,
         score: player.score.score,
         combo: player.score.combo,
         connected: this.room.has(id),
@@ -357,6 +361,7 @@ export class Match {
         return {
           playerId: id,
           nickname: player.nickname,
+          avatar: player.avatar,
           score: player.score.score,
           rank: 0,
           accuracy: total === 0 ? 1 : player.score.correctClicks / total,

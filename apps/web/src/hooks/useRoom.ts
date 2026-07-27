@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Ack, RoomErrorCode, RoomSettings, RoomState } from '@pixelmatrix/shared';
+import type { Ack, AvatarId, RoomErrorCode, RoomSettings, RoomState } from '@pixelmatrix/shared';
 import { createSocket } from '@/lib/socket';
 import type { GameSocket } from '@/lib/socket';
 
@@ -14,8 +14,12 @@ export interface UseRoom {
   readonly errorCode: RoomErrorCode | null;
   readonly busy: boolean;
   readonly socket: GameSocket | null;
-  createRoom(nickname: string, settings?: Partial<RoomSettings>): Promise<boolean>;
-  joinRoom(code: string, nickname: string): Promise<boolean>;
+  createRoom(
+    nickname: string,
+    avatar: AvatarId,
+    settings?: Partial<RoomSettings>,
+  ): Promise<boolean>;
+  joinRoom(code: string, nickname: string, avatar: AvatarId): Promise<boolean>;
   leaveRoom(): void;
   backToLobby(): void;
   setReady(ready: boolean): void;
@@ -83,9 +87,9 @@ export function useRoom(): UseRoom {
   );
 
   const createRoom = useCallback(
-    async (nickname: string, settings?: Partial<RoomSettings>) => {
+    async (nickname: string, avatar: AvatarId, settings?: Partial<RoomSettings>) => {
       const result = await request<{ roomCode: string; playerId: string; roomState: RoomState }>(
-        (socket, resolve) => socket.emit('room:create', { nickname, settings }, resolve),
+        (socket, resolve) => socket.emit('room:create', { nickname, avatar, settings }, resolve),
       );
       if (!result?.ok) return false;
       setPlayerId(result.data.playerId);
@@ -96,9 +100,10 @@ export function useRoom(): UseRoom {
   );
 
   const joinRoom = useCallback(
-    async (code: string, nickname: string) => {
+    async (code: string, nickname: string, avatar: AvatarId) => {
       const result = await request<{ roomCode: string; playerId: string; roomState: RoomState }>(
-        (socket, resolve) => socket.emit('room:join', { roomCode: code, nickname }, resolve),
+        (socket, resolve) =>
+          socket.emit('room:join', { roomCode: code, nickname, avatar }, resolve),
       );
       if (!result?.ok) return false;
       setPlayerId(result.data.playerId);
