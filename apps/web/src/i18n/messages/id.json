@@ -115,6 +115,8 @@
     "chaosShuffle": "Acak",
     "tapColor": "Ketuk warna",
     "avatar": "Pilih karakter",
-    "avatarHint": "Karaktermu muncul di kotak yang berhasil kamu rebut."
+    "avatarHint": "Karaktermu muncul di kotak yang berhasil kamu rebut.",
+    "muteOn": "Bunyi: nyala",
+    "muteOff": "Bunyi: mati"
   }
 }

@@ -35,6 +35,17 @@ export function comboMultiplier(combo: number): number {
 }
 
 /**
+ * Apakah combo ini layak dirayakan dengan popup.
+ *
+ * Dipakai bersama oleh solo dan multiplayer supaya "rasa"-nya sama. Dibatasi ke
+ * kelipatan COMBO_STEP, bukan tiap klik benar: popup yang muncul terus-menerus
+ * berhenti terasa sebagai pencapaian dan malah menghalangi pandangan ke papan.
+ */
+export function isComboMilestone(combo: number): boolean {
+  return combo > 0 && combo % COMBO_STEP === 0;
+}
+
+/**
  * Bonus karena bertahan di level tinggi: ×1 di Lv 1 naik mulus sampai ×2 di
  * Lv 20, lalu berhenti di sana.
  */

@@ -9,6 +9,8 @@ import { GRID_LINE, pixelStyle } from './palette';
 export const BOARD_SIZE = 640;
 export const CELL = BOARD_SIZE / GRID_SIZE;
 const PIXEL_INSET = 6;
+const PARTICLE_TEXTURE = 'pm-particle';
+const PARTICLE_COUNT = 10;
 
 interface PixelView {
   readonly rect: Phaser.GameObjects.Rectangle;
@@ -24,6 +26,8 @@ interface PixelView {
  */
 export class BoardRenderer {
   private readonly views = new Map<string, PixelView>();
+  /** Tekstur partikel dibuat sekali per scene, bukan per ledakan. */
+  private particleTextureReady = false;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -112,6 +116,58 @@ export class BoardRenderer {
   }
 
   /**
+   * Semburan partikel di sel yang baru diklaim.
+   *
+   * Teksturnya dibuat program, bukan file gambar: satu kotak putih 8×8 yang
+   * diwarnai lewat tint. Menambah aset unduhan cuma untuk ini akan melawan
+   * target load < 3 detik di jaringan seluler (NFR).
+   */
+  burstAt(pixelId: string, cell: Cell): void {
+    // Warna diambil dari view yang sedang tampil, bukan dari event: baik engine
+    // solo maupun payload server tidak membawa warna di event klaim, dan
+    // menambahkannya di sana berarti melebarkan kontrak cuma demi efek visual.
+    const tint = this.views.get(pixelId)?.rect.fillColor ?? 0xffffff;
+    this.burst(cell, tint);
+  }
+
+  burst(cell: Cell, tint: number): void {
+    if (!this.particleTextureReady) {
+      const key = PARTICLE_TEXTURE;
+      if (!this.scene.textures.exists(key)) {
+        const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
+        graphics.fillStyle(0xffffff, 1);
+        graphics.fillRect(0, 0, 8, 8);
+        graphics.generateTexture(key, 8, 8);
+        graphics.destroy();
+      }
+      this.particleTextureReady = true;
+    }
+
+    const emitter = this.scene.add.particles(
+      cell.col * CELL + CELL / 2,
+      cell.row * CELL + CELL / 2,
+      PARTICLE_TEXTURE,
+      {
+        // Sedikit dan pendek: papan ini dilihat di layar HP, dan partikel yang
+        // berlebihan justru menutupi pixel berikutnya yang harus diketuk.
+        lifespan: 380,
+        speed: { min: 70, max: 190 },
+        // Papan 640px internal menyusut ke ~360px di layar HP, jadi partikel
+        // berukuran "wajar" di koordinat internal jadi bintik tak terbaca.
+        scale: { start: 1.8, end: 0 },
+        alpha: { start: 1, end: 0 },
+        tint,
+        quantity: PARTICLE_COUNT,
+        emitting: false,
+      },
+    );
+    emitter.explode(PARTICLE_COUNT);
+    // Emitter dibuang setelah partikel terakhir mati; kalau tidak, satu ronde
+    // panjang meninggalkan ratusan emitter menganggur di scene.
+    this.scene.time.delayedCall(400, () => emitter.destroy());
+  }
+
+  /**
    * Cap avatar di sel yang baru direbut — inti dari "rasa main bareng".
    *
    * Ditahan sebentar sebelum memudar (bukan langsung naik seperti angka poin)
@@ -143,6 +199,43 @@ export class BoardRenderer {
           delay: 260,
           duration: 240,
           onComplete: () => mark.destroy(),
+        });
+      },
+    });
+  }
+
+  /**
+   * Popup combo di tengah papan, hanya pada kelipatan tertentu.
+   *
+   * Dibatasi ke milestone (bukan tiap klik benar) dengan sengaja: kalau muncul
+   * terus-menerus ia berhenti terasa sebagai pencapaian dan mulai menghalangi
+   * pandangan ke papan.
+   */
+  comboPopup(combo: number): void {
+    const label = this.scene.add.text(BOARD_SIZE / 2, BOARD_SIZE / 2, `COMBO ×${combo}`, {
+      fontFamily: 'monospace',
+      fontSize: '46px',
+      color: '#ffb703',
+      fontStyle: 'bold',
+    });
+    label.setOrigin(0.5);
+    label.setAlpha(0);
+    label.setScale(0.6);
+
+    this.scene.tweens.add({
+      targets: label,
+      alpha: 1,
+      scale: 1.15,
+      duration: 160,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: label,
+          alpha: 0,
+          scale: 1.4,
+          delay: 220,
+          duration: 260,
+          onComplete: () => label.destroy(),
         });
       },
     });

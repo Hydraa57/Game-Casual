@@ -29,6 +29,7 @@ export type { RandomResult } from './rng';
 export {
   applyPenalty,
   comboMultiplier,
+  isComboMilestone,
   levelBonusMultiplier,
   pointsForClick,
   remainingRatio,

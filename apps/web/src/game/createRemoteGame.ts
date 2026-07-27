@@ -6,6 +6,7 @@ import { Sfx } from './sfx';
 export interface RemoteController {
   readonly scene: RemoteBoardScene;
   unlockAudio(): void;
+  setMuted(muted: boolean): void;
   destroy(): void;
 }
 
@@ -36,6 +37,7 @@ export function createRemoteGame({
   return {
     scene,
     unlockAudio: () => sfx.unlock(),
+    setMuted: (muted: boolean) => sfx.setMuted(muted),
     destroy: () => {
       sfx.dispose();
       game.destroy(true);

@@ -205,12 +205,21 @@ Semua ini muncul dari pertanyaan yang tidak terjawab oleh rencana awal, dan seng
 9. **Tick 20 Hz, siaran skor 4 Hz.** Papan disimulasikan tiap `SERVER_TICK_MS` (50 ms) supaya spawn/expire presisi, tapi leaderboard hanya dikirim tiap `MP_TICK_BROADCAST_MS` (250 ms) — cukup untuk mata, jauh lebih hemat di jaringan seluler.
 10. **Waktu spawn diselaraskan ulang di client.** Pixel dari server dicatat memakai jam scene lokal, supaya animasi memudarnya tetap benar walau `elapsedMs` server dan client tidak persis sama.
 
-## 6. Game Feel / Juice (Fase 4)
+## 6. Game Feel / Juice
 
-- Partikel burst + SFX "ding" chiptune saat klik benar; nada naik seiring combo.
-- Screen shake kecil + flash merah saat klik salah.
-- Popup teks combo ("×1.5!", "×2!") dan popup poin melayang di posisi klik.
-- SFX via jsfxr / asset chiptune gratis; BGM opsional dengan toggle mute.
+- [x] Partikel burst + SFX chiptune saat klik benar; nada naik seiring combo.
+- [x] Screen shake kecil + flash merah saat klik salah; getar (`navigator.vibrate`) di HP.
+- [x] Popup poin melayang di posisi klik, dan popup combo di tengah papan.
+- [x] Toggle mute — **satu preferensi untuk solo dan multiplayer**, disimpan di `localStorage`.
+- [ ] BGM (belum ada; SFX saja untuk sekarang).
+
+Tiga keputusan yang diambil saat mengerjakannya:
+
+1. **Tidak ada satu pun file aset.** SFX dibangkitkan WebAudio, tekstur partikel digambar program saat runtime. Menambah unduhan hanya demi efek akan melawan target load < 3 detik di jaringan seluler (NFR).
+2. **Popup combo hanya di kelipatan 5**, bukan tiap klik benar — dan kelipatan itu dipilih karena selaras dengan tangga multiplier, jadi popup-nya menandai sesuatu yang benar-benar berubah. Kalau muncul terus-menerus, ia berhenti terasa sebagai pencapaian dan mulai menghalangi pandangan ke papan.
+3. **Di multiplayer, popup combo hanya untuk combo sendiri.** Combo lawan yang menutupi papanmu adalah hukuman untuk pemain yang sedang tertinggal — persis kebalikan dari yang seharusnya.
+
+Ukuran partikel disetel di koordinat papan internal (640px) yang menyusut ke ~360px di layar HP; nilai yang terlihat wajar saat mengembangkan di desktop menjadi bintik tak terbaca di HP.
 
 ## 7. Mobile & Touch (wajib, bukan opsional)
 

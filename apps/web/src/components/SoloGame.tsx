@@ -7,6 +7,7 @@ import type { HudSnapshot } from '@/game/hudSnapshot';
 import type { SoloController } from '@/game/createSoloGame';
 import { Link } from '@/i18n/navigation';
 import { readHighScore, writeHighScore } from '@/lib/highScore';
+import { readMuted, writeMuted } from '@/lib/mute';
 import { Hud } from './Hud';
 
 export function SoloGame({ startLevel }: { startLevel?: number }) {
@@ -21,6 +22,7 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
 
   useEffect(() => {
     setHighScore(readHighScore());
+    setMuted(readMuted());
   }, []);
 
   // Phaser menyentuh `window` saat di-import, jadi di-import dinamis di dalam
@@ -32,6 +34,8 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
     void import('@/game/createSoloGame').then(({ createSoloGame }) => {
       if (disposed || !boardRef.current) return;
       controller = createSoloGame({ parent: boardRef.current, onHud: setSnapshot, startLevel });
+      // Preferensi bunyi dibaca sebelum controller ada, jadi diterapkan di sini.
+      controller.setMuted(readMuted());
       controllerRef.current = controller;
     });
 
@@ -72,6 +76,7 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
     setMuted((current) => {
       const next = !current;
       controllerRef.current?.setMuted(next);
+      writeMuted(next);
       return next;
     });
   }, []);

@@ -20,6 +20,7 @@ import type {
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
 import { cssColor } from '@/game/palette';
+import { readMuted, writeMuted } from '@/lib/mute';
 import type { GameSocket } from '@/lib/socket';
 
 const CHAOS_LABEL: Record<ChaosModifier, string> = {
@@ -67,6 +68,11 @@ export function MatchView({
   const [result, setResult] = useState<MatchEndedPayload | null>(null);
   const [targetColors, setTargetColors] = useState<readonly Color[]>([]);
   const [targetImminent, setTargetImminent] = useState(false);
+  const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    setMuted(readMuted());
+  }, []);
 
   /**
    * Avatar disimpan di ref, bukan dipakai langsung sebagai dependency effect.
@@ -91,6 +97,9 @@ export function MatchView({
         parent: boardRef.current,
         onTapPixel: (pixelId) => socket.emit('game:click', { pixelId, clientTs: Date.now() }),
       });
+      // Preferensi bunyi dibagi dengan solo mode: pemain yang sudah mematikan
+      // bunyi di sana tidak seharusnya dikejutkan saat masuk multiplayer.
+      controller.setMuted(readMuted());
       controllerRef.current = controller;
     });
 
@@ -194,6 +203,15 @@ export function MatchView({
       socket.off('game:ended', onEnded);
     };
   }, [socket, playerId]);
+
+  const toggleMute = useCallback(() => {
+    setMuted((current) => {
+      const next = !current;
+      controllerRef.current?.setMuted(next);
+      writeMuted(next);
+      return next;
+    });
+  }, []);
 
   // Hasil dibersihkan lokal DAN room dikembalikan ke lobby: server menahan room
   // di `finished` sampai pemain menutup layar ini sendiri.
@@ -312,9 +330,14 @@ export function MatchView({
         )}
       </div>
 
-      <button className="btn btn--small" type="button" onClick={onLeave}>
-        {t('leaveRoom')}
-      </button>
+      <div className="controls">
+        <button className="btn btn--small" type="button" onClick={toggleMute}>
+          {muted ? t('muteOff') : t('muteOn')}
+        </button>
+        <button className="btn btn--small" type="button" onClick={onLeave}>
+          {t('leaveRoom')}
+        </button>
+      </div>
     </div>
   );
 }

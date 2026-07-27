@@ -10,6 +10,7 @@ import type { Pixel } from '../types/index';
 import {
   applyPenalty,
   comboMultiplier,
+  isComboMilestone,
   levelBonusMultiplier,
   pointsForClick,
   remainingRatio,
@@ -50,6 +51,28 @@ describe('speedBonus', () => {
   it('nilai di luar 0..1 tetap dijepit', () => {
     expect(speedBonus(-5)).toBe(0);
     expect(speedBonus(5)).toBe(MAX_SPEED_BONUS);
+  });
+});
+
+describe('isComboMilestone', () => {
+  it('menandai kelipatan COMBO_STEP, bukan setiap klik benar', () => {
+    expect(isComboMilestone(5)).toBe(true);
+    expect(isComboMilestone(10)).toBe(true);
+    expect(isComboMilestone(4)).toBe(false);
+    expect(isComboMilestone(6)).toBe(false);
+  });
+
+  it('combo nol bukan milestone', () => {
+    // Combo di-reset ke 0 setiap klik salah; kalau 0 dihitung milestone, popup
+    // justru muncul saat pemain baru saja gagal.
+    expect(isComboMilestone(0)).toBe(false);
+  });
+
+  it('milestone selaras dengan tangga multiplier', () => {
+    // Popup pertama harus jatuh tepat saat multiplier benar-benar naik —
+    // merayakan sesuatu yang tidak mengubah apa pun akan terasa kosong.
+    expect(comboMultiplier(5)).toBeGreaterThan(comboMultiplier(4));
+    expect(isComboMilestone(5)).toBe(true);
   });
 });
 

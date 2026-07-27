@@ -10,6 +10,7 @@ import {
   createGameState,
   currentLevel,
   chaosHidesGlyphs,
+  isComboMilestone,
   chaosModifierFor,
   isAtMaxLevel,
   isTargetChangeImminent,
@@ -156,8 +157,12 @@ export class BoardScene extends Phaser.Scene {
           break;
 
         case 'pixelClaimed':
+          // Semburan dipanggil SEBELUM remove: warnanya dibaca dari view yang
+          // masih ada di papan.
+          this.boardView.burstAt(event.pixelId, event.cell);
           this.boardView.remove(event.pixelId, 'pop');
           this.boardView.floatingScore(event.cell, `+${event.points}`);
+          if (isComboMilestone(event.combo)) this.boardView.comboPopup(event.combo);
           this.options.sfx.correct(event.combo);
           break;
 

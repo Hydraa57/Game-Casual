@@ -1,5 +1,10 @@
 import * as Phaser from 'phaser';
-import { AVATAR_GLYPH, chaosHidesGlyphs, MP_WRONG_CLICK_COOLDOWN_MS } from '@pixelmatrix/shared';
+import {
+  AVATAR_GLYPH,
+  chaosHidesGlyphs,
+  isComboMilestone,
+  MP_WRONG_CLICK_COOLDOWN_MS,
+} from '@pixelmatrix/shared';
 import type { AvatarId, ChaosModifier, Cell, Color, Pixel } from '@pixelmatrix/shared';
 import { BoardRenderer } from './BoardRenderer';
 import { BOARD_BACKGROUND } from './palette';
@@ -110,6 +115,9 @@ export class RemoteBoardScene extends Phaser.Scene {
     avatar: AvatarId | null,
   ): void {
     this.pixels.delete(pixelId);
+    // Semburan dipanggil SEBELUM remove: warnanya dibaca dari view yang masih
+    // ada di papan.
+    this.boardView.burstAt(pixelId, cell);
     this.boardView.remove(pixelId, 'pop');
     // Poin lawan tetap ditampilkan tapi diredupkan: kamu perlu tahu pixel itu
     // direbut, tanpa mengira itu poinmu.
@@ -117,7 +125,12 @@ export class RemoteBoardScene extends Phaser.Scene {
     // `avatar` null hanya kalau event datang sebelum daftar pemain sampai —
     // capnya dilewati, tapi poin dan suaranya tetap jalan.
     if (avatar !== null) this.boardView.claimMark(cell, AVATAR_GLYPH[avatar], byMe);
-    if (byMe) this.options.sfx.correct(combo);
+    if (!byMe) return;
+
+    this.options.sfx.correct(combo);
+    // Popup combo HANYA untuk combo sendiri. Combo lawan tidak boleh menutupi
+    // papanmu — itu hukuman untuk pemain yang sedang tertinggal.
+    if (isComboMilestone(combo)) this.boardView.comboPopup(combo);
   }
 
   rejected(reason: 'wrongColor' | 'tooLate' | 'notFound' | 'rateLimited' | 'notRunning'): void {
