@@ -3,6 +3,8 @@ dist/
 build/
 # Klien Prisma dibangkitkan dari schema.prisma; jangan di-commit.
 packages/db/generated/
+# Salinan binary engine untuk bundle Next (scripts/copy-prisma-engine.mjs).
+apps/web/generated/
 .next/
 out/
 coverage/
