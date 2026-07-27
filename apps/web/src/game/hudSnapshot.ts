@@ -25,6 +25,11 @@ export interface HudSnapshot {
   readonly chaos: ChaosModifier | null;
   readonly targetImminent: boolean;
   readonly accuracy: number;
+  /**
+   * Lama ronde berjalan. Dipakai server untuk menolak skor yang mustahil saat
+   * dikirim ke akun — bukan untuk ditampilkan.
+   */
+  readonly elapsedMs: number;
   /** Level checkpoint terakhir yang tersentuh; `null` kalau belum ada. */
   readonly checkpointLevel: number | null;
   readonly continuesLeft: number;
@@ -46,6 +51,7 @@ export const INITIAL_SNAPSHOT: HudSnapshot = {
   chaos: null,
   targetImminent: false,
   accuracy: 1,
+  elapsedMs: 0,
   checkpointLevel: null,
   continuesLeft: MAX_CONTINUES,
   canContinue: false,

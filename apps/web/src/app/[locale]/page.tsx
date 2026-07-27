@@ -46,6 +46,10 @@ function Landing({ locale }: { locale: Locale }) {
         </Link>
       </div>
 
+      <Link className="btn btn--block" href="/leaderboard">
+        {t('leaderboard')}
+      </Link>
+
       <Link className="btn btn--small" href="/" locale={otherLocale}>
         {t('switchLanguage')}
       </Link>

@@ -241,6 +241,7 @@ export class BoardScene extends Phaser.Scene {
       chaos: chaosModifierFor(board.chaosSeed, board.level),
       targetImminent: status === 'running' && isTargetChangeImminent(this.gameState),
       accuracy: totalClicks === 0 ? 1 : score.correctClicks / totalClicks,
+      elapsedMs: this.gameState.elapsedMs,
       checkpointLevel: this.gameState.checkpoint?.level ?? null,
       continuesLeft: this.gameState.continuesLeft,
       canContinue: canContinue(this.gameState),

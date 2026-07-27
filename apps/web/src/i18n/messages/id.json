@@ -17,7 +17,8 @@
     "playSolo": "Main Solo",
     "playMultiplayer": "Main Bareng Teman",
     "comingSoon": "segera",
-    "switchLanguage": "English"
+    "switchLanguage": "English",
+    "leaderboard": "Papan Skor"
   },
   "solo": {
     "title": "Solo",
@@ -149,5 +150,13 @@
       "badRequest": "Ada yang salah. Coba lagi.",
       "network": "Gagal menghubungi server. Cek koneksimu."
     }
+  },
+  "leaderboard": {
+    "title": "Papan Skor",
+    "subtitle": "Rekor solo tertinggi. Cuma pemain dengan akun yang masuk daftar.",
+    "back": "Kembali",
+    "loading": "Memuat…",
+    "error": "Gagal memuat papan skor.",
+    "empty": "Belum ada yang mencetak skor. Jadilah yang pertama!"
   }
 }

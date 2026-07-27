@@ -17,7 +17,8 @@
     "playSolo": "Play Solo",
     "playMultiplayer": "Play With Friends",
     "comingSoon": "soon",
-    "switchLanguage": "Bahasa Indonesia"
+    "switchLanguage": "Bahasa Indonesia",
+    "leaderboard": "Leaderboard"
   },
   "solo": {
     "title": "Solo",
@@ -149,5 +150,13 @@
       "badRequest": "Something went wrong. Try again.",
       "network": "Could not reach the server. Check your connection."
     }
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "subtitle": "Highest solo records. Only players with an account are listed.",
+    "back": "Back",
+    "loading": "Loading…",
+    "error": "Could not load the leaderboard.",
+    "empty": "Nobody has scored yet. Be the first!"
   }
 }

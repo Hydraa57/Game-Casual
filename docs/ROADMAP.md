@@ -91,11 +91,12 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 - [x] **Akun username + password, TANPA OAuth.** Google/Discord sengaja tidak dipakai: game ini baru, dan meminta orang menautkan akun Google-nya adalah friksi yang jauh lebih besar daripada mengisi dua kolom
 - [x] Guest tetap bisa main penuh — akun hanya menambah riwayat yang tersimpan
 - [ ] Handshake Socket.IO membawa session token supaya `MatchPlayer.userId` terisi; guest tetap boleh join room
-- [ ] `GET /api/v1/users/me` + `POST /api/v1/solo-scores` sesuai [API.md](./API.md) (envelope + status codes), termasuk validasi heuristik skor-vs-durasi
+- [x] `GET /api/auth/me` + `POST /api/solo-scores` termasuk validasi heuristik skor-vs-durasi. **Deviasi dari API.md:** tanpa prefiks `/api/v1` dan tanpa envelope `{data,meta}` — versi & envelope berguna saat ada konsumen luar, dan di sini satu-satunya konsumen adalah front-end di repo yang sama
 - [ ] `POST /api/v1/rooms/private` sebagai proxy auth ke game-server (menutup deviasi MVP dari API.md)
 - [ ] Halaman profil: stats, win/loss, match history, solo high score (FR-09)
-- [ ] Leaderboard skor tertinggi: nama ID + avatar
+- [x] Leaderboard skor tertinggi: nama ID + avatar, 20 teratas
 - [ ] Migrasi high score `localStorage` → akun saat login pertama
+- [ ] Leaderboard global multiplayer (menang/kalah), bukan cuma solo
 
 ## Fase 4 — Deploy Publik & Polish
 

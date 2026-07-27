@@ -55,7 +55,21 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
       setHighScore(snapshot.score);
       setIsNewRecord(true);
     }
-  }, [snapshot.status, snapshot.score]);
+
+    // Kirim ke akun kalau pemain login. Endpoint-nya membalas `saved: false`
+    // untuk guest dan saat database tidak ada — keduanya keadaan normal, jadi
+    // kegagalannya sengaja tidak ditampilkan ke pemain: rekor localStorage
+    // sudah tersimpan dan ronde berikutnya tidak boleh terganggu oleh ini.
+    void fetch('/api/solo-scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        score: snapshot.score,
+        durationSeconds: Math.max(1, Math.round(snapshot.elapsedMs / 1000)),
+        level: snapshot.level,
+      }),
+    }).catch(() => {});
+  }, [snapshot.status, snapshot.score, snapshot.elapsedMs, snapshot.level]);
 
   const start = useCallback(() => {
     setIsNewRecord(false);
