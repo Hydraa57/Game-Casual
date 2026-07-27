@@ -94,15 +94,17 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 
 ## Fase 4 — Deploy Publik & Polish
 
-- [ ] Deploy: Vercel (web) + Render/Fly.io (game-server), env & CORS produksi, wss
+- [x] Deploy: Vercel (web) + Render (game-server) via Dockerfile + `render.yaml`, env & CORS produksi, wss
 - [ ] Ukur latency nyata; rampingkan payload event bila perlu (NFR: aksi < 150 ms)
-- [ ] Juice: partikel, screen shake, popup combo & poin, nada SFX naik seiring combo, BGM + mute
-- [ ] Haptic feedback (`navigator.vibrate`) saat klik salah di HP
-- [ ] Landing page proper (cara main, tombol buat/gabung room)
+- [x] Juice: partikel, screen shake, popup combo & poin, nada SFX naik seiring combo, toggle mute (BGM belum ada)
+- [x] Haptic feedback (`navigator.vibrate`) saat klik salah di HP
+- [x] Landing page (cara main, tombol solo & multiplayer) — sudah ada sejak Fase 1
 - [ ] Cek load time < 3 dtk (NFR) — code splitting Phaser; **ukur juga di jaringan seluler**, bukan hanya WiFi
-- [ ] Uji di HP nyata: Android Chrome + iOS Safari (bukan hanya emulasi DevTools)
-- [ ] Opsional: manifest PWA supaya bisa "Add to Home Screen" — memangkas friksi saat nongkrong
+- [ ] Uji di HP nyata: Android Chrome + iOS Safari (bukan hanya emulasi DevTools) — **hanya kamu yang bisa melakukan ini**
+- [x] Manifest PWA supaya bisa "Add to Home Screen" — memangkas friksi saat nongkrong
 - [ ] Playtest dengan teman-teman → iterasi angka balancing GDD (**validasi di HP dulu**, lihat GDD §7)
+
+> **PWA tanpa service worker, disengaja.** Pemasangan ke home screen tetap jalan lewat menu browser di Android dan iOS; yang hilang hanya prompt install otomatis di Android. Menambah SW berarti menambah lapisan cache yang bisa menyajikan build lama setelah deploy. Konsekuensinya: tidak ada mode offline, termasuk untuk solo yang sebenarnya sanggup jalan tanpa jaringan.
 
 ## Fase 5 — Menuju PRD Penuh (opsional, urutan bebas)
 

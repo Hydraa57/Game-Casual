@@ -108,6 +108,15 @@ Kalau masih gagal, pesan errornya sekarang menyebutkan alamat yang dicoba — it
 
 > **Latensi itu penting di game ini.** Pemenang klik rebutan ditentukan dari urutan kedatangan di server, jadi jarak fisik ke server langsung memengaruhi keadilannya. `render.yaml` sudah menyetel region **Singapura** (~30 ms dari Indonesia) alih-alih default Oregon (~200 ms). Kalau deploy manual tanpa Blueprint, pastikan pilih region terdekat.
 
+## Pasang di HP (PWA)
+
+Ada manifest + ikon, jadi game bisa dipasang ke home screen dan terbuka layar penuh tanpa address bar — berguna saat nongkrong: teman tinggal tap ikonnya.
+
+- **Android Chrome:** menu ⋮ → *Add to Home screen*
+- **iOS Safari:** tombol Share → *Add to Home Screen*
+
+**Belum ada service worker**, dan itu disengaja. Tanpa SW, pemasangan tetap bisa lewat menu browser di kedua platform; yang hilang cuma prompt install otomatis di Android. Menambahkannya berarti menambah lapisan cache yang bisa menyajikan build lama setelah deploy — risiko yang tidak sebanding untuk keuntungan sekecil itu. Konsekuensi lain: **game tidak bisa dimainkan offline.** Multiplayer memang butuh jaringan, tapi solo mode sebenarnya bisa jalan offline kalau nanti SW-nya ditambahkan.
+
 ## Mulai dari Mana?
 
 Lihat [ROADMAP.md](docs/ROADMAP.md). Fase 0, 1, dan 1.5 selesai; Fase 2 (multiplayer) sedang dikerjakan. Prinsip urutannya: **buktikan gamenya seru dulu, baru bangun infrastruktur.**

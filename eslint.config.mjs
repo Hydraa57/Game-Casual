@@ -28,4 +28,12 @@ export default tseslint.config(
     files: ['*.mjs', '*.js'],
     ...tseslint.configs.disableTypeChecked,
   },
+  {
+    // Skrip build/tooling: dijalankan langsung oleh Node, jadi global Node
+    // (Buffer, console, process) memang tersedia di sini.
+    files: ['**/scripts/**/*.mjs', '**/scripts/**/*.js'],
+    languageOptions: {
+      globals: { Buffer: 'readonly', console: 'readonly', process: 'readonly' },
+    },
+  },
 );

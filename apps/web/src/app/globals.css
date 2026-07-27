@@ -32,7 +32,11 @@ body {
 
 body {
   min-height: 100dvh;
-  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  /* Keempat sisi memakai safe-area karena viewport-nya `cover`: saat dipasang
+     sebagai PWA, halaman membentang sampai ke belakang notch dan indikator
+     home. Tanpa ini tombol paling atas/bawah bisa tidak bisa ditekan. */
+  padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+    calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
   -webkit-tap-highlight-color: transparent;
 }
 
