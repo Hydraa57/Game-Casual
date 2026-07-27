@@ -129,6 +129,8 @@ Cek `GET /health` di game-server: `persistence: true` berarti database terpasang
 
 Provider gratis yang cocok: Neon atau Supabase (keduanya Postgres, ada free tier). Pastikan region-nya dekat game-server.
 
+> **Khusus Supabase — jalankan [`packages/db/supabase/rls.sql`](packages/db/supabase/rls.sql) setelah migrasi.** Supabase mengekspos semua tabel `public` lewat anon key, dan anon key memang dirancang untuk publik. Tanpa file itu, siapa pun yang punya anon key bisa mengunduh hash password dan token sesi. Skrip itu menutup semuanya kecuali tiga kolom yang dipakai leaderboard, dan tidak menyentuh akses aplikasi (Prisma konek sebagai pemilik tabel, yang melewati RLS).
+
 > **Kalau memakai Supabase**, ambil connection string dari Settings → Database → *Connection string* → **Session pooler** (bukan Direct connection — banyak host tidak punya IPv6). Bentuknya `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`. Tempel sebagai `DATABASE_URL` di game-server.
 
 > ⚠️ **Kalau migrasi pertama diterapkan lewat dashboard/API Supabase (bukan lewat Prisma)**, Prisma tidak tahu apa-apa soal itu — ia mencatat di tabelnya sendiri (`_prisma_migrations`), sementara Supabase mencatat di `supabase_migrations.schema_migrations`. Akibatnya `prisma migrate deploy` yang pertama akan mencoba membuat ulang tabel yang sudah ada, lalu gagal. Tandai dulu satu per satu:
