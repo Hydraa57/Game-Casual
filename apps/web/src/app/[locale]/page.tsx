@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
+import { PrefetchGame } from '@/components/PrefetchGame';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 
@@ -15,6 +16,7 @@ function Landing({ locale }: { locale: Locale }) {
 
   return (
     <main className="shell landing">
+      <PrefetchGame target="solo" />
       <header>
         <h1 className="landing__title">{t('title')}</h1>
         <p className="landing__tagline">{t('tagline')}</p>

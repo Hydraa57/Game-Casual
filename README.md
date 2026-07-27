@@ -14,6 +14,7 @@ Game casual berbasis browser: refleks arcade + sentuhan brain-training, gaya ret
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arsitektur teknis — struktur monorepo, kontrak event Socket.IO, skema database, deployment |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Roadmap per fase + checklist task + cara verifikasi |
 | [docs/COMPETITIVE-RESEARCH.md](docs/COMPETITIVE-RESEARCH.md) | Riset pembanding — game apa saja yang sudah mirip, dan di mana pembeda produk ini |
+| [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | Hasil ukur load time & latency di build produksi dengan throttle seluler |
 
 ## Keputusan Kunci
 

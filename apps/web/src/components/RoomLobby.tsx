@@ -10,6 +10,7 @@ import {
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
 import type { RoomSettings, RoomState } from '@pixelmatrix/shared';
+import { PrefetchGame } from './PrefetchGame';
 
 export interface RoomLobbyProps {
   readonly room: RoomState;
@@ -64,6 +65,10 @@ export function RoomLobby({
           {copied ? t('copied') : t('share')}
         </button>
       </div>
+
+      {/* Lobby = waktu tunggu paling pasti dalam permainan ini. Tanpa ini,
+          ~330 KB Phaser baru diunduh saat countdown 3-2-1 sudah berjalan. */}
+      <PrefetchGame target="remote" />
 
       <section className="card">
         <h2 className="card__title">
