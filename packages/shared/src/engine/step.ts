@@ -103,9 +103,15 @@ export function step(state: GameState, deltaMs: number): StepResult {
   let spawnCount = 0;
   while (board.nextSpawnAtMs <= elapsedMs && spawnCount < MAX_SPAWNS_PER_STEP) {
     const spawnAtMs = board.nextSpawnAtMs;
-    // Pixel nyawa hanya masuk akal di mode bernyawa (solo), dan hanya kalau
-    // nyawanya belum penuh — kalau tidak, ia jadi pixel yang tidak berguna.
-    const canDropLife = score.lives !== null && score.lives < MAX_LIVES;
+    // Di solo, pixel ♥ hanya berguna kalau nyawanya belum penuh.
+    //
+    // Di multiplayer papannya BERSAMA, jadi keputusan spawn tidak boleh
+    // bergantung pada nyawa satu pemain — pemain yang sekarat justru paling
+    // butuh ♥ muncul, dan itu tidak akan terjadi kalau pemain lain kebetulan
+    // penuh. Di sana ♥ selalu boleh muncul dan menjadi rebutan seperti pixel
+    // lainnya.
+    const canDropLife =
+      state.config.mode === 'multiplayer' || (score.lives !== null && score.lives < MAX_LIVES);
     const spawned = spawnPixel(board, level, state.config.gridSize, spawnAtMs, canDropLife, chaos);
     board = {
       ...spawned.board,

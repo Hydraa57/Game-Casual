@@ -73,6 +73,7 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 
 - [x] **Indikator warna target di multiplayer** — versi pertama tidak menampilkannya sama sekali, jadi pemain harus menebak warna mana yang benar. Bug, bukan fitur yang tertunda
 - [x] **Avatar pemain** (8 karakter) yang dicap di sel yang berhasil direbut, supaya terasa memperebutkan papan yang sama dan bukan main sendiri-sendiri. Lihat [GAME-DESIGN §5](./GAME-DESIGN.md)
+- [x] **Nyawa di multiplayer** (3, sama seperti solo) + **bom memotong 2 nyawa** di kedua mode. Nyawa habis = beku 5 detik lalu hidup lagi dengan nyawa penuh, bukan tereliminasi
 
 **Dua deviasi dari rencana awal, keduanya disengaja:**
 

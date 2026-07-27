@@ -705,3 +705,20 @@ h3 {
   margin-right: 6px;
   vertical-align: -0.1em;
 }
+
+/* ---------------------------------------------------------------- nyawa MP */
+
+.lives {
+  color: var(--success);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  /* Lebar dikunci supaya baris skor tidak bergeser tiap nyawa berubah —
+     leaderboard yang melompat-lompat saat match berjalan itu mengganggu. */
+  min-width: 3.2em;
+  text-align: right;
+}
+
+.lives--out {
+  color: var(--danger);
+  font-weight: 700;
+}

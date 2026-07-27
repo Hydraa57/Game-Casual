@@ -100,11 +100,13 @@ Selain pixel biasa, papan bisa memunculkan tiga jenis pixel yang **tidak peduli 
 
 | Jenis | Muncul | Peluang | Umur | Efek di-tap | Dibiarkan pudar |
 |---|---|---|---|---|---|
-| **Bom ☠** | Lv 8+ | 8% → 15% di Lv 20 | normal | **−1 nyawa**, combo putus, shake + flash + getar. Di MP (tanpa nyawa): −15 poin | Tidak apa-apa — memang harus dihindari |
+| **Bom ☠** | Lv 8+ | 8% → 15% di Lv 20 | normal | **−2 nyawa**, combo putus, shake + flash + getar. Sama di solo dan MP | Tidak apa-apa — memang harus dihindari |
 | **Emas ★** | Lv 3+ | 4% | 60% dari normal | Poin **×5**, combo +1, warna apa pun boleh | Tidak ada penalti |
 | **Nyawa ♥** | Lv 5+ | 3%, hanya jika nyawa < 5 | 70% dari normal | **+1 nyawa** (maks 5), combo +1 | Tidak ada penalti (tapi sayang) |
 
 Pixel biasa tetap >70% dari seluruh spawn bahkan di Lv 20 — pixel spesial adalah bumbu, bukan mekanik utama.
+
+**Bom memotong DUA nyawa, klik warna salah hanya satu.** Dengan 3 nyawa awal, dua bom menghabisimu. Kalau harganya sama dengan klik salah biasa, menahan diri tidak pernah terasa penting — dan justru itu satu-satunya hal baru yang dibawa bom ke gameplay.
 
 **Bom adalah satu-satunya pixel yang menghukum karena DISENTUH**, bukan karena diabaikan. Ini yang menambah dimensi menahan diri (*response inhibition*) ke gameplay yang tadinya murni refleks, dan yang paling mendekatkan game ini ke klaim "brain training" di PRD.
 
@@ -147,9 +149,24 @@ Semua pemain melihat **papan yang sama** dan berebut pixel yang sama. **Server o
 ### Aturan khusus MP
 
 - Klik benar pertama yang sampai di server mengklaim pixel; pemain lain yang telat mendapat feedback `clickRejected` (pixel tetap hilang dari papan).
-- Klik salah: **−5 poin** + **cooldown input lokal 500 ms** (layar berkedip merah singkat). Tidak ada sistem nyawa di MP.
+- **3 nyawa, sama seperti solo.** Bom memotong 2, pixel ♥ mengembalikan 1.
+- Klik salah: **−5 poin** + **cooldown input lokal 500 ms** (layar berkedip merah singkat). **TIDAK memotong nyawa** — beda dari solo.
 - Server melakukan **rate limit ~8 klik/detik/pemain** — klik berlebih diabaikan (mitigasi spam & cheat, sesuai analisis risiko PRD).
 - Combo dan speed bonus berlaku sama seperti solo.
+- **Tidak ada checkpoint/continue di MP** — itu fitur solo, dan digating dari mode (bukan dari keberadaan nyawa).
+
+### Nyawa habis = beku 5 detik, bukan tereliminasi
+
+Pemain yang kehabisan nyawa **tidak dikeluarkan dari match**. Ia beku selama `MP_FREEZE_MS` (5 detik) — ketukannya diabaikan, papannya tertutup overlay — lalu hidup lagi dengan nyawa penuh.
+
+Alasannya bukan soal keseimbangan, tapi soal siapa yang memainkannya: match cuma 2 menit dan gamenya dibuat untuk dimainkan bareng saat nongkrong. Pemain yang tereliminasi di menit pertama akan duduk bengong 90 detik, membuka aplikasi lain, dan biasanya tidak kembali. Hukumannya tetap nyata — selama beku, lawan mencetak poin tanpa perlawanan.
+
+Yang **tidak** direset saat hidup lagi: skor dan combo terbaik. Yang hilang karena kehabisan nyawa adalah waktu bermain, bukan poin yang sudah dikumpulkan; kalau skor ikut hangus, satu bom di detik terakhir bisa menghapus dua menit permainan.
+
+Dua konsekuensi yang sengaja diambil:
+
+1. **Klik warna salah tidak memotong nyawa di MP.** Di sana klik salah sudah dihukum poin DAN cooldown 500 ms; menumpuk penalti ketiga akan membekukan pemain terus-menerus di mode yang justru memaksa mengetuk cepat. Diatur satu tempat lewat `wrongClickCostsLife(mode)`.
+2. **Pixel ♥ selalu boleh muncul di MP**, tidak peduli nyawa siapa pun. Papannya bersama — kalau spawn-nya bergantung pada nyawa satu pemain, pemain yang sekarat justru tidak akan pernah melihatnya muncul karena lawannya kebetulan penuh.
 
 ### Avatar & umpan balik "siapa yang merebut"
 

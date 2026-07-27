@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOMB_FIRST_LEVEL,
+  BOMB_LIFE_COST,
   BOMB_MAX_CHANCE,
   BOMB_MIN_CHANCE,
   BOMB_SCORE_PENALTY,
@@ -9,6 +10,8 @@ import {
   LIFE_FIRST_LEVEL,
   MAX_CURVE_LEVEL,
   MAX_LIVES,
+  MP_STARTING_LIVES,
+  SOLO_STARTING_LIVES,
 } from '../constants/index';
 import type { Pixel, PixelKind } from '../types/index';
 import { applyClick } from './click';
@@ -74,7 +77,7 @@ describe('bombChance', () => {
 });
 
 describe('pixel bom ☠', () => {
-  it('mengurangi nyawa dan memutus combo saat di-tap', () => {
+  it('memotong DUA nyawa dan memutus combo saat di-tap', () => {
     const state = gameWith([pixel('bomb')], {
       score: {
         ...gameWith([]).score,
@@ -87,13 +90,15 @@ describe('pixel bom ☠', () => {
     const result = applyClick(state, 'bomb-1');
 
     expect(result.claimed).toBe(false);
-    expect(result.state.score.lives).toBe(2);
+    // 3 nyawa awal − BOMB_LIFE_COST. Bom harus jauh lebih mahal daripada klik
+    // warna salah, kalau tidak menahan diri tidak pernah terasa penting.
+    expect(result.state.score.lives).toBe(SOLO_STARTING_LIVES - BOMB_LIFE_COST);
     expect(result.state.score.combo).toBe(0);
     expect(result.state.score.bestCombo).toBe(9);
     expect(result.events).toContainEqual({
       type: 'bombHit',
       pixelId: 'bomb-1',
-      livesLeft: 2,
+      livesLeft: SOLO_STARTING_LIVES - BOMB_LIFE_COST,
       scorePenalty: 0,
     });
   });
@@ -119,8 +124,48 @@ describe('pixel bom ☠', () => {
     expect(result.events.some((event) => event.type === 'gameOver')).toBe(true);
   });
 
-  it('di mode tanpa nyawa (multiplayer) yang dipotong adalah skor', () => {
+  it('nyawa tidak pernah jatuh di bawah nol walau bom memotong dua', () => {
+    const state = gameWith([pixel('bomb')], {
+      score: { ...gameWith([]).score, lives: 1 },
+    });
+
+    const result = applyClick(state, 'bomb-1');
+
+    // Kalau ini negatif, HUD akan menggambar jumlah nyawa yang mustahil dan
+    // pemeriksaan "nyawa habis" di server bisa terlewat.
+    expect(result.state.score.lives).toBe(0);
+  });
+
+  it('di multiplayer bom juga memotong nyawa, bukan skor', () => {
     const base = startGame(createGameState({ seed: 11, config: multiplayerConfig(150, 120) }));
+    const mp: GameState = {
+      ...base,
+      elapsedMs: 1000,
+      score: { ...base.score, score: 100 },
+      board: {
+        ...base.board,
+        targetColors: ['red'],
+        nextSpawnAtMs: 999_999,
+        pixels: [pixel('bomb')],
+      },
+    };
+
+    const result = applyClick(mp, 'bomb-1');
+    expect(result.state.score.lives).toBe(MP_STARTING_LIVES - BOMB_LIFE_COST);
+    // Skornya utuh: hukumannya nyawa, dan itu sudah cukup mahal.
+    expect(result.state.score.score).toBe(100);
+  });
+
+  it('di mode yang benar-benar tanpa nyawa, yang dipotong adalah skor', () => {
+    // Jalur ini tidak dipakai mode mana pun sekarang, tapi engine-nya masih
+    // mendukungnya — dan kalau suatu saat dipakai lagi, bom harus tetap
+    // punya taruhan.
+    const base = startGame(
+      createGameState({
+        seed: 11,
+        config: { ...multiplayerConfig(150, 120), startingLives: null },
+      }),
+    );
     const state: GameState = {
       ...base,
       elapsedMs: 1000,
@@ -273,9 +318,12 @@ describe('peluang spawn per level', () => {
     expect(tally.normal / tally.total).toBeGreaterThan(0.7);
   });
 
-  it('pixel nyawa tidak pernah muncul di multiplayer', () => {
+  it('pixel nyawa MUNCUL di multiplayer dan jadi rebutan', () => {
     const tally = kindTally(MAX_CURVE_LEVEL, multiplayerConfig(150, 600));
-    expect(tally.life).toBe(0);
+    // Keputusannya berubah saat MP mendapat nyawa: kalau spawn ♥ bergantung
+    // pada nyawa satu pemain, pemain yang sekarat justru tidak akan pernah
+    // melihatnya muncul karena lawannya kebetulan penuh.
+    expect(tally.life).toBeGreaterThan(0);
     expect(tally.bomb).toBeGreaterThan(0);
   });
 

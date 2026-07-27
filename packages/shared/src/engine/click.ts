@@ -1,8 +1,10 @@
 import {
+  BOMB_LIFE_COST,
   BOMB_SCORE_PENALTY,
   GOLD_POINT_MULTIPLIER,
   MAX_LIVES,
   WRONG_CLICK_PENALTY,
+  wrongClickCostsLife,
 } from '../constants/index';
 import type { ClickRejectReason, GameEvent } from './events';
 import { levelFor } from './difficulty';
@@ -82,7 +84,14 @@ function applyWrongColor(state: GameState, pixelId: string): ClickResult {
 
   // Pixel-nya sengaja TIDAK dihapus: kalau klik salah membersihkan papan, klik
   // ngawur jadi strategi untuk menyingkirkan distraktor.
-  const lives = state.score.lives === null ? null : Math.max(0, state.score.lives - 1);
+  //
+  // Nyawa hanya dipotong di solo. Di multiplayer klik salah sudah dihukum poin
+  // DAN cooldown input, dan hukuman ketiga akan membekukan pemain terus-menerus
+  // di mode yang justru memaksa mengetuk cepat.
+  const lives =
+    state.score.lives === null || !wrongClickCostsLife(state.config.mode)
+      ? state.score.lives
+      : Math.max(0, state.score.lives - 1);
 
   let score = {
     ...state.score,
@@ -123,12 +132,12 @@ function applyBomb(state: GameState, pixelId: string): ClickResult {
   const previousCombo = state.score.combo;
   const hasLives = state.score.lives !== null;
 
-  const lives = hasLives ? Math.max(0, state.score.lives! - 1) : null;
+  const lives = hasLives ? Math.max(0, state.score.lives! - BOMB_LIFE_COST) : null;
 
   let score = {
     ...state.score,
-    // Tanpa sistem nyawa (multiplayer), hukumannya diambil dari skor supaya bom
-    // tetap punya taruhan.
+    // Kalau mode-nya memang tidak punya nyawa sama sekali, hukumannya diambil
+    // dari skor supaya bom tetap punya taruhan.
     score: hasLives ? state.score.score : Math.max(0, state.score.score - BOMB_SCORE_PENALTY),
     combo: 0,
     wrongClicks: state.score.wrongClicks + 1,

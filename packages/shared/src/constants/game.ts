@@ -1,4 +1,4 @@
-import type { AvatarId, Color, PixelKind, RoomSettings } from '../types/index';
+import type { AvatarId, Color, GameMode, PixelKind, RoomSettings } from '../types/index';
 
 // ---------------------------------------------------------------------------
 // Papan (GDD §2)
@@ -167,6 +167,15 @@ export const BOMB_MAX_CHANCE = 0.15;
 /** Kehilangan skor saat bom ditap di mode tanpa nyawa (multiplayer). */
 export const BOMB_SCORE_PENALTY = 15;
 
+/**
+ * Bom memotong DUA nyawa, bukan satu.
+ *
+ * Dengan 3 nyawa awal, itu berarti dua bom menghabisimu. Sengaja: bom adalah
+ * satu-satunya pixel yang menghukum karena disentuh, dan kalau harganya sama
+ * dengan klik warna salah, menahan diri tidak pernah terasa penting.
+ */
+export const BOMB_LIFE_COST = 2;
+
 export const GOLD_FIRST_LEVEL = 3;
 export const GOLD_CHANCE = 0.04;
 export const GOLD_POINT_MULTIPLIER = 5;
@@ -239,6 +248,34 @@ export const TARGET_WARNING_MS = 1000;
 // ---------------------------------------------------------------------------
 
 export const MP_WRONG_CLICK_COOLDOWN_MS = 500;
+
+/** Nyawa awal di multiplayer — sama dengan solo. */
+export const MP_STARTING_LIVES = SOLO_STARTING_LIVES;
+
+/**
+ * Lama pemain beku setelah nyawanya habis di multiplayer, sebelum hidup lagi
+ * dengan nyawa penuh.
+ *
+ * Dipilih membekukan, bukan mengeliminasi: match cuma 2 menit dan gamenya
+ * dibuat untuk dimainkan bareng di tongkrongan. Pemain yang tereliminasi di
+ * menit pertama akan duduk bengong 90 detik — dan biasanya membuka aplikasi
+ * lain, lalu tidak kembali.
+ */
+export const MP_FREEZE_MS = 5000;
+
+/**
+ * Apakah klik warna salah ikut memotong nyawa.
+ *
+ * Di solo: ya, itu satu-satunya cara kalah. Di multiplayer: TIDAK — klik salah
+ * di sana sudah dihukum −5 poin DAN cooldown input 500 ms, dan menumpuk
+ * penalti ketiga membuat pemain beku terus-menerus di permainan yang justru
+ * memaksa mengetuk cepat. Nyawa di MP murni taruhan untuk bom.
+ *
+ * Satu tempat kalau mau diubah.
+ */
+export function wrongClickCostsLife(mode: GameMode): boolean {
+  return mode === 'solo';
+}
 export const MAX_CLICKS_PER_SECOND = 8;
 
 /**

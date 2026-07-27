@@ -36,6 +36,7 @@ export class RemoteBoardScene extends Phaser.Scene {
   private targets: readonly Color[] = [];
   private interactive = false;
   private cooldownUntil = 0;
+  private frozen = false;
 
   constructor(private readonly options: RemoteBoardOptions) {
     super('remote-board');
@@ -57,6 +58,16 @@ export class RemoteBoardScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Pemain sedang beku karena nyawanya habis.
+   *
+   * Server sudah mengabaikan ketukannya, tapi diblokir di sini juga supaya
+   * tidak ada pesan sia-sia terbang di jaringan seluler selama 5 detik itu.
+   */
+  setFrozen(frozen: boolean): void {
+    this.frozen = frozen;
+  }
+
   /** Warna target saat ini — dikirim server lewat `game:started`/`targetChanged`. */
   setTargets(colors: readonly Color[]): void {
     this.targets = colors;
@@ -74,6 +85,7 @@ export class RemoteBoardScene extends Phaser.Scene {
 
   beginMatch(): void {
     this.interactive = true;
+    this.frozen = false;
     this.cooldownUntil = 0;
     this.elapsedMs = 0;
     this.pixels.clear();
@@ -164,7 +176,7 @@ export class RemoteBoardScene extends Phaser.Scene {
   // ---------------------------------------------------------------- internal
 
   private handlePointerDown(pointer: Phaser.Input.Pointer): void {
-    if (!this.interactive || Date.now() < this.cooldownUntil) return;
+    if (!this.interactive || this.frozen || Date.now() < this.cooldownUntil) return;
 
     const cell = this.boardView.cellAt(pointer.x, pointer.y);
     if (!cell) return;

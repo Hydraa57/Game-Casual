@@ -117,6 +117,9 @@
     "avatar": "Pick a character",
     "avatarHint": "Your character appears on tiles you claim.",
     "muteOn": "Sound: on",
-    "muteOff": "Sound: off"
+    "muteOff": "Sound: off",
+    "down": "OUT",
+    "knockedOut": "NO LIVES LEFT",
+    "knockedOutHint": "Back with full lives in a moment."
   }
 }

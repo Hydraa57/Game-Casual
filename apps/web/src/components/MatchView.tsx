@@ -136,6 +136,8 @@ export function MatchView({
       setTargetImminent(payload.targetImminent);
       scene()?.setTargets(payload.targetColors);
       scene()?.setChaos(payload.chaos);
+      const mine = payload.scoreboard.find((entry) => entry.playerId === playerId);
+      scene()?.setFrozen((mine?.frozenMs ?? 0) > 0);
     };
 
     const onSpawned = ({ pixel }: PixelSpawnedPayload) => scene()?.spawn(pixel);
@@ -222,6 +224,8 @@ export function MatchView({
 
   const seconds = remainingMs === null ? null : Math.ceil(remainingMs / 1000);
   const sorted = [...scoreboard].sort((a, b) => b.score - a.score);
+  const me = scoreboard.find((entry) => entry.playerId === playerId) ?? null;
+  const frozenSeconds = me !== null && me.frozenMs > 0 ? Math.ceil(me.frozenMs / 1000) : null;
 
   return (
     <div className="match">
@@ -237,6 +241,14 @@ export function MatchView({
               {AVATAR_GLYPH[entry.avatar]}
             </span>
             <span className="scoreboard__name">{entry.nickname}</span>
+            {entry.lives !== null && (
+              <span
+                className={`lives${entry.frozenMs > 0 ? ' lives--out' : ''}`}
+                aria-label={`${entry.lives}`}
+              >
+                {entry.frozenMs > 0 ? t('down') : '▮'.repeat(entry.lives)}
+              </span>
+            )}
             {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}
             <span className="scoreboard__score">{entry.score}</span>
           </li>
@@ -288,6 +300,17 @@ export function MatchView({
           <div className="overlay">
             <div className="overlay__score">{countdown}</div>
             <p className="overlay__hint">{t('getReady')}</p>
+          </div>
+        )}
+
+        {/* Overlay beku menutupi papan dengan sengaja: selain memberi tahu,
+            ia juga mencegah pemain terus menggeprek sel yang tidak akan
+            direspons server. */}
+        {frozenSeconds !== null && result === null && (
+          <div className="overlay overlay--flash">
+            <h2 className="overlay__title">{t('knockedOut')}</h2>
+            <div className="overlay__score">{frozenSeconds}</div>
+            <p className="overlay__hint">{t('knockedOutHint')}</p>
           </div>
         )}
 

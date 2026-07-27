@@ -117,6 +117,9 @@
     "avatar": "Pilih karakter",
     "avatarHint": "Karaktermu muncul di kotak yang berhasil kamu rebut.",
     "muteOn": "Bunyi: nyala",
-    "muteOff": "Bunyi: mati"
+    "muteOff": "Bunyi: mati",
+    "down": "KO",
+    "knockedOut": "NYAWA HABIS",
+    "knockedOutHint": "Hidup lagi dengan nyawa penuh sebentar lagi."
   }
 }

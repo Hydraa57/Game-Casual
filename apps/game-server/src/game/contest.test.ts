@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyClick,
+  BOMB_LIFE_COST,
   createGameState,
   createScoreState,
   GRID_SIZE,
   MAX_CLICKS_PER_SECOND,
+  MP_STARTING_LIVES,
+  supportsContinues,
 } from '@pixelmatrix/shared';
 import type { GameConfig, GameState, Pixel, ScoreState } from '@pixelmatrix/shared';
 import { RateLimiter } from './RateLimiter';
@@ -22,7 +25,7 @@ function multiplayerBoardConfig(): GameConfig {
   return {
     mode: 'multiplayer',
     gridSize: GRID_SIZE,
-    startingLives: null,
+    startingLives: MP_STARTING_LIVES,
     timeLimitMs: null,
     targetScore: null,
   };
@@ -107,29 +110,70 @@ describe('klik rebutan', () => {
     expect(bob.score).toBe(42);
   });
 
-  it('klik warna salah memotong skor, bukan nyawa (tidak ada nyawa di MP)', () => {
+  it('klik warna salah memotong skor tapi TIDAK memotong nyawa di MP', () => {
     const distractor: Pixel = { ...contestedPixel, id: 'blue-1', color: 'blue' };
     const board = sharedBoard([contestedPixel, distractor]);
-    const alice = { ...createScoreState(null), score: 50, combo: 4 };
+    const alice = { ...createScoreState(MP_STARTING_LIVES), score: 50, combo: 4 };
 
     const result = clickAs(board, alice, 'blue-1');
 
-    expect(result.score.lives).toBeNull();
+    // Klik salah di MP sudah dihukum poin DAN cooldown input 500 ms. Menambah
+    // potongan nyawa akan membekukan pemain terus-menerus di mode yang justru
+    // memaksa mengetuk cepat.
+    expect(result.score.lives).toBe(MP_STARTING_LIVES);
     expect(result.score.score).toBeLessThan(50);
     expect(result.score.combo).toBe(0);
     // Pixel yang salah tetap di papan — sama seperti solo.
     expect(result.board.board.pixels.map((p) => p.id)).toContain('blue-1');
   });
 
-  it('bom di MP memotong skor, dan pixelnya hilang untuk semua orang', () => {
+  it('bom di MP memotong dua nyawa, bukan skor, dan pixelnya hilang untuk semua', () => {
     const bomb: Pixel = { ...contestedPixel, id: 'bomb-1', kind: 'bomb' };
     const board = sharedBoard([bomb]);
-    const alice = { ...createScoreState(null), score: 80 };
+    const alice = { ...createScoreState(MP_STARTING_LIVES), score: 80 };
 
     const result = clickAs(board, alice, 'bomb-1');
 
-    expect(result.score.score).toBeLessThan(80);
+    expect(result.score.lives).toBe(MP_STARTING_LIVES - BOMB_LIFE_COST);
+    expect(result.score.score).toBe(80);
     expect(result.board.board.pixels).toHaveLength(0);
+  });
+
+  it('dua bom membuat nyawa habis — pemicu beku di Match', () => {
+    const bomb: Pixel = { ...contestedPixel, id: 'bomb-1', kind: 'bomb' };
+    const second: Pixel = {
+      ...contestedPixel,
+      id: 'bomb-2',
+      kind: 'bomb',
+      cell: { row: 4, col: 4 },
+    };
+    let board = sharedBoard([bomb, second]);
+    let alice = createScoreState(MP_STARTING_LIVES);
+
+    const first = clickAs(board, alice, 'bomb-1');
+    board = first.board;
+    alice = first.score;
+    const result = clickAs(board, alice, 'bomb-2');
+
+    expect(result.score.lives).toBe(0);
+  });
+
+  it('pixel nyawa di MP mengembalikan satu nyawa', () => {
+    const heart: Pixel = { ...contestedPixel, id: 'life-1', kind: 'life' };
+    const board = sharedBoard([heart]);
+    const alice = { ...createScoreState(MP_STARTING_LIVES), lives: 1 };
+
+    const result = clickAs(board, alice, 'life-1');
+
+    expect(result.score.lives).toBe(2);
+    expect(result.claimed).toBe(true);
+  });
+
+  it('checkpoint TIDAK pernah aktif di MP walau sekarang ada nyawa', () => {
+    // Gating-nya harus dari mode, bukan dari keberadaan nyawa. Kalau salah,
+    // multiplayer diam-diam dapat "mati lalu ulang dari checkpoint" — yang
+    // tidak punya arti di match yang berjalan bersamaan untuk semua pemain.
+    expect(supportsContinues(multiplayerBoardConfig())).toBe(false);
   });
 
   it('level papan tidak bergeser karena klik pemain — server yang menentukan', () => {

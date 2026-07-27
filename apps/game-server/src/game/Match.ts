@@ -6,7 +6,9 @@ import {
   createScoreState,
   GRID_SIZE,
   isTargetChangeImminent,
+  MP_FREEZE_MS,
   MP_LEVEL_DURATION_MS,
+  MP_STARTING_LIVES,
   MP_TICK_BROADCAST_MS,
   SERVER_TICK_MS,
   step,
@@ -23,6 +25,7 @@ import type {
 } from '@pixelmatrix/shared';
 import type { Room } from '../rooms/Room';
 import type { GameServer } from '../net/handlers';
+import { hasThawed, isFrozen, shouldFreeze } from './freeze';
 import { RateLimiter } from './RateLimiter';
 
 type MatchStatus = 'countdown' | 'running' | 'suddenDeath' | 'ended';
@@ -31,6 +34,11 @@ interface PlayerStats {
   nickname: string;
   avatar: AvatarId;
   score: ScoreState;
+  /**
+   * Waktu (epoch ms) sampai pemain bisa mengetuk lagi setelah nyawanya habis;
+   * 0 berarti tidak beku.
+   */
+  frozenUntil: number;
 }
 
 /**
@@ -64,7 +72,8 @@ export class Match {
       this.players.set(player.id, {
         nickname: player.nickname,
         avatar: player.avatar,
-        score: createScoreState(null),
+        score: createScoreState(MP_STARTING_LIVES),
+        frozenUntil: 0,
       });
     }
   }
@@ -117,6 +126,11 @@ export class Match {
     const player = this.players.get(playerId);
     if (!player) return;
 
+    // Pemain yang nyawanya habis sedang beku: ketukannya diabaikan sepenuhnya,
+    // bahkan sebelum rate limiter, supaya menggeprek layar selama beku tidak
+    // menghabiskan jatah klik untuk saat dia hidup lagi.
+    if (isFrozen(player.frozenUntil, Date.now())) return;
+
     if (!this.limiter.allow(playerId, Date.now())) {
       this.io.to(playerId).emit('game:clickRejected', {
         pixelId,
@@ -137,6 +151,16 @@ export class Match {
     player.score = result.state.score;
 
     this.forwardClickEvents(playerId, result.events);
+
+    // Nyawa habis: pemain dibekukan, TIDAK dikeluarkan. Match cuma 2 menit dan
+    // dimainkan bareng — pemain yang tereliminasi di menit pertama akan duduk
+    // bengong, lalu membuka aplikasi lain dan tidak kembali.
+    if (shouldFreeze(player.score.lives, player.frozenUntil)) {
+      player.frozenUntil = Date.now() + MP_FREEZE_MS;
+      // Disiarkan langsung, tidak menunggu tick terjadwal: pemain harus tahu
+      // dirinya beku dalam milidetik yang sama, bukan sampai 250 ms kemudian.
+      this.broadcastTick();
+    }
 
     if (this.status === 'suddenDeath' && result.claimed) {
       this.finish('suddenDeath');
@@ -196,6 +220,8 @@ export class Match {
     this.board = result.state;
     this.forwardBoardEvents(result.events);
 
+    this.reviveThawedPlayers(now);
+
     if (this.status === 'running' && this.board.elapsedMs >= this.timeLimitMs) {
       this.onTimeUp();
       return;
@@ -208,6 +234,24 @@ export class Match {
       this.lastBroadcastAt = now;
       this.broadcastTick();
     }
+  }
+
+  /**
+   * Kembalikan pemain yang masa bekunya habis, dengan nyawa penuh.
+   *
+   * Skor dan combo terbaiknya TIDAK direset: yang hilang karena kehabisan nyawa
+   * adalah waktu bermain, bukan poin yang sudah diperoleh. Kalau skor ikut
+   * hangus, satu bom di detik terakhir bisa menghapus dua menit permainan.
+   */
+  private reviveThawedPlayers(now: number): void {
+    let revived = false;
+    for (const player of this.players.values()) {
+      if (!hasThawed(player.frozenUntil, now)) continue;
+      player.frozenUntil = 0;
+      player.score = { ...player.score, lives: MP_STARTING_LIVES, combo: 0 };
+      revived = true;
+    }
+    if (revived) this.broadcastTick();
   }
 
   private onTimeUp(): void {
@@ -321,6 +365,7 @@ export class Match {
             pixelId: event.pixelId,
             byPlayerId: playerId,
             scorePenalty: event.scorePenalty,
+            livesLeft: event.livesLeft,
           });
           break;
 
@@ -345,6 +390,11 @@ export class Match {
         avatar: player.avatar,
         score: player.score.score,
         combo: player.score.combo,
+        lives: player.score.lives,
+        // Sisa beku dikirim sebagai durasi, bukan timestamp: jam client dan
+        // server tidak pernah sama, dan selisihnya akan terlihat sebagai
+        // hitungan mundur yang salah.
+        frozenMs: Math.max(0, player.frozenUntil - Date.now()),
         connected: this.room.has(id),
       })),
     });

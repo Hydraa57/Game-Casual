@@ -4,6 +4,7 @@ import {
   DUAL_TARGET_FIRST_LEVEL,
   GRID_SIZE,
   MAX_CONTINUES,
+  MP_STARTING_LIVES,
   SOLO_STARTING_LIVES,
   TARGET_MAX_DURATION_MS,
   TARGET_MIN_DURATION_MS,
@@ -114,7 +115,7 @@ export function multiplayerConfig(
   return {
     mode: 'multiplayer',
     gridSize: GRID_SIZE,
-    startingLives: null,
+    startingLives: MP_STARTING_LIVES,
     timeLimitMs: timeLimitSec * 1000,
     targetScore,
     ...overrides,
@@ -174,9 +175,17 @@ export function createGameState({
   };
 }
 
-/** Continue hanya untuk mode dengan sistem nyawa, yaitu solo. */
+/**
+ * Continue hanya untuk solo.
+ *
+ * Digating dari MODE, bukan dari keberadaan nyawa. Versi sebelumnya memakai
+ * `startingLives !== null`, dan itu benar hanya selama multiplayer tidak punya
+ * nyawa — begitu MP mendapat nyawa, gate itu diam-diam memberi checkpoint ke
+ * multiplayer, padahal "mati lalu ulang dari checkpoint" tidak punya arti di
+ * match yang berjalan bersamaan untuk semua pemain.
+ */
 export function supportsContinues(config: GameConfig): boolean {
-  return config.startingLives !== null;
+  return config.mode === 'solo';
 }
 
 export function startGame(state: GameState): GameState {

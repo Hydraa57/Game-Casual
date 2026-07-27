@@ -114,6 +114,7 @@ export interface BombHitPayload {
   readonly pixelId: string;
   readonly byPlayerId: string;
   readonly scorePenalty: number;
+  readonly livesLeft: number | null;
 }
 
 export interface TargetChangedPayload {
@@ -127,6 +128,15 @@ export interface ScoreboardEntry {
   readonly avatar: AvatarId;
   readonly score: number;
   readonly combo: number;
+  /** Sisa nyawa; `null` hanya kalau mode-nya memang tanpa nyawa. */
+  readonly lives: number | null;
+  /**
+   * Sisa waktu beku dalam ms setelah nyawa habis; 0 = sedang bermain.
+   *
+   * Durasi, bukan timestamp: jam client dan server tidak pernah persis sama,
+   * dan selisihnya akan terlihat sebagai hitungan mundur yang salah.
+   */
+  readonly frozenMs: number;
   readonly connected: boolean;
 }
 
