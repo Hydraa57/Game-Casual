@@ -329,3 +329,63 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   targetScore: 150,
   timeLimitSec: 120,
 };
+
+// ---------------------------------------------------------------------------
+// Batas kewajaran skor solo
+// ---------------------------------------------------------------------------
+//
+// Skor solo dihitung di browser, jadi server TIDAK bisa memverifikasinya —
+// yang bisa dilakukan hanya menolak yang mustahil. Angka-angka ini tinggal di
+// shared, bukan di route API, supaya sisi client dan server memakai definisi
+// "mustahil" yang sama persis.
+
+/**
+ * Batas atas poin per detik bermain.
+ *
+ * Dihitung dari kasus terbaik yang mungkin: klik emas (poin ×5) dengan speed
+ * bonus penuh, combo tertinggi, DAN bonus level tertinggi, pada kecepatan tap
+ * tercepat yang diakui game ini. Sengaja longgar: menolak skor jujur karena
+ * batasnya terlalu ketat jauh lebih merusak di game hobi daripada meloloskan
+ * satu skor palsu.
+ *
+ * Setiap faktor dirujuk dari konstantanya, bukan ditulis sebagai angka.
+ * Versi pertama rumus ini mengalikan dengan `2` yang ditulis langsung, dan
+ * `2` itu hanya mewakili SALAH SATU dari combo atau bonus level — yang lain
+ * terlewat, sehingga batasnya meleset setengah dari maksimum yang sebenarnya
+ * bisa dicapai. Tidak pernah ketahuan karena skor asli jauh di bawahnya, tapi
+ * artinya ronde yang sangat bagus bisa ditolak sebagai "mustahil".
+ * `game.test.ts` sekarang mengunci batas ini terhadap `pointsForClick` yang
+ * sesungguhnya, jadi buff skor di kemudian hari tidak bisa diam-diam
+ * menghidupkan lagi bug yang sama.
+ *
+ * Kecepatan tap-nya memakai MAX_CLICKS_PER_SECOND — rate limit yang sudah
+ * ditegakkan server di multiplayer — bukan angka baru yang dikarang khusus di
+ * sini. Dengan begitu hanya ada SATU definisi "secepat apa manusia menap" di
+ * seluruh proyek.
+ */
+export const MAX_POINTS_PER_SECOND =
+  (BASE_POINTS + MAX_SPEED_BONUS) *
+  Math.max(...COMBO_MULTIPLIERS) *
+  MAX_LEVEL_BONUS_MULTIPLIER *
+  GOLD_POINT_MULTIPLIER *
+  MAX_CLICKS_PER_SECOND;
+
+/**
+ * Durasi satu ronde solo terpanjang yang masih masuk akal.
+ *
+ * Dipakai hanya untuk membatasi rekor guest yang dibawa ke akun baru, di mana
+ * durasi ronde-nya tidak diketahui — lihat MAX_CLAIMABLE_SOLO_SCORE.
+ */
+export const MAX_PLAUSIBLE_SOLO_SECONDS = 1800;
+
+/**
+ * Plafon rekor guest yang boleh dibawa ke akun.
+ *
+ * Ini BUKAN pengaman anti-curang, dan tidak berpura-pura begitu: siapa pun
+ * yang mau memalsukan skor bisa melakukannya lewat endpoint solo biasa dengan
+ * durasi yang dibuat cocok, karena skornya memang dihitung di client. Gunanya
+ * cuma satu — mencegah angka absurd (miliaran) nyangkut permanen di puncak
+ * leaderboard. Pengaman yang sebenarnya adalah aturan sekali-pakai di endpoint
+ * klaim: rekor hanya bisa dibawa selagi akunnya belum punya skor sama sekali.
+ */
+export const MAX_CLAIMABLE_SOLO_SCORE = MAX_POINTS_PER_SECOND * MAX_PLAUSIBLE_SOLO_SECONDS;

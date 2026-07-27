@@ -9,11 +9,18 @@ import {
   COLOR_HEX,
   COLOR_UNLOCK_LEVELS,
   COMBO_MULTIPLIERS,
+  COMBO_STEP,
   KIND_GLYPH,
   DEFAULT_AVATAR,
   DEFAULT_ROOM_SETTINGS,
+  GOLD_POINT_MULTIPLIER,
   GRID_SIZE,
   INITIAL_ACTIVE_COLORS,
+  MAX_CLAIMABLE_SOLO_SCORE,
+  MAX_CLICKS_PER_SECOND,
+  MAX_CURVE_LEVEL,
+  MAX_PLAUSIBLE_SOLO_SECONDS,
+  MAX_POINTS_PER_SECOND,
   MAX_PLAYERS_LIMIT,
   MIN_LIFETIME_MS,
   MIN_PLAYERS_TO_START,
@@ -24,6 +31,7 @@ import {
   TARGET_MIN_DURATION_MS,
   TOTAL_CELLS,
 } from './game';
+import { pointsForClick } from '../engine/scoring';
 
 describe('konstanta papan & warna', () => {
   it('TOTAL_CELLS konsisten dengan GRID_SIZE', () => {
@@ -108,6 +116,32 @@ describe('konstanta skor & multiplayer', () => {
     for (let i = 1; i < COMBO_MULTIPLIERS.length; i += 1) {
       expect(COMBO_MULTIPLIERS[i]!).toBeGreaterThan(COMBO_MULTIPLIERS[i - 1]!);
     }
+  });
+
+  /**
+   * Ini mengunci arah pertidaksamaannya: batas kewajaran harus selalu di ATAS
+   * apa yang benar-benar bisa dicetak engine. Kalau terbalik, endpoint skor
+   * solo akan menolak ronde jujur dan menyebutnya curang — kegagalan yang jauh
+   * lebih buruk daripada meloloskan skor palsu, dan yang persis pernah terjadi
+   * saat rumusnya melewatkan satu multiplier.
+   */
+  it('MAX_POINTS_PER_SECOND tidak pernah di bawah maksimum nyata engine', () => {
+    // Klik paling mahal yang mungkin: baru muncul (speed bonus penuh), combo
+    // sudah di tingkat teratas, di level tempat kurva mentok, dan pixel emas.
+    const bestClick =
+      pointsForClick(1, COMBO_STEP * COMBO_MULTIPLIERS.length, MAX_CURVE_LEVEL) *
+      GOLD_POINT_MULTIPLIER;
+
+    expect(MAX_POINTS_PER_SECOND).toBeGreaterThanOrEqual(bestClick * MAX_CLICKS_PER_SECOND);
+  });
+
+  it('MAX_CLAIMABLE_SOLO_SCORE jauh di atas skor yang realistis', () => {
+    expect(MAX_CLAIMABLE_SOLO_SCORE).toBe(MAX_POINTS_PER_SECOND * MAX_PLAUSIBLE_SOLO_SECONDS);
+    // Rekor sungguhan di game ini berada di orde ribuan. Plafonnya harus
+    // longgar sekali supaya tidak pernah menyentuh pemain jujur, tapi tetap
+    // berhingga supaya angka absurd tidak bisa nyangkut di leaderboard.
+    expect(MAX_CLAIMABLE_SOLO_SCORE).toBeGreaterThan(1_000_000);
+    expect(Number.isFinite(MAX_CLAIMABLE_SOLO_SCORE)).toBe(true);
   });
 
   it('DEFAULT_ROOM_SETTINGS berada dalam pilihan yang diizinkan', () => {

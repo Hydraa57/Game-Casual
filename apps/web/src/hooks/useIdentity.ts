@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AvatarId } from '@pixelmatrix/shared';
 import { writeAvatar } from '@/lib/avatar';
+import { claimGuestHighScore } from '@/lib/claimHighScore';
 import { readGuestChoice, writeGuestChoice } from '@/lib/identity';
 import { writeNickname } from '@/lib/nickname';
 
@@ -38,19 +39,45 @@ export interface UseIdentity {
 export function useIdentity(): UseIdentity {
   const [identity, setIdentity] = useState<Identity>({ kind: 'loading' });
 
+  // Klaim rekor berjalan asinkron dan bisa selesai setelah komponennya lepas.
+  // Tanpa penjaga ini, hasilnya akan mencoba menulis state yang sudah tidak ada.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  /**
+   * Jadikan `user` identitas aktif, lalu bawa rekor guest-nya kalau ada.
+   *
+   * Dipakai baik oleh sesi yang dipulihkan maupun login baru. Keduanya harus
+   * lewat sini: pemain bisa saja main sebagai guest di perangkat ini SETELAH
+   * akunnya dibuat di perangkat lain, jadi membatasi klaim pada momen login
+   * saja akan melewatkan kasus itu.
+   */
+  const adopt = useCallback((user: AccountUser) => {
+    // Disinkronkan di SETIAP pemuatan, bukan hanya saat baru login. Pemain yang
+    // sesinya masih hidup dari kunjungan lalu tidak pernah melewati jalur
+    // login, jadi tanpa ini lobby multiplayer menawarkan nickname lama — dan
+    // match-nya tercatat atas nama yang berbeda dari akunnya.
+    syncIdentityToDevice(user);
+    setIdentity({ kind: 'account', user });
+
+    void claimGuestHighScore(user.soloHighScore).then((soloHighScore) => {
+      if (soloHighScore === null || !mounted.current) return;
+      setIdentity({ kind: 'account', user: { ...user, soloHighScore } });
+    });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     const settle = (user: AccountUser | null) => {
       if (cancelled) return;
       if (user !== null) {
-        // Disinkronkan di SETIAP pemuatan, bukan hanya saat baru login.
-        // Pemain yang sesinya masih hidup dari kunjungan lalu tidak pernah
-        // melewati jalur login, jadi tanpa ini lobby multiplayer menawarkan
-        // nickname lama — dan match-nya tercatat atas nama yang berbeda dari
-        // akunnya.
-        syncIdentityToDevice(user);
-        setIdentity({ kind: 'account', user });
+        adopt(user);
         return;
       }
       setIdentity(readGuestChoice() ? { kind: 'guest' } : { kind: 'none' });
@@ -66,20 +93,22 @@ export function useIdentity(): UseIdentity {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [adopt]);
 
   const chooseGuest = useCallback(() => {
     writeGuestChoice(true);
     setIdentity({ kind: 'guest' });
   }, []);
 
-  const adoptAccount = useCallback((user: AccountUser) => {
-    // Pilihan guest dibuang: kalau nanti logout, pemain harus memilih lagi
-    // dengan sadar, bukan diam-diam kembali jadi guest.
-    writeGuestChoice(false);
-    syncIdentityToDevice(user);
-    setIdentity({ kind: 'account', user });
-  }, []);
+  const adoptAccount = useCallback(
+    (user: AccountUser) => {
+      // Pilihan guest dibuang: kalau nanti logout, pemain harus memilih lagi
+      // dengan sadar, bukan diam-diam kembali jadi guest.
+      writeGuestChoice(false);
+      adopt(user);
+    },
+    [adopt],
+  );
 
   const reset = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);

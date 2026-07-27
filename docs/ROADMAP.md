@@ -96,7 +96,7 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 - [ ] `POST /api/v1/rooms/private` sebagai proxy auth ke game-server (menutup deviasi MVP dari API.md)
 - [x] Halaman profil sederhana: rekor solo, jumlah match, jumlah menang, 10 match terakhir
 - [x] Leaderboard skor tertinggi: nama ID + avatar, 20 teratas
-- [ ] Migrasi high score `localStorage` → akun saat login pertama
+- [x] Migrasi high score `localStorage` → akun saat login pertama. Klaim hanya menaikkan `User.soloHighScore` dan **tidak** membuat baris `SoloScore`: localStorage cuma menyimpan angkanya, jadi membuat baris riwayat berarti mengarang durasi dan level yang tidak pernah terjadi. Pengamannya sekali-pakai — klaim tertutup permanen begitu akunnya punya skor
 - [ ] Leaderboard global multiplayer (menang/kalah), bukan cuma solo
 
 ## Fase 4 — Deploy Publik & Polish
@@ -132,5 +132,5 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 | 1.5 | `?level=8` bom mengurangi nyawa & emas membayar ×5; `?level=12` dua swatch warna target; `?level=21` badge chaos tampil; mati 3× → tombol "Lanjut dari Lv N", continue ketiga tidak ditawarkan |
 | 1 | Mainkan sendiri di localhost: skor/combo/nyawa/pause sesuai GDD; refresh → high score bertahan. **Lalu buka dari HP** (via IP LAN): papan pas di layar, tap responsif, tidak ada scroll/zoom liar |
 | 2 | Dua tab browser + satu incognito (3 "pemain"): skor sinkron; klik rebutan hanya dimenangkan satu pemain; spam klik terkena rate limit; tutup satu tab → match jalan terus. Ulangi dengan 2 HP nyata |
-| 3 | Login Google; main solo → skor muncul di profil & DB; main MP → match history terisi (guest tercatat sebagai nickname) |
+| 3 | Daftar akun username+password (OAuth sudah dibuang, lihat Fase 3); rekor guest dari localStorage ikut terbawa ke akun baru; main solo → skor muncul di profil & DB; main MP → match history terisi (guest tercatat sebagai nickname) |
 | 4 | Main dari 2 jaringan berbeda via URL publik; input terasa < 150 ms; load pertama < 3 dtk; uji di Android Chrome & iOS Safari |

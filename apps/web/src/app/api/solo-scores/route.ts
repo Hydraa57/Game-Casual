@@ -1,20 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@pixelmatrix/db';
-import { BASE_POINTS, GOLD_POINT_MULTIPLIER, MAX_SPEED_BONUS } from '@pixelmatrix/shared';
+import { MAX_POINTS_PER_SECOND } from '@pixelmatrix/shared';
 import { currentUser } from '@/lib/session';
-
-/**
- * Batas atas skor yang masuk akal per detik bermain.
- *
- * Dihitung dari kasus terbaik yang mungkin: klik emas (poin ×5) dengan speed
- * bonus penuh dan multiplier tertinggi, pada kecepatan tap manusia (~5/detik).
- * Angka di atas ini tidak mungkin dicapai dengan bermain — hanya dengan
- * mengirim skor palsu ke endpoint ini.
- *
- * Dibuat longgar dengan sengaja: menolak skor jujur karena batasnya terlalu
- * ketat jauh lebih merusak daripada meloloskan satu skor palsu di game hobi.
- */
-const MAX_POINTS_PER_SECOND = (BASE_POINTS + MAX_SPEED_BONUS) * GOLD_POINT_MULTIPLIER * 2 * 5;
 
 export async function POST(request: Request): Promise<NextResponse> {
   const prisma = db();
