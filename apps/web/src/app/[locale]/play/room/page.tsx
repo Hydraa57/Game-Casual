@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { MultiplayerRoom } from '@/components/MultiplayerRoom';
+import { PlayGate } from '@/components/PlayGate';
 
 /**
  * Seluruh alur multiplayer ada di satu halaman: gabung, lobby, dan (nanti)
@@ -17,5 +18,9 @@ export default async function RoomPage({
   setRequestLocale(locale);
 
   const code = typeof query.code === 'string' ? query.code.toUpperCase() : '';
-  return <MultiplayerRoom initialCode={code} />;
+  return (
+    <PlayGate>
+      <MultiplayerRoom initialCode={code} />
+    </PlayGate>
+  );
 }

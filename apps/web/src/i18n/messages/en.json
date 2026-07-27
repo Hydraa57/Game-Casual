@@ -149,7 +149,18 @@
       "noDatabase": "Accounts are not enabled on this server. You can still play as a guest.",
       "badRequest": "Something went wrong. Try again.",
       "network": "Could not reach the server. Check your connection."
-    }
+    },
+    "gateTitle": "Play as who?",
+    "gateAccount": "Log in / Sign up",
+    "gateAccountNote": "Your solo record and match history are saved, and your name joins the leaderboard.",
+    "gateGuest": "Play as guest",
+    "gateGuestNote": "Start right away, no sign-up. Nothing is saved.",
+    "gateBack": "Pick another way",
+    "gateHome": "Home",
+    "guestLabel": "Guest",
+    "guestNotSaved": "history not saved",
+    "switch": "Switch",
+    "or": "or"
   },
   "leaderboard": {
     "title": "Leaderboard",

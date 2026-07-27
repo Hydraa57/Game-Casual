@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
-import { AccountPanel } from '@/components/AccountPanel';
+import { LandingMenu } from '@/components/LandingMenu';
 import { PrefetchGame } from '@/components/PrefetchGame';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
@@ -35,20 +35,7 @@ function Landing({ locale }: { locale: Locale }) {
         </ol>
       </section>
 
-      <AccountPanel />
-
-      <div className="actions">
-        <Link className="btn btn--primary btn--block" href="/play/solo">
-          {t('playSolo')}
-        </Link>
-        <Link className="btn btn--block" href="/play/room">
-          {t('playMultiplayer')}
-        </Link>
-      </div>
-
-      <Link className="btn btn--block" href="/leaderboard">
-        {t('leaderboard')}
-      </Link>
+      <LandingMenu />
 
       <Link className="btn btn--small" href="/" locale={otherLocale}>
         {t('switchLanguage')}

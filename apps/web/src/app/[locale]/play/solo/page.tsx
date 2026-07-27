@@ -1,4 +1,5 @@
 import { setRequestLocale } from 'next-intl/server';
+import { PlayGate } from '@/components/PlayGate';
 import { SoloGame } from '@/components/SoloGame';
 
 /**
@@ -24,5 +25,9 @@ export default async function SoloPage({
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   setRequestLocale(locale);
 
-  return <SoloGame startLevel={parseStartLevel(query.level)} />;
+  return (
+    <PlayGate>
+      <SoloGame startLevel={parseStartLevel(query.level)} />
+    </PlayGate>
+  );
 }

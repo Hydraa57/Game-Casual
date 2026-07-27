@@ -90,6 +90,7 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 - [x] Hasil match tersimpan ke `Match` + `MatchPlayer` (guest ikut tercatat, `userId` null)
 - [x] **Akun username + password, TANPA OAuth.** Google/Discord sengaja tidak dipakai: game ini baru, dan meminta orang menautkan akun Google-nya adalah friksi yang jauh lebih besar daripada mengisi dua kolom
 - [x] Guest tetap bisa main penuh — akun hanya menambah riwayat yang tersimpan
+- [x] **Gerbang identitas**: solo maupun MP baru bisa dibuka setelah pemain memilih guest atau akun. Dipasang di tempat (bukan redirect) supaya `?code=` dari link undangan tidak hilang
 - [ ] Handshake Socket.IO membawa session token supaya `MatchPlayer.userId` terisi; guest tetap boleh join room
 - [x] `GET /api/auth/me` + `POST /api/solo-scores` termasuk validasi heuristik skor-vs-durasi. **Deviasi dari API.md:** tanpa prefiks `/api/v1` dan tanpa envelope `{data,meta}` — versi & envelope berguna saat ada konsumen luar, dan di sini satu-satunya konsumen adalah front-end di repo yang sama
 - [ ] `POST /api/v1/rooms/private` sebagai proxy auth ke game-server (menutup deviasi MVP dari API.md)

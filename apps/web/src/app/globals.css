@@ -824,3 +824,27 @@ h3 {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+/* ------------------------------------------------------- gerbang identitas */
+
+.gate {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.gate .card__title {
+  margin-bottom: 4px;
+}
+
+/* Jarak antara tombol dan catatannya dirapatkan supaya keduanya terbaca
+   sebagai satu pilihan, bukan dua elemen terpisah. */
+.gate .hint {
+  margin-top: -4px;
+  margin-bottom: 6px;
+}

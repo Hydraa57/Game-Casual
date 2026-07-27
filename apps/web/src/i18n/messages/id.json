@@ -149,7 +149,18 @@
       "noDatabase": "Fitur akun belum aktif di server ini. Kamu tetap bisa main sebagai guest.",
       "badRequest": "Ada yang salah. Coba lagi.",
       "network": "Gagal menghubungi server. Cek koneksimu."
-    }
+    },
+    "gateTitle": "Main sebagai siapa?",
+    "gateAccount": "Masuk / Daftar akun",
+    "gateAccountNote": "Rekor solo dan riwayat match tersimpan, dan namamu masuk papan skor.",
+    "gateGuest": "Main sebagai guest",
+    "gateGuestNote": "Langsung main tanpa daftar. Riwayatnya tidak tersimpan.",
+    "gateBack": "Pilih cara lain",
+    "gateHome": "Beranda",
+    "guestLabel": "Guest",
+    "guestNotSaved": "riwayat tidak tersimpan",
+    "switch": "Ganti",
+    "or": "atau"
   },
   "leaderboard": {
     "title": "Papan Skor",
