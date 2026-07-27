@@ -137,19 +137,41 @@ Provider gratis yang cocok: Neon atau Supabase (keduanya Postgres, ada free tier
 
 > **Khusus Supabase — jalankan [`packages/db/supabase/rls.sql`](packages/db/supabase/rls.sql) setelah migrasi.** Supabase mengekspos semua tabel `public` lewat anon key, dan anon key memang dirancang untuk publik. Tanpa file itu, siapa pun yang punya anon key bisa mengunduh hash password dan token sesi. Skrip itu menutup semuanya kecuali tiga kolom yang dipakai leaderboard, dan tidak menyentuh akses aplikasi (Prisma konek sebagai pemilik tabel, yang melewati RLS).
 
-> **Kalau memakai Supabase**, ambil connection string dari Settings → Database → *Connection string* → **Session pooler** (bukan Direct connection — banyak host tidak punya IPv6). Bentuknya `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`. Tempel sebagai `DATABASE_URL` di game-server.
+### Kalau memakai Supabase
+
+Ambil dari **Settings → Database → Connection string**. Ada tiga pilihan dan **yang benar berbeda untuk tiap layanan** — ini bukan detail kosmetik, salah pilih berarti koneksinya gagal total atau Prisma error di query pertama.
+
+| Dipakai di | Mode | Port | Kenapa |
+|---|---|---|---|
+| **Render** (game-server) | **Session pooler** | 5432 | Proses hidup terus di jaringan IPv4. Mendukung prepared statement, jadi Prisma jalan tanpa flag tambahan |
+| **Vercel** (web) | **Transaction pooler** | 6543 | Tiap request adalah proses baru. Wajib ditambah `?pgbouncer=true` — mode transaksi tidak mendukung prepared statement dan Prisma akan error tanpa itu |
+| migrasi (`prisma migrate deploy`) | Session pooler atau Direct | 5432 | Direct connection di free tier hanya IPv6, jadi Session pooler biasanya yang jalan |
+
+Bentuknya kira-kira begini (host lengkapnya salin dari dashboard, jangan dikarang):
+
+```bash
+# Render
+DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-<n>-<region>.pooler.supabase.com:5432/postgres"
+
+# Vercel — perhatikan port 6543 DAN ?pgbouncer=true
+DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-<n>-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true"
+```
+
+> **Kalau mau satu string saja untuk keduanya**, pakai Session pooler (5432) di mana-mana. Itu tetap benar; yang dikorbankan hanya efisiensi koneksi di Vercel, dan itu baru terasa kalau trafiknya ramai. Yang **tidak** boleh: memakai Transaction pooler tanpa `?pgbouncer=true`.
 
 > ⚠️ **Kalau migrasi pertama diterapkan lewat dashboard/API Supabase (bukan lewat Prisma)**, Prisma tidak tahu apa-apa soal itu — ia mencatat di tabelnya sendiri (`_prisma_migrations`), sementara Supabase mencatat di `supabase_migrations.schema_migrations`. Akibatnya `prisma migrate deploy` yang pertama akan mencoba membuat ulang tabel yang sudah ada, lalu gagal. Tandai dulu satu per satu:
 >
 > ```bash
 > cd packages/db
-> DATABASE_URL="<url-supabase>" pnpm exec prisma migrate resolve --applied 20260727023219_init
-> DATABASE_URL="<url-supabase>" pnpm exec prisma migrate resolve --applied 20260727031407_match_player_elimination
-> DATABASE_URL="<url-supabase>" pnpm exec prisma migrate resolve --applied 20260727034059_credential_accounts
-> DATABASE_URL="<url-supabase>" pnpm exec prisma migrate resolve --applied 20260727035500_username_lower
+> for m in 20260727023219_init 20260727031407_match_player_elimination \
+>          20260727034059_credential_accounts 20260727035500_username_lower; do
+>   DATABASE_URL="<url-session-pooler>" pnpm exec prisma migrate resolve --applied "$m"
+> done
 > ```
 >
 > Setelah itu `prisma migrate deploy` bekerja normal untuk migrasi berikutnya.
+
+> **Jangan lupa jalankan [`packages/db/supabase/rls.sql`](packages/db/supabase/rls.sql).** Supabase mengekspos semua tabel `public` lewat anon key, dan anon key memang dirancang untuk publik — tanpa file itu, hash password dan token sesi bisa diunduh siapa saja.
 
 ## Pasang di HP (PWA)
 
