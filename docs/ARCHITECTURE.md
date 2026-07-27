@@ -162,7 +162,17 @@ Mengikuti [API.md](./API.md): prefix `/api/v1`, envelope `{ success, data | erro
 
 **Deviasi yang disengaja dari API.md** — di MVP, pembuatan private room dilakukan **lewat Socket.IO (`room:create`), bukan `POST /api/v1/rooms/private`**, karena room hidup di memori game-server dan belum ada auth. Saat Fase 3, endpoint REST-nya ditambahkan sebagai proxy tervalidasi-auth ke game-server sehingga kontrak API.md terpenuhi.
 
-**Auth socket (Fase 3)**: handshake Socket.IO membawa session token NextAuth; server memverifikasi dan mengaitkan `userId` ke socket. Guest (tanpa token) tetap boleh join room — sesuai keputusan "guest nickname dulu".
+**Auth: username + password, bukan OAuth.** Keputusan produk, bukan teknis — game ini baru dan meminta orang menautkan akun Google-nya adalah friksi yang jauh lebih besar daripada mengisi dua kolom. Konsekuensi yang diterima: tanpa email, **lupa password berarti akun hilang**. Kolom `email` sudah ada di skema (nullable, belum dipakai) supaya pemulihan bisa ditambahkan tanpa migrasi menyakitkan.
+
+Aturan username/password sengaja longgar (3–16 karakter, password minimal 6) karena yang disimpan hanya riwayat permainan. Yang **tidak** longgar adalah penyimpanannya: scrypt dari `node:crypto` dengan salt acak per akun, dan verifikasi memakai `timingSafeEqual`. Alasannya bukan nilai data di sini — melainkan bahwa orang memakai ulang password mereka di tempat lain.
+
+Tiga hal kecil yang mudah terlewat dan sudah ditangani:
+
+1. **Login tidak membedakan "username tidak ada" dari "password salah".** Membedakannya mengubah form login jadi alat untuk memeriksa siapa saja yang punya akun.
+2. **Password tetap di-hash walau username tidak ditemukan**, memakai hash boneka. Tanpa itu, respons untuk username asing jauh lebih cepat dan selisih waktunya membocorkan hal yang sama.
+3. **Keunikan username dijaga database** lewat kolom `usernameLower` yang unik, bukan lewat cek-lalu-insert. Dua pendaftaran bersamaan bisa lolos pemeriksaan aplikasi berdua, lalu "Budi" dan "budi" hidup berdampingan di leaderboard.
+
+**Auth socket (belum)**: handshake Socket.IO nanti membawa session token supaya `MatchPlayer.userId` terisi. Guest (tanpa token) tetap boleh join room.
 
 ## 6. Deployment & Skalabilitas
 

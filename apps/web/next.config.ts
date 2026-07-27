@@ -6,7 +6,7 @@ const withNextIntl = createNextIntlPlugin();
 const nextConfig: NextConfig = {
   // @pixelmatrix/shared mengekspor TypeScript source langsung, jadi Next yang
   // meng-transpile-nya. Tidak ada langkah build antara → tidak ada dist basi.
-  transpilePackages: ['@pixelmatrix/shared'],
+  transpilePackages: ['@pixelmatrix/shared', '@pixelmatrix/db'],
 
   // Supaya bisa dibuka dari HP di jaringan yang sama (`pnpm dev` sudah listen
   // di 0.0.0.0). Ganti/tambah IP LAN kamu kalau Next memblokir permintaannya.

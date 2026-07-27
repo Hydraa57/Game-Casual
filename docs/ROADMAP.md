@@ -88,11 +88,13 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 - [x] PostgreSQL + Prisma di `packages/db`, skema sesuai ARCHITECTURE.md §4, migrasi awal terverifikasi terhadap Postgres 16 sungguhan
 - [x] **Persistensi opsional**: tanpa `DATABASE_URL` game jalan penuh dan tidak menulis apa pun. `GET /health` melaporkan statusnya
 - [x] Hasil match tersimpan ke `Match` + `MatchPlayer` (guest ikut tercatat, `userId` null)
-- [ ] NextAuth: Google provider dulu (Discord/email menyusul) — **butuh kredensial OAuth darimu**
-- [ ] Handshake Socket.IO membawa session token; guest tetap boleh join room
+- [x] **Akun username + password, TANPA OAuth.** Google/Discord sengaja tidak dipakai: game ini baru, dan meminta orang menautkan akun Google-nya adalah friksi yang jauh lebih besar daripada mengisi dua kolom
+- [x] Guest tetap bisa main penuh — akun hanya menambah riwayat yang tersimpan
+- [ ] Handshake Socket.IO membawa session token supaya `MatchPlayer.userId` terisi; guest tetap boleh join room
 - [ ] `GET /api/v1/users/me` + `POST /api/v1/solo-scores` sesuai [API.md](./API.md) (envelope + status codes), termasuk validasi heuristik skor-vs-durasi
 - [ ] `POST /api/v1/rooms/private` sebagai proxy auth ke game-server (menutup deviasi MVP dari API.md)
 - [ ] Halaman profil: stats, win/loss, match history, solo high score (FR-09)
+- [ ] Leaderboard skor tertinggi: nama ID + avatar
 - [ ] Migrasi high score `localStorage` → akun saat login pertama
 
 ## Fase 4 — Deploy Publik & Polish

@@ -1,11 +1,12 @@
 // URUTAN IMPORT DI SINI PENTING: `./env.js` harus dievaluasi sebelum klien
 // Prisma, karena klien itu menyuntikkan isi file .env ke process.env saat
 // di-import. Lihat penjelasan lengkap di env.ts.
-import { DATABASE_URL } from './env.js';
-import { PrismaClient } from '../generated/client/index.js';
+import { DATABASE_URL } from './env';
+import { PrismaClient } from '../generated/client/index';
 
-export type { PrismaClient } from '../generated/client/index.js';
-export { Prisma } from '../generated/client/index.js';
+export type { PrismaClient } from '../generated/client/index';
+export { Prisma } from '../generated/client/index';
+export { hashPassword, newSessionToken, verifyPassword } from './password';
 
 /**
  * Klien database, atau `null` kalau `DATABASE_URL` tidak diset.

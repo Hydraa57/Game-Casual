@@ -124,5 +124,30 @@
     "eliminated": "ELIMINATED",
     "eliminatedHint": "Knocked out three times. You are a spectator until the match ends.",
     "eliminatedShort": "OUT"
+  },
+  "auth": {
+    "title": "Account",
+    "login": "Log in",
+    "signup": "Sign up",
+    "username": "Player ID",
+    "password": "Password",
+    "avatar": "Character",
+    "createAccount": "Create account",
+    "signIn": "Log in",
+    "guestNote": "Without an account you can still play everything as a guest — your history just is not saved.",
+    "signedInAs": "Signed in as",
+    "logout": "Log out",
+    "playAsGuest": "Play as guest",
+    "highScore": "Solo record",
+    "err": {
+      "usernameLength": "Player ID must be 3–16 characters.",
+      "usernameChars": "Player ID can only use letters, numbers and underscores.",
+      "passwordLength": "Password must be at least {min} characters.",
+      "usernameTaken": "That player ID is taken. Try another.",
+      "invalidCredentials": "Wrong player ID or password.",
+      "noDatabase": "Accounts are not enabled on this server. You can still play as a guest.",
+      "badRequest": "Something went wrong. Try again.",
+      "network": "Could not reach the server. Check your connection."
+    }
   }
 }

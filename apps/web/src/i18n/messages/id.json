@@ -124,5 +124,30 @@
     "eliminated": "TERELIMINASI",
     "eliminatedHint": "KO tiga kali. Kamu jadi penonton sampai match selesai.",
     "eliminatedShort": "OUT"
+  },
+  "auth": {
+    "title": "Akun",
+    "login": "Masuk",
+    "signup": "Daftar",
+    "username": "Nama ID",
+    "password": "Password",
+    "avatar": "Karakter",
+    "createAccount": "Buat Akun",
+    "signIn": "Masuk",
+    "guestNote": "Tanpa akun kamu tetap bisa main penuh sebagai guest — cuma riwayatnya tidak tersimpan.",
+    "signedInAs": "Masuk sebagai",
+    "logout": "Keluar",
+    "playAsGuest": "Main sebagai guest",
+    "highScore": "Rekor solo",
+    "err": {
+      "usernameLength": "Nama ID harus 3–16 karakter.",
+      "usernameChars": "Nama ID hanya boleh huruf, angka, dan garis bawah.",
+      "passwordLength": "Password minimal {min} karakter.",
+      "usernameTaken": "Nama ID itu sudah dipakai. Coba yang lain.",
+      "invalidCredentials": "Nama ID atau password salah.",
+      "noDatabase": "Fitur akun belum aktif di server ini. Kamu tetap bisa main sebagai guest.",
+      "badRequest": "Ada yang salah. Coba lagi.",
+      "network": "Gagal menghubungi server. Cek koneksimu."
+    }
   }
 }

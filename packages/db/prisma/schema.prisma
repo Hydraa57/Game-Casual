@@ -19,21 +19,38 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
-// Akun (Fase 3) — model Account/Session/VerificationToken mengikuti NextAuth
+// Akun — username + password, TANPA OAuth
 // ---------------------------------------------------------------------------
+//
+// Sengaja tidak memakai login Google/Discord: game ini baru, dan meminta orang
+// menautkan akun Google-nya ke game yang belum mereka percayai adalah friksi
+// yang jauh lebih besar daripada mengisi dua kolom. Guest tetap bisa main
+// penuh; akun hanya menambah riwayat yang tersimpan.
 
 model User {
-  id            String    @id @default(cuid())
-  /// Nama tampilan. Unik supaya bisa dipakai di leaderboard tanpa ambigu.
-  username      String    @unique
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  /// Didenormalisasi supaya profil bisa dibaca tanpa agregasi ke SoloScore.
-  soloHighScore Int       @default(0)
-  createdAt     DateTime  @default(now())
+  id String @id @default(cuid())
 
-  accounts     Account[]
+  /// Nama tampilan apa adanya, termasuk besar-kecil hurufnya.
+  username String @unique
+  /// Versi huruf kecil, dipakai untuk keunikan.
+  ///
+  /// Dijadikan kolom tersendiri dan bukan sekadar pencarian case-insensitive
+  /// supaya keunikannya dijaga DATABASE. Dengan cek-lalu-insert di aplikasi,
+  /// dua pendaftaran bersamaan bisa lolos berdua — lalu "Budi" dan "budi"
+  /// hidup berdampingan di leaderboard dan orang bisa menyamar jadi temannya.
+  usernameLower String @unique
+  /// scrypt: "salt:hash" heksadesimal. TIDAK PERNAH berisi password polos.
+  passwordHash String
+  /// Avatar default pemain saat masuk room.
+  avatar String @default("fox")
+  /// Belum dipakai. Ada supaya pemulihan password bisa ditambahkan tanpa
+  /// migrasi yang menyakitkan — tanpa email, lupa password = akun hilang.
+  email String? @unique
+
+  /// Didenormalisasi supaya profil dan leaderboard bisa dibaca tanpa agregasi.
+  soloHighScore Int      @default(0)
+  createdAt     DateTime @default(now())
+
   sessions     Session[]
   soloScores   SoloScore[]
   matchPlayers MatchPlayer[]
@@ -41,43 +58,18 @@ model User {
   @@index([soloHighScore])
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-}
-
 model Session {
-  id           String   @id @default(cuid())
+  id String @id @default(cuid())
+
+  /// Token acak 32 byte. Yang disimpan di cookie httpOnly milik pemain.
   sessionToken String   @unique
   userId       String
   expires      DateTime
+  createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-}
-
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@unique([identifier, token])
 }
 
 // ---------------------------------------------------------------------------

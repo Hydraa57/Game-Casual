@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
+import { AccountPanel } from '@/components/AccountPanel';
 import { PrefetchGame } from '@/components/PrefetchGame';
 import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
@@ -33,6 +34,8 @@ function Landing({ locale }: { locale: Locale }) {
           <li>{t('howTo.step4')}</li>
         </ol>
       </section>
+
+      <AccountPanel />
 
       <div className="actions">
         <Link className="btn btn--primary btn--block" href="/play/solo">

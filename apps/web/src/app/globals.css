@@ -722,3 +722,49 @@ h3 {
   color: var(--danger);
   font-weight: 700;
 }
+
+/* ------------------------------------------------------------------- akun */
+
+.authTabs {
+  display: flex;
+  gap: 8px;
+}
+
+.authTabs .chip {
+  flex: 1;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.account__who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.account__name {
+  font-weight: 700;
+  /* Nama panjang tidak boleh mendorong tombol keluar keluar layar HP. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account__score {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
