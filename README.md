@@ -36,6 +36,7 @@ Next.js + Phaser (Vercel) · Node + Socket.IO (Render/Fly.io) · PostgreSQL + Pr
 apps/web/          Next.js + Phaser — landing page & solo mode
 apps/game-server/  Socket.IO game server — room, lobby, match otoritatif
 packages/shared/   Tipe, konstanta balancing, engine aturan main
+packages/db/       Prisma + PostgreSQL — riwayat match & akun (OPSIONAL)
 docs/              Blueprint & planning
 ```
 
@@ -108,6 +109,23 @@ Kalau masih gagal, pesan errornya sekarang menyebutkan alamat yang dicoba — it
 > **Catatan free tier:** Render menidurkan instance yang idle. Efeknya yang perlu diketahui: saat pertama membuka halaman multiplayer setelah lama tidak dipakai, statusnya **akan** menunjukkan "terputus" dulu selama 30–60 detik sementara server bangun, lalu berubah sendiri ke "tersambung" — client-nya mencoba ulang otomatis, jadi tidak perlu refresh. Untuk main di tongkrongan ini terasa; kalau mengganggu, pakai paket yang tidak tidur atau Fly.io.
 
 > **Latensi itu penting di game ini.** Pemenang klik rebutan ditentukan dari urutan kedatangan di server, jadi jarak fisik ke server langsung memengaruhi keadilannya. `render.yaml` sudah menyetel region **Singapura** (~30 ms dari Indonesia) alih-alih default Oregon (~200 ms). Kalau deploy manual tanpa Blueprint, pastikan pilih region terdekat.
+
+## Database (opsional)
+
+**Game jalan penuh tanpa database.** Kalau `DATABASE_URL` tidak diset, room hidup di memori dan high score solo di `localStorage` — persis seperti sekarang. Yang hilang hanya riwayat match. Ini bukan keadaan sementara: syarat "teman bisa langsung main tanpa daftar" berarti database tidak boleh pernah jadi prasyarat bermain.
+
+Untuk menyalakannya, set `DATABASE_URL` di game-server lalu jalankan migrasinya:
+
+```bash
+cd packages/db
+cp .env.example .env    # isi DATABASE_URL
+pnpm migrate            # dev: buat/terapkan migrasi
+pnpm migrate:deploy     # produksi: terapkan migrasi yang sudah ada
+```
+
+Cek `GET /health` di game-server: `persistence: true` berarti database terpasang, `false` berarti game berjalan tanpa penyimpanan.
+
+Provider gratis yang cocok: Neon atau Supabase (keduanya Postgres, ada free tier). Pastikan region-nya dekat game-server.
 
 ## Pasang di HP (PWA)
 

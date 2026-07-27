@@ -5,6 +5,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@pixelmatrix/sh
 import { Match } from './game/Match';
 import { registerHandlers } from './net/handlers';
 import type { MatchHooks } from './net/handlers';
+import { hasDatabase } from '@pixelmatrix/db';
 import { RoomManager } from './rooms/RoomManager';
 import type { Room } from './rooms/Room';
 
@@ -27,6 +28,9 @@ app.get('/health', (_req, res) => {
     rooms: rooms.roomCount,
     players: rooms.playerCount,
     matches: matches.size,
+    // Terlihat di /health supaya tidak perlu menebak apakah env-nya sudah
+    // terpasang benar di hosting. `false` bukan error — game tetap jalan.
+    persistence: hasDatabase(),
   });
 });
 

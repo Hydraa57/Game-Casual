@@ -9,3 +9,4 @@ coverage/
 
 # Dihasilkan otomatis oleh Next
 next-env.d.ts
+packages/db/generated/

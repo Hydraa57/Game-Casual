@@ -25,6 +25,7 @@ import type {
 } from '@pixelmatrix/shared';
 import type { Room } from '../rooms/Room';
 import type { GameServer } from '../net/handlers';
+import { saveMatch } from '../persistence/matchStore';
 import { hasThawed, isFrozen, shouldFreeze } from './freeze';
 import { RateLimiter } from './RateLimiter';
 
@@ -61,6 +62,7 @@ export class Match {
   private lastBroadcastAt = 0;
   private countdownLeft = COUNTDOWN_SECONDS;
   private suddenDeathSeq = 0;
+  private startedAt: Date | null = null;
 
   constructor(
     private readonly room: Room,
@@ -189,6 +191,7 @@ export class Match {
 
   private beginPlay(): void {
     this.status = 'running';
+    this.startedAt = new Date();
     this.room.setStatus('playing');
     this.board = { ...this.board, status: 'running' };
     this.lastTickAt = Date.now();
@@ -427,7 +430,20 @@ export class Match {
     this.status = 'ended';
     this.stop();
 
-    this.io.to(this.room.code).emit('game:ended', { ranking: this.ranking(), reason });
+    const ranking = this.ranking();
+    this.io.to(this.room.code).emit('game:ended', { ranking, reason });
+
+    // Sengaja tidak di-await: pemain sudah melihat hasilnya, dan menunggu
+    // round-trip database di sini hanya akan menunda layar hasil. Kegagalannya
+    // ditangani di dalam saveMatch dan tidak pernah menjatuhkan match.
+    void saveMatch({
+      roomCode: this.room.code,
+      settings: this.room.currentSettings,
+      endReason: reason,
+      startedAt: this.startedAt ?? new Date(),
+      endedAt: new Date(),
+      ranking,
+    });
 
     // Room DITAHAN di `finished`, bukan langsung `waiting`: kalau langsung, client
     // berpindah ke lobby sebelum sempat menampilkan layar hasil. Pemain sendiri

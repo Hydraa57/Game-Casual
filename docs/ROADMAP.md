@@ -82,14 +82,15 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 
 **Yang belum dikerjakan dan sengaja ditunda ke Fase 3:** hasil match belum disimpan ke mana pun (belum ada database), dan pemain yang koneksinya putus di tengah match tidak bisa masuk kembali ke match yang sama.
 
-## Fase 3 — Akun & Persistensi
+## Fase 3 — Akun & Persistensi 🚧
 
-- [ ] PostgreSQL + Prisma, skema sesuai ARCHITECTURE.md §4
-- [ ] NextAuth: Google provider dulu (Discord/email menyusul)
+- [x] PostgreSQL + Prisma di `packages/db`, skema sesuai ARCHITECTURE.md §4, migrasi awal terverifikasi terhadap Postgres 16 sungguhan
+- [x] **Persistensi opsional**: tanpa `DATABASE_URL` game jalan penuh dan tidak menulis apa pun. `GET /health` melaporkan statusnya
+- [x] Hasil match tersimpan ke `Match` + `MatchPlayer` (guest ikut tercatat, `userId` null)
+- [ ] NextAuth: Google provider dulu (Discord/email menyusul) — **butuh kredensial OAuth darimu**
 - [ ] Handshake Socket.IO membawa session token; guest tetap boleh join room
 - [ ] `GET /api/v1/users/me` + `POST /api/v1/solo-scores` sesuai [API.md](./API.md) (envelope + status codes), termasuk validasi heuristik skor-vs-durasi
 - [ ] `POST /api/v1/rooms/private` sebagai proxy auth ke game-server (menutup deviasi MVP dari API.md)
-- [ ] Game server melaporkan hasil match → tabel `Match` + `MatchPlayer`
 - [ ] Halaman profil: stats, win/loss, match history, solo high score (FR-09)
 - [ ] Migrasi high score `localStorage` → akun saat login pertama
 

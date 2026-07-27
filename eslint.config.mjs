@@ -9,6 +9,8 @@ export default tseslint.config(
       '**/.next/**',
       '**/coverage/**',
       '**/next-env.d.ts',
+      // Klien Prisma dibangkitkan dari schema.prisma — bukan kode yang kita tulis.
+      'packages/db/generated/**',
     ],
   },
   js.configs.recommended,

@@ -105,7 +105,9 @@ Semua payload didefinisikan sebagai tipe TypeScript di `packages/shared/src/even
 
 ## 4. Database (mulai Fase 3 — Prisma + PostgreSQL)
 
-MVP (Fase 0–2) **tidak memakai database sama sekali**: room hidup di memori game-server, high score solo di `localStorage`. Skema saat auth masuk:
+**Database bersifat OPSIONAL — selamanya, bukan sementara.** Kalau `DATABASE_URL` tidak diset, game berjalan penuh: room di memori, high score solo di `localStorage`, dan hasil match tidak disimpan. Syarat "teman bisa langsung main tanpa daftar" berarti database tidak boleh pernah menjadi prasyarat untuk bermain; ia hanya menambah riwayat dan profil. `GET /health` di game-server melaporkan `persistence: true/false` supaya tidak perlu menebak apakah env-nya sudah terpasang.
+
+Skemanya ada di [`packages/db/prisma/schema.prisma`](../packages/db/prisma/schema.prisma) (Prisma + PostgreSQL), dipakai bersama oleh web dan game-server lewat `@pixelmatrix/db`:
 
 ```prisma
 model User {          // + model Account, Session, VerificationToken standar NextAuth
@@ -147,6 +149,12 @@ model MatchPlayer {
 ```
 
 Fase 5 menambah `Item`, `Purchase`, `Ban` (IAP & admin, lihat PRD FR-10–FR-12).
+
+### ⚠️ Jebakan yang sudah menggigit sekali
+
+**Klien Prisma yang dibangkitkan memuat file `.env` di dekat schema-nya ke `process.env` saat modulnya di-import.** Artinya pemeriksaan `process.env.DATABASE_URL` yang dilakukan *sesudah* import akan melihat nilai yang tidak pernah diset di lingkungan itu — dan persistensi menyala diam-diam. Saat diuji, satu match tetap tertulis ke database padahal server dijalankan tanpa `DATABASE_URL` sama sekali.
+
+Penangkalnya ada di `packages/db/src/env.ts`: nilai env ditangkap di modul terpisah yang **di-import lebih dulu** daripada klien Prisma, dan URL-nya diberikan eksplisit ke `new PrismaClient({ datasources })`. Urutan import di `packages/db/src/index.ts` karena itu tidak boleh diacak. Ada unit test yang gagal kalau persistensi menyala tanpa env.
 
 ## 5. REST API
 
