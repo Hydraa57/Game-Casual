@@ -18,7 +18,14 @@ WORKDIR /app
 # dependensinya tidak berubah.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
+COPY packages/db/package.json packages/db/
 COPY apps/game-server/package.json apps/game-server/
+
+# Schema Prisma ikut SEBELUM install, bukan sesudahnya: postinstall di
+# packages/db menjalankan `prisma generate`, dan itu butuh schema-nya sudah
+# ada. Klien yang dihasilkan tidak pernah di-commit (lihat .gitignore), jadi
+# ini satu-satunya tempat ia dibuat di dalam image.
+COPY packages/db/prisma packages/db/prisma
 
 # `...` di akhir filter berarti "paket ini beserta dependensi workspace-nya".
 # Jadi apps/web (Next + Phaser, ratusan MB) tidak ikut terpasang.
@@ -29,6 +36,7 @@ RUN pnpm install --frozen-lockfile --filter @pixelmatrix/game-server...
 
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
+COPY packages/db/src packages/db/src
 COPY apps/game-server apps/game-server
 
 ENV NODE_ENV=production
@@ -39,4 +47,7 @@ EXPOSE 3001
 # CORS_ORIGIN WAJIB diisi di produksi dengan origin web-nya, misal
 # https://pixel-matrix.vercel.app. Kalau dibiarkan kosong, server menerima
 # koneksi dari origin mana pun.
+#
+# DATABASE_URL opsional: tanpa itu game jalan penuh, hanya riwayat match yang
+# tidak tersimpan.
 CMD ["pnpm", "--filter", "@pixelmatrix/game-server", "start"]

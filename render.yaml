@@ -24,3 +24,8 @@ services:
       - key: CORS_ORIGIN
         # Ganti kalau domain web-mu berubah. Jangan biarkan `*` di produksi.
         value: https://game-casual-web.vercel.app
+      - key: DATABASE_URL
+        # sync: false = Render menanyakannya saat blueprint dipasang dan tidak
+        # menyimpannya di repo. Boleh dikosongkan: tanpa DATABASE_URL game
+        # tetap jalan penuh, hanya riwayat match yang tidak tersimpan.
+        sync: false
