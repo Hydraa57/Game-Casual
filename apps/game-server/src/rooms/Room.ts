@@ -1,4 +1,6 @@
 import {
+  ALLOWED_TARGET_SCORES,
+  ALLOWED_TIME_LIMITS_SEC,
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
@@ -175,13 +177,34 @@ export class Room {
   }
 }
 
-/** Jepit pengaturan ke rentang yang sah — client tidak pernah dipercaya. */
+/**
+ * Jepit pengaturan ke rentang yang sah — client tidak pernah dipercaya.
+ *
+ * Batasnya DITURUNKAN dari daftar pilihan yang diizinkan, bukan ditulis sebagai
+ * angka. Versi pertama memakai angka langsung (`50, 1000` untuk target skor),
+ * dan begitu daftar pilihannya dinaikkan sampai 1500, batas atas 1000 itu
+ * diam-diam menurunkan pilihan host tanpa satu pun error: zod meloloskan 1500
+ * karena ia ada di daftar, lalu clamp memotongnya ke 1000. Host memilih 1500,
+ * mendapat 1000, dan tidak ada apa pun yang memberi tahu.
+ *
+ * Dua sumber kebenaran untuk hal yang sama selalu berakhir seperti itu. Sekarang
+ * hanya ada satu, dan `Room.test.ts` menjaga agar setiap pilihan yang diizinkan
+ * benar-benar lolos tanpa berubah nilainya.
+ */
 export function normalizeSettings(patch?: Partial<RoomSettings>): RoomSettings {
   const merged = { ...DEFAULT_ROOM_SETTINGS, ...patch };
   return {
     maxPlayers: clamp(merged.maxPlayers, MIN_PLAYERS_TO_START, MAX_PLAYERS_LIMIT),
-    targetScore: clamp(merged.targetScore, 50, 1000),
-    timeLimitSec: clamp(merged.timeLimitSec, 30, 600),
+    targetScore: clamp(
+      merged.targetScore,
+      Math.min(...ALLOWED_TARGET_SCORES),
+      Math.max(...ALLOWED_TARGET_SCORES),
+    ),
+    timeLimitSec: clamp(
+      merged.timeLimitSec,
+      Math.min(...ALLOWED_TIME_LIMITS_SEC),
+      Math.max(...ALLOWED_TIME_LIMITS_SEC),
+    ),
   };
 }
 

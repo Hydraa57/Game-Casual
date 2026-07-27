@@ -6,7 +6,6 @@ import {
   ROOM_CODE_LENGTH,
 } from '@pixelmatrix/shared';
 import { resolveAvatar } from './avatar';
-import { normalizeSettings } from './Room';
 import { RoomManager } from './RoomManager';
 import { isValidRoomCode, normalizeRoomCode, ROOM_CODE_ALPHABET } from './roomCode';
 
@@ -277,16 +276,10 @@ describe('syarat mulai match', () => {
 });
 
 describe('pengaturan room', () => {
-  it('nilai di luar rentang dijepit — client tidak dipercaya', () => {
-    expect(normalizeSettings({ maxPlayers: 99 }).maxPlayers).toBe(MAX_PLAYERS_LIMIT);
-    expect(normalizeSettings({ maxPlayers: 0 }).maxPlayers).toBe(MIN_PLAYERS_TO_START);
-    expect(normalizeSettings({ targetScore: 999_999 }).targetScore).toBe(1000);
-    expect(normalizeSettings({ timeLimitSec: 1 }).timeLimitSec).toBe(30);
-  });
-
-  it('nilai bukan angka jatuh ke batas bawah, bukan NaN', () => {
-    expect(normalizeSettings({ maxPlayers: Number.NaN }).maxPlayers).toBe(MIN_PLAYERS_TO_START);
-  });
+  // Penjepitan nilai diuji di Room.test.ts, tempat normalizeSettings berada.
+  // Versi yang dulu ada di sini memakai angka yang ditulis langsung (1000, 30)
+  // dan justru MENGUNCI batas yang salah: ketika daftar pilihan dinaikkan
+  // sampai 1500, test ini tetap hijau sementara perilakunya sudah rusak.
 
   it('maxPlayers yang diturunkan di bawah jumlah pemain saat ini tidak mengeluarkan siapa pun', () => {
     const manager = new RoomManager();
