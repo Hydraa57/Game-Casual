@@ -18,6 +18,8 @@ const finished: FinishedMatch = {
       rank: 1,
       accuracy: 0.9,
       bestCombo: 7,
+      knockouts: 0,
+      eliminated: false,
     },
   ],
 };

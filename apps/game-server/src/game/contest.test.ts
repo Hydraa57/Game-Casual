@@ -110,21 +110,34 @@ describe('klik rebutan', () => {
     expect(bob.score).toBe(42);
   });
 
-  it('klik warna salah memotong skor tapi TIDAK memotong nyawa di MP', () => {
+  it('klik warna salah memotong skor DAN satu nyawa di MP', () => {
     const distractor: Pixel = { ...contestedPixel, id: 'blue-1', color: 'blue' };
     const board = sharedBoard([contestedPixel, distractor]);
     const alice = { ...createScoreState(MP_STARTING_LIVES), score: 50, combo: 4 };
 
     const result = clickAs(board, alice, 'blue-1');
 
-    // Klik salah di MP sudah dihukum poin DAN cooldown input 500 ms. Menambah
-    // potongan nyawa akan membekukan pemain terus-menerus di mode yang justru
-    // memaksa mengetuk cepat.
-    expect(result.score.lives).toBe(MP_STARTING_LIVES);
+    expect(result.score.lives).toBe(MP_STARTING_LIVES - 1);
     expect(result.score.score).toBeLessThan(50);
     expect(result.score.combo).toBe(0);
     // Pixel yang salah tetap di papan — sama seperti solo.
     expect(result.board.board.pixels.map((p) => p.id)).toContain('blue-1');
+  });
+
+  it('tiga klik salah menghabiskan nyawa di MP', () => {
+    const distractor: Pixel = { ...contestedPixel, id: 'blue-1', color: 'blue' };
+    let board = sharedBoard([contestedPixel, distractor]);
+    let alice = createScoreState(MP_STARTING_LIVES);
+
+    for (let index = 0; index < MP_STARTING_LIVES; index += 1) {
+      const result = clickAs(board, alice, 'blue-1');
+      board = result.board;
+      alice = result.score;
+    }
+
+    // Angka ini yang menentukan seberapa keras aturannya terasa: 3 klik salah
+    // = 1 KO, dan MP_MAX_KNOCKOUTS KO = tereliminasi.
+    expect(alice.lives).toBe(0);
   });
 
   it('bom di MP memotong dua nyawa, bukan skor, dan pixelnya hilang untuk semua', () => {

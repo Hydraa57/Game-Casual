@@ -137,7 +137,7 @@ export function MatchView({
       scene()?.setTargets(payload.targetColors);
       scene()?.setChaos(payload.chaos);
       const mine = payload.scoreboard.find((entry) => entry.playerId === playerId);
-      scene()?.setFrozen((mine?.frozenMs ?? 0) > 0);
+      scene()?.setFrozen(mine?.eliminated === true || (mine?.frozenMs ?? 0) > 0);
     };
 
     const onSpawned = ({ pixel }: PixelSpawnedPayload) => scene()?.spawn(pixel);
@@ -225,7 +225,11 @@ export function MatchView({
   const seconds = remainingMs === null ? null : Math.ceil(remainingMs / 1000);
   const sorted = [...scoreboard].sort((a, b) => b.score - a.score);
   const me = scoreboard.find((entry) => entry.playerId === playerId) ?? null;
-  const frozenSeconds = me !== null && me.frozenMs > 0 ? Math.ceil(me.frozenMs / 1000) : null;
+  const eliminated = me?.eliminated === true;
+  // Overlay beku tidak ditampilkan untuk pemain yang sudah tereliminasi:
+  // baginya hitungan mundur "hidup lagi sebentar lagi" itu bohong.
+  const frozenSeconds =
+    !eliminated && me !== null && me.frozenMs > 0 ? Math.ceil(me.frozenMs / 1000) : null;
 
   return (
     <div className="match">
@@ -243,10 +247,14 @@ export function MatchView({
             <span className="scoreboard__name">{entry.nickname}</span>
             {entry.lives !== null && (
               <span
-                className={`lives${entry.frozenMs > 0 ? ' lives--out' : ''}`}
+                className={`lives${entry.frozenMs > 0 || entry.eliminated ? ' lives--out' : ''}`}
                 aria-label={`${entry.lives}`}
               >
-                {entry.frozenMs > 0 ? t('down') : '▮'.repeat(entry.lives)}
+                {entry.eliminated
+                  ? t('eliminatedShort')
+                  : entry.frozenMs > 0
+                    ? t('down')
+                    : '▮'.repeat(entry.lives)}
               </span>
             )}
             {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}
@@ -306,6 +314,15 @@ export function MatchView({
         {/* Overlay beku menutupi papan dengan sengaja: selain memberi tahu,
             ia juga mencegah pemain terus menggeprek sel yang tidak akan
             direspons server. */}
+        {/* Tereliminasi: papannya tetap terlihat supaya masih seru ditonton,
+            tapi tidak ada hitungan mundur — dia tidak akan kembali. */}
+        {eliminated && result === null && (
+          <div className="overlay">
+            <h2 className="overlay__title">{t('eliminated')}</h2>
+            <p className="overlay__hint">{t('eliminatedHint')}</p>
+          </div>
+        )}
+
         {frozenSeconds !== null && result === null && (
           <div className="overlay overlay--flash">
             <h2 className="overlay__title">{t('knockedOut')}</h2>
@@ -342,6 +359,7 @@ export function MatchView({
                   <span>{entry.score}</span>
                   <span className="results__detail">
                     {Math.round(entry.accuracy * 100)}% · ×{entry.bestCombo}
+                    {entry.eliminated ? ` · ${t('eliminatedShort')}` : ''}
                   </span>
                 </li>
               ))}

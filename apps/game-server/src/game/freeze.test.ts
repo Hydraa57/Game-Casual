@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { MP_FREEZE_MS } from '@pixelmatrix/shared';
-import { hasThawed, isFrozen, shouldFreeze } from './freeze';
+import { MP_FREEZE_MS, MP_MAX_KNOCKOUTS } from '@pixelmatrix/shared';
+import {
+  hasThawed,
+  isEliminatedAfter,
+  isFrozen,
+  shouldEndByElimination,
+  shouldFreeze,
+} from './freeze';
 
 describe('shouldFreeze', () => {
   it('nyawa habis dan belum beku → beku', () => {
@@ -62,5 +68,41 @@ describe('hasThawed', () => {
 
     expect(isFrozen(until, now + MP_FREEZE_MS - 1)).toBe(true);
     expect(hasThawed(until, now + MP_FREEZE_MS)).toBe(true);
+  });
+});
+
+describe('isEliminatedAfter', () => {
+  it('KO sebelum yang terakhir hanya membekukan', () => {
+    expect(isEliminatedAfter(1, MP_MAX_KNOCKOUTS)).toBe(false);
+    expect(isEliminatedAfter(2, MP_MAX_KNOCKOUTS)).toBe(false);
+  });
+
+  it('KO ke-MP_MAX_KNOCKOUTS mengeliminasi', () => {
+    expect(isEliminatedAfter(MP_MAX_KNOCKOUTS, MP_MAX_KNOCKOUTS)).toBe(true);
+  });
+
+  it('lebih dari batas tetap tereliminasi', () => {
+    // Tidak seharusnya terjadi (pemain berhenti bisa mengetuk setelah
+    // tereliminasi), tapi jangan sampai malah membebaskannya kembali.
+    expect(isEliminatedAfter(MP_MAX_KNOCKOUTS + 1, MP_MAX_KNOCKOUTS)).toBe(true);
+  });
+});
+
+describe('shouldEndByElimination', () => {
+  it('dua pemain, satu tereliminasi → match selesai', () => {
+    // Inilah aturan "main berdua, tereliminasi = langsung kalah". Tidak perlu
+    // kasus khusus untuk dua pemain: yang diperiksa hanya sisa pemain aktif.
+    expect(shouldEndByElimination(1)).toBe(true);
+  });
+
+  it('empat pemain, satu tereliminasi → match jalan terus', () => {
+    expect(shouldEndByElimination(3)).toBe(false);
+    expect(shouldEndByElimination(2)).toBe(false);
+  });
+
+  it('semua tereliminasi → match tetap harus berhenti', () => {
+    // Kalau tidak, papan berjalan tanpa siapa pun yang bisa mengetuk sampai
+    // waktu habis.
+    expect(shouldEndByElimination(0)).toBe(true);
   });
 });

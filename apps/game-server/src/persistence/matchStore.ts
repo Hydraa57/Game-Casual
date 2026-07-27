@@ -1,10 +1,10 @@
 import { db } from '@pixelmatrix/db';
-import type { MatchResultEntry, RoomSettings } from '@pixelmatrix/shared';
+import type { MatchEndedPayload, MatchResultEntry, RoomSettings } from '@pixelmatrix/shared';
 
 export interface FinishedMatch {
   readonly roomCode: string;
   readonly settings: RoomSettings;
-  readonly endReason: 'targetScore' | 'timeUp' | 'suddenDeath';
+  readonly endReason: MatchEndedPayload['reason'];
   readonly startedAt: Date;
   readonly endedAt: Date;
   readonly ranking: readonly MatchResultEntry[];
@@ -49,6 +49,8 @@ export async function saveMatch(match: FinishedMatch): Promise<boolean> {
             rank: entry.rank,
             accuracy: entry.accuracy,
             bestCombo: entry.bestCombo,
+            knockouts: entry.knockouts,
+            eliminated: entry.eliminated,
           })),
         },
       },

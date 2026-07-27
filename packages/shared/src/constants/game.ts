@@ -264,17 +264,30 @@ export const MP_STARTING_LIVES = SOLO_STARTING_LIVES;
 export const MP_FREEZE_MS = 5000;
 
 /**
- * Apakah klik warna salah ikut memotong nyawa.
+ * Berapa kali pemain boleh kehabisan nyawa sebelum tereliminasi.
  *
- * Di solo: ya, itu satu-satunya cara kalah. Di multiplayer: TIDAK — klik salah
- * di sana sudah dihukum −5 poin DAN cooldown input 500 ms, dan menumpuk
- * penalti ketiga membuat pemain beku terus-menerus di permainan yang justru
- * memaksa mengetuk cepat. Nyawa di MP murni taruhan untuk bom.
- *
- * Satu tempat kalau mau diubah.
+ * KO pertama dan kedua hanya membekukan; yang ketiga mengeluarkannya dari
+ * permainan dan ia hanya bisa menonton. Ini yang memberi match ujung yang
+ * tegas — tanpa batas, pemain yang kesulitan akan KO berulang kali sampai
+ * waktu habis tanpa pernah ada konsekuensi yang terasa.
  */
-export function wrongClickCostsLife(mode: GameMode): boolean {
-  return mode === 'solo';
+export const MP_MAX_KNOCKOUTS = 3;
+
+/**
+ * Klik warna salah memotong satu nyawa — di solo MAUPUN multiplayer.
+ *
+ * Di MP itu berarti tiga hukuman menumpuk untuk satu kesalahan: −5 poin,
+ * cooldown input 500 ms, dan −1 nyawa. Konsekuensinya harus disadari saat
+ * mengulik angka: dengan 3 nyawa, tiga klik salah sudah cukup untuk KO, dan
+ * MP_MAX_KNOCKOUTS KO membuat pemain tereliminasi. Jadi ~9 klik salah dalam
+ * satu match berarti keluar dari permainan.
+ *
+ * Kalau ternyata terlalu keras saat playtest, tuas yang paling tepat diputar
+ * adalah MP_MAX_KNOCKOUTS atau MP_STARTING_LIVES — bukan menghapus penalti
+ * nyawanya, karena justru itu yang membuat menahan diri punya arti.
+ */
+export function wrongClickCostsLife(_mode: GameMode): boolean {
+  return true;
 }
 export const MAX_CLICKS_PER_SECOND = 8;
 

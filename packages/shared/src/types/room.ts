@@ -44,4 +44,14 @@ export interface MatchResultEntry {
   /** 0..1 — klik benar dibagi total klik. */
   readonly accuracy: number;
   readonly bestCombo: number;
+  /** Berapa kali nyawanya habis sepanjang match. */
+  readonly knockouts: number;
+  /**
+   * Tereliminasi sebelum match usai.
+   *
+   * Pemain yang tereliminasi SELALU berada di bawah pemain yang bertahan,
+   * berapa pun skornya — keluar dari permainan lebih berat daripada kalah
+   * angka, dan tanpa aturan ini "bunuh diri sambil unggul skor" jadi strategi.
+   */
+  readonly eliminated: boolean;
 }

@@ -8,6 +8,7 @@ import {
   isTargetChangeImminent,
   MP_FREEZE_MS,
   MP_LEVEL_DURATION_MS,
+  MP_MAX_KNOCKOUTS,
   MP_STARTING_LIVES,
   MP_TICK_BROADCAST_MS,
   SERVER_TICK_MS,
@@ -17,6 +18,7 @@ import {
 import type {
   AvatarId,
   GameConfig,
+  MatchEndedPayload,
   GameEvent,
   GameState,
   MatchResultEntry,
@@ -26,7 +28,13 @@ import type {
 import type { Room } from '../rooms/Room';
 import type { GameServer } from '../net/handlers';
 import { saveMatch } from '../persistence/matchStore';
-import { hasThawed, isFrozen, shouldFreeze } from './freeze';
+import {
+  hasThawed,
+  isEliminatedAfter,
+  isFrozen,
+  shouldEndByElimination,
+  shouldFreeze,
+} from './freeze';
 import { RateLimiter } from './RateLimiter';
 
 type MatchStatus = 'countdown' | 'running' | 'suddenDeath' | 'ended';
@@ -40,6 +48,10 @@ interface PlayerStats {
    * 0 berarti tidak beku.
    */
   frozenUntil: number;
+  /** Berapa kali nyawanya sudah habis sepanjang match ini. */
+  knockouts: number;
+  /** Sudah keluar dari permainan; hanya bisa menonton sampai match usai. */
+  eliminated: boolean;
 }
 
 /**
@@ -76,6 +88,8 @@ export class Match {
         avatar: player.avatar,
         score: createScoreState(MP_STARTING_LIVES),
         frozenUntil: 0,
+        knockouts: 0,
+        eliminated: false,
       });
     }
   }
@@ -128,10 +142,10 @@ export class Match {
     const player = this.players.get(playerId);
     if (!player) return;
 
-    // Pemain yang nyawanya habis sedang beku: ketukannya diabaikan sepenuhnya,
-    // bahkan sebelum rate limiter, supaya menggeprek layar selama beku tidak
-    // menghabiskan jatah klik untuk saat dia hidup lagi.
-    if (isFrozen(player.frozenUntil, Date.now())) return;
+    // Pemain yang beku atau tereliminasi: ketukannya diabaikan sepenuhnya,
+    // bahkan sebelum rate limiter, supaya menggeprek layar tidak menghabiskan
+    // jatah klik untuk saat dia hidup lagi.
+    if (player.eliminated || isFrozen(player.frozenUntil, Date.now())) return;
 
     if (!this.limiter.allow(playerId, Date.now())) {
       this.io.to(playerId).emit('game:clickRejected', {
@@ -154,14 +168,29 @@ export class Match {
 
     this.forwardClickEvents(playerId, result.events);
 
-    // Nyawa habis: pemain dibekukan, TIDAK dikeluarkan. Match cuma 2 menit dan
-    // dimainkan bareng — pemain yang tereliminasi di menit pertama akan duduk
-    // bengong, lalu membuka aplikasi lain dan tidak kembali.
     if (shouldFreeze(player.score.lives, player.frozenUntil)) {
-      player.frozenUntil = Date.now() + MP_FREEZE_MS;
+      player.knockouts += 1;
+
+      if (isEliminatedAfter(player.knockouts, MP_MAX_KNOCKOUTS)) {
+        player.eliminated = true;
+        this.io.to(playerId).emit('game:eliminated');
+      } else {
+        // KO yang belum terakhir hanya membekukan — pemain kembali dengan
+        // nyawa penuh, jadi match tetap ramai sampai batas KO tercapai.
+        player.frozenUntil = Date.now() + MP_FREEZE_MS;
+      }
+
       // Disiarkan langsung, tidak menunggu tick terjadwal: pemain harus tahu
-      // dirinya beku dalam milidetik yang sama, bukan sampai 250 ms kemudian.
+      // nasibnya dalam milidetik yang sama, bukan sampai 250 ms kemudian.
       this.broadcastTick();
+
+      // "Main berdua, tereliminasi = langsung kalah" tidak butuh kasus khusus:
+      // dari berapa pun pemain, match berhenti begitu yang masih bermain
+      // tinggal satu.
+      if (shouldEndByElimination(this.activePlayerCount())) {
+        this.finish('elimination');
+        return;
+      }
     }
 
     if (this.status === 'suddenDeath' && result.claimed) {
@@ -239,6 +268,15 @@ export class Match {
     }
   }
 
+  /** Pemain yang masih boleh bermain — belum tereliminasi dan masih terhubung. */
+  private activePlayerCount(): number {
+    let count = 0;
+    for (const [id, player] of this.players) {
+      if (!player.eliminated && this.room.has(id)) count += 1;
+    }
+    return count;
+  }
+
   /**
    * Kembalikan pemain yang masa bekunya habis, dengan nyawa penuh.
    *
@@ -249,7 +287,7 @@ export class Match {
   private reviveThawedPlayers(now: number): void {
     let revived = false;
     for (const player of this.players.values()) {
-      if (!hasThawed(player.frozenUntil, now)) continue;
+      if (player.eliminated || !hasThawed(player.frozenUntil, now)) continue;
       player.frozenUntil = 0;
       player.score = { ...player.score, lives: MP_STARTING_LIVES, combo: 0 };
       revived = true;
@@ -258,7 +296,12 @@ export class Match {
   }
 
   private onTimeUp(): void {
-    if (!tiedAtTop(this.ranking().map((entry) => entry.score))) {
+    // Hanya pemain yang masih bermain yang boleh memicu sudden death. Pemain
+    // tereliminasi tidak bisa mengetuk apa pun, jadi seri dengannya akan
+    // membuat match menggantung selamanya.
+    const active = [...this.players.values()].filter((player) => !player.eliminated);
+    const activeScores = active.map((player) => player.score.score).sort((a, b) => b - a);
+    if (!tiedAtTop(activeScores)) {
       this.finish('timeUp');
       return;
     }
@@ -394,6 +437,8 @@ export class Match {
         score: player.score.score,
         combo: player.score.combo,
         lives: player.score.lives,
+        knockouts: player.knockouts,
+        eliminated: player.eliminated,
         // Sisa beku dikirim sebagai durasi, bukan timestamp: jam client dan
         // server tidak pernah sama, dan selisihnya akan terlihat sebagai
         // hitungan mundur yang salah.
@@ -408,24 +453,31 @@ export class Match {
   }
 
   private ranking(): MatchResultEntry[] {
-    return [...this.players.entries()]
-      .map(([id, player]) => {
-        const total = player.score.correctClicks + player.score.wrongClicks;
-        return {
-          playerId: id,
-          nickname: player.nickname,
-          avatar: player.avatar,
-          score: player.score.score,
-          rank: 0,
-          accuracy: total === 0 ? 1 : player.score.correctClicks / total,
-          bestCombo: player.score.bestCombo,
-        };
-      })
-      .sort((a, b) => b.score - a.score)
-      .map((entry, index) => ({ ...entry, rank: index + 1 }));
+    return (
+      [...this.players.entries()]
+        .map(([id, player]) => {
+          const total = player.score.correctClicks + player.score.wrongClicks;
+          return {
+            playerId: id,
+            nickname: player.nickname,
+            avatar: player.avatar,
+            score: player.score.score,
+            rank: 0,
+            accuracy: total === 0 ? 1 : player.score.correctClicks / total,
+            bestCombo: player.score.bestCombo,
+            knockouts: player.knockouts,
+            eliminated: player.eliminated,
+          };
+        })
+        // Yang bertahan SELALU di atas yang tereliminasi, berapa pun skornya.
+        // Tanpa ini, "bunuh diri sambil unggul skor" jadi strategi yang menang —
+        // dan aturan "main berdua, tereliminasi = kalah" tidak akan terpenuhi.
+        .sort((a, b) => Number(a.eliminated) - Number(b.eliminated) || b.score - a.score)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+    );
   }
 
-  private finish(reason: 'targetScore' | 'timeUp' | 'suddenDeath'): void {
+  private finish(reason: MatchEndedPayload['reason']): void {
     if (this.status === 'ended') return;
     this.status = 'ended';
     this.stop();

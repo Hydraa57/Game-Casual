@@ -149,24 +149,33 @@ Semua pemain melihat **papan yang sama** dan berebut pixel yang sama. **Server o
 ### Aturan khusus MP
 
 - Klik benar pertama yang sampai di server mengklaim pixel; pemain lain yang telat mendapat feedback `clickRejected` (pixel tetap hilang dari papan).
-- **3 nyawa, sama seperti solo.** Bom memotong 2, pixel ♥ mengembalikan 1.
-- Klik salah: **−5 poin** + **cooldown input lokal 500 ms** (layar berkedip merah singkat). **TIDAK memotong nyawa** — beda dari solo.
+- **3 nyawa, sama seperti solo.** Bom memotong 2, klik warna salah memotong 1, pixel ♥ mengembalikan 1.
+- Klik salah: **−5 poin** + **−1 nyawa** + **cooldown input lokal 500 ms** (layar berkedip merah singkat). Tiga hukuman menumpuk untuk satu kesalahan — itu disengaja dan membuat ketelitian sama pentingnya dengan kecepatan.
 - Server melakukan **rate limit ~8 klik/detik/pemain** — klik berlebih diabaikan (mitigasi spam & cheat, sesuai analisis risiko PRD).
 - Combo dan speed bonus berlaku sama seperti solo.
 - **Tidak ada checkpoint/continue di MP** — itu fitur solo, dan digating dari mode (bukan dari keberadaan nyawa).
 
-### Nyawa habis = beku 5 detik, bukan tereliminasi
+### KO, respawn, dan eliminasi
 
-Pemain yang kehabisan nyawa **tidak dikeluarkan dari match**. Ia beku selama `MP_FREEZE_MS` (5 detik) — ketukannya diabaikan, papannya tertutup overlay — lalu hidup lagi dengan nyawa penuh.
+| Kejadian | Akibat |
+|---|---|
+| Nyawa habis (KO ke-1 dan ke-2) | **Beku 5 detik** (`MP_FREEZE_MS`), lalu hidup lagi dengan **nyawa penuh** |
+| KO ke-3 (`MP_MAX_KNOCKOUTS`) | **Tereliminasi** — hanya bisa menonton sampai match usai |
+| Pemain aktif tersisa ≤ 1 | Match langsung selesai, `endReason: elimination` |
 
-Alasannya bukan soal keseimbangan, tapi soal siapa yang memainkannya: match cuma 2 menit dan gamenya dibuat untuk dimainkan bareng saat nongkrong. Pemain yang tereliminasi di menit pertama akan duduk bengong 90 detik, membuka aplikasi lain, dan biasanya tidak kembali. Hukumannya tetap nyata — selama beku, lawan mencetak poin tanpa perlawanan.
+Aturan terakhir itu yang membuat **"kalau main berdua, tereliminasi = langsung kalah"** bekerja tanpa kasus khusus untuk dua pemain: dari berapa pun pemain, match berhenti begitu yang masih bermain tinggal satu.
 
-Yang **tidak** direset saat hidup lagi: skor dan combo terbaik. Yang hilang karena kehabisan nyawa adalah waktu bermain, bukan poin yang sudah dikumpulkan; kalau skor ikut hangus, satu bom di detik terakhir bisa menghapus dua menit permainan.
+**Pemain tereliminasi SELALU diperingkat di bawah pemain yang bertahan, berapa pun skornya.** Tanpa aturan ini, "bunuh diri sambil unggul skor" jadi strategi yang menang — dan janji "yang tereliminasi kalah" tidak akan terpenuhi.
 
-Dua konsekuensi yang sengaja diambil:
+Yang **tidak** direset saat hidup lagi dari KO: skor dan combo terbaik. Yang hilang karena kehabisan nyawa adalah waktu bermain, bukan poin yang sudah dikumpulkan.
 
-1. **Klik warna salah tidak memotong nyawa di MP.** Di sana klik salah sudah dihukum poin DAN cooldown 500 ms; menumpuk penalti ketiga akan membekukan pemain terus-menerus di mode yang justru memaksa mengetuk cepat. Diatur satu tempat lewat `wrongClickCostsLife(mode)`.
-2. **Pixel ♥ selalu boleh muncul di MP**, tidak peduli nyawa siapa pun. Papannya bersama — kalau spawn-nya bergantung pada nyawa satu pemain, pemain yang sekarat justru tidak akan pernah melihatnya muncul karena lawannya kebetulan penuh.
+**Pixel ♥ selalu boleh muncul di MP**, tidak peduli nyawa siapa pun. Papannya bersama — kalau spawn-nya bergantung pada nyawa satu pemain, pemain yang sekarat justru tidak akan pernah melihatnya muncul karena lawannya kebetulan penuh.
+
+#### ⚠️ Angka yang perlu diperhatikan saat playtest
+
+Dengan aturan sekarang, **3 klik warna salah = 1 KO**, dan **3 KO = tereliminasi**. Artinya ~9 klik salah dalam satu match berarti keluar dari permainan — dan bom mempercepatnya karena satu bom setara dua klik salah.
+
+Itu keras, dan memang dimaksudkan keras. Tapi kalau saat main bareng ternyata ada yang tereliminasi di menit pertama secara rutin, tuas yang paling tepat diputar adalah **`MP_MAX_KNOCKOUTS`** (3 → 4/5) atau **`MP_STARTING_LIVES`** — bukan menghapus penalti nyawa pada klik salah, karena justru itu yang membuat ketelitian punya arti.
 
 ### Avatar & umpan balik "siapa yang merebut"
 

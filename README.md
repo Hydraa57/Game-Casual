@@ -127,6 +127,8 @@ Cek `GET /health` di game-server: `persistence: true` berarti database terpasang
 
 Provider gratis yang cocok: Neon atau Supabase (keduanya Postgres, ada free tier). Pastikan region-nya dekat game-server.
 
+> **Kalau memakai Supabase**, ambil connection string dari Settings → Database → *Connection string* → **Session pooler** (bukan Direct connection — banyak host tidak punya IPv6). Bentuknya `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`. Tempel sebagai `DATABASE_URL` di game-server.
+
 ## Pasang di HP (PWA)
 
 Ada manifest + ikon, jadi game bisa dipasang ke home screen dan terbuka layar penuh tanpa address bar — berguna saat nongkrong: teman tinggal tap ikonnya.

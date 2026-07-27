@@ -120,6 +120,9 @@
     "muteOff": "Bunyi: mati",
     "down": "KO",
     "knockedOut": "NYAWA HABIS",
-    "knockedOutHint": "Hidup lagi dengan nyawa penuh sebentar lagi."
+    "knockedOutHint": "Hidup lagi dengan nyawa penuh sebentar lagi.",
+    "eliminated": "TERELIMINASI",
+    "eliminatedHint": "KO tiga kali. Kamu jadi penonton sampai match selesai.",
+    "eliminatedShort": "OUT"
   }
 }

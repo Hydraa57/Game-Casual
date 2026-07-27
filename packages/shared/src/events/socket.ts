@@ -137,6 +137,10 @@ export interface ScoreboardEntry {
    * dan selisihnya akan terlihat sebagai hitungan mundur yang salah.
    */
   readonly frozenMs: number;
+  /** Berapa kali pemain ini sudah KO; MP_MAX_KNOCKOUTS berarti tereliminasi. */
+  readonly knockouts: number;
+  /** Sudah keluar dari permainan dan hanya bisa menonton. */
+  readonly eliminated: boolean;
   readonly connected: boolean;
 }
 
@@ -159,7 +163,8 @@ export interface TickPayload {
 
 export interface MatchEndedPayload {
   readonly ranking: readonly MatchResultEntry[];
-  readonly reason: 'targetScore' | 'timeUp' | 'suddenDeath';
+  /** `elimination`: pemain tersisa tinggal satu karena yang lain tereliminasi. */
+  readonly reason: 'targetScore' | 'timeUp' | 'suddenDeath' | 'elimination';
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +205,8 @@ export interface ServerToClientEvents {
   'game:boardShuffled': (payload: { readonly pixels: readonly Pixel[] }) => void;
   'game:tick': (payload: TickPayload) => void;
   'game:suddenDeath': () => void;
+  /** Hanya ke pemain yang bersangkutan: dia keluar dari permainan. */
+  'game:eliminated': () => void;
   'game:ended': (payload: MatchEndedPayload) => void;
   error: (payload: SocketError) => void;
 }

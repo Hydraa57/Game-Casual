@@ -120,6 +120,9 @@
     "muteOff": "Sound: off",
     "down": "OUT",
     "knockedOut": "NO LIVES LEFT",
-    "knockedOutHint": "Back with full lives in a moment."
+    "knockedOutHint": "Back with full lives in a moment.",
+    "eliminated": "ELIMINATED",
+    "eliminatedHint": "Knocked out three times. You are a spectator until the match ends.",
+    "eliminatedShort": "OUT"
   }
 }
