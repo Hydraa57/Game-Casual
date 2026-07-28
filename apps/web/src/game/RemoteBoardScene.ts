@@ -174,9 +174,19 @@ export class RemoteBoardScene extends Phaser.Scene {
    * match. Keduanya sama-sama berarti "lupakan yang sekarang ada di papan,
    * inilah keadaan yang benar".
    */
-  /** Spanduk naik level; dipanggil MatchView saat tick membawa level baru. */
+
+  /**
+   * Spanduk naik level; dipanggil MatchView saat tick membawa level baru.
+   *
+   * Bunyinya dipicu DI SINI, bukan di MatchView. Solo memicunya dari event
+   * `levelUp` engine, dan multiplayer tidak punya event itu — levelnya datang
+   * lewat tick. Akibatnya naik level di MP sempat sepenuhnya bisu: animasinya
+   * jalan, bunyinya tidak. Menaruhnya di satu tempat bersama animasinya membuat
+   * keduanya tidak mungkin terpisah lagi.
+   */
   levelBanner(level: number): void {
     this.boardView.levelCelebration(level);
+    this.options.sfx.levelUp();
   }
 
   /** Denyut papan saat warna target berganti. */

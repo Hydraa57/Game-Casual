@@ -63,13 +63,34 @@ export class Sfx {
   }
 
   /**
-   * Naik level: arpeggio naik yang lebih lebar dari bunyi nyawa, supaya keduanya
-   * tidak tertukar — keduanya kabar baik, tapi artinya berbeda.
+   * Naik level: fanfare pendek, bukan sekadar arpeggio.
+   *
+   * Versi pertama tiga nada `triangle` pelan (0,07) — praktis tidak terdengar
+   * di atas musik latar dan bunyi klik, padahal ini satu-satunya momen di mana
+   * permainan berubah. Sekarang tiga hal ditumpuk supaya jelas terdengar
+   * sebagai PERISTIWA:
+   *
+   * 1. Arpeggio naik `square` yang lebih keras dan lebih lebar rentangnya.
+   * 2. Nada kelima di bawahnya, jadi akordnya terdengar penuh, bukan kurus.
+   * 3. Ekor berkilau dua nada tinggi — bagian yang membuatnya terbaca sebagai
+   *    "hadiah", bukan sekadar "pemberitahuan".
+   *
+   * Tetap dijaga BEDA dari `life()`: keduanya kabar baik, tapi tertukar berarti
+   * pemain mengira nyawanya bertambah padahal kesulitannya yang naik.
    */
   levelUp(): void {
-    this.tone(520, 0.1, 'triangle', 0.07, 0);
-    this.tone(700, 0.1, 'triangle', 0.07, 0.09);
-    this.tone(1040, 0.22, 'triangle', 0.08, 0.18);
+    this.tone(523, 0.12, 'square', 0.11, 0);
+    this.tone(659, 0.12, 'square', 0.11, 0.08);
+    this.tone(784, 0.14, 'square', 0.12, 0.16);
+    this.tone(1046, 0.34, 'square', 0.13, 0.24);
+    // Nada bawah yang menopang akordnya.
+    this.tone(261, 0.4, 'triangle', 0.09, 0.24);
+    // Ekor berkilau.
+    this.tone(1568, 0.18, 'triangle', 0.06, 0.34);
+    this.tone(2093, 0.22, 'triangle', 0.05, 0.42);
+    // Getar sangat singkat: di HP inilah yang paling sulit dilewatkan, dan
+    // naik level adalah satu-satunya kabar baik yang layak menggetarkan.
+    navigator.vibrate?.(25);
   }
 
   gameOver(): void {

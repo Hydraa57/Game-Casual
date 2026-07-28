@@ -140,6 +140,13 @@ export function MatchView({
    * lalu memasang ulang SELURUH listener di tengah match — dan event yang tiba
    * di celah itu hilang.
    */
+  /**
+   * Level pada tick sebelumnya. Ref dan bukan state: nilainya cuma dipakai untuk
+   * membandingkan di dalam handler event, dan tidak ada satu pun bagian tampilan
+   * yang perlu digambar ulang karenanya.
+   */
+  const lastLevelRef = useRef(0);
+
   const avatarsRef = useRef(avatars);
   useEffect(() => {
     avatarsRef.current = avatars;
@@ -191,6 +198,10 @@ export function MatchView({
         setRemainingMs(snapshot.remainingMs);
         setSuddenDeath(snapshot.suddenDeath);
         setScoreboard(snapshot.scoreboard);
+        // Tanpa baris ini, pemain yang kembali di tengah match pada level 9
+        // akan mendapat spanduk "Level 9" di tick berikutnya — seolah ia baru
+        // saja naik, padahal ia cuma menyusul keadaan yang sudah berjalan.
+        lastLevelRef.current = snapshot.level;
       });
     });
 
@@ -214,6 +225,10 @@ export function MatchView({
       setSuddenDeath(false);
       controllerRef.current?.unlockAudio();
       scene()?.beginMatch();
+      // Rematch memulai dari level 1 lagi. Kalau ref-nya masih menyimpan level
+      // terakhir ronde sebelumnya, kenaikan level pertama ronde ini tidak akan
+      // terdeteksi sama sekali.
+      lastLevelRef.current = 0;
     };
 
     const onTick = (payload: TickPayload) => {
@@ -223,12 +238,19 @@ export function MatchView({
       // sebelumnya lah yang mengubahnya menjadi momen.
       setLevelFraction(payload.levelFraction);
       setLevelRemainingMs(payload.levelRemainingMs);
-      setLevel((previous) => {
-        if (payload.level > previous && previous > 0) {
-          scene()?.levelBanner(payload.level);
-        }
-        return payload.level;
-      });
+      // Dibandingkan lewat ref, BUKAN di dalam updater `setLevel`.
+      //
+      // Versi pertama menaruh pemicunya di dalam updater, dan React memanggil
+      // updater lebih dari sekali (StrictMode memanggilnya dua kali justru untuk
+      // menemukan efek samping seperti ini). Akibatnya spanduk digambar dua kali
+      // dan fanfare naik level berbunyi dobel — terdengar seperti bunyi yang
+      // pecah, bukan seperti satu peristiwa. Updater harus murni; perbandingan
+      // "berubah dari nilai sebelumnya" tempatnya di sini.
+      if (payload.level > lastLevelRef.current && lastLevelRef.current > 0) {
+        scene()?.levelBanner(payload.level);
+      }
+      lastLevelRef.current = payload.level;
+      setLevel(payload.level);
       setChaos(payload.chaos);
       setScoreboard(payload.scoreboard);
       // Tick membawa warna target juga, jadi HUD tetap benar walau satu event
