@@ -327,9 +327,9 @@ export function MatchView({
         <span>
           <span className="hud__label">{t('target')}</span> <strong>{targetScore}</strong>
         </span>
-        <span>
-          <span className="hud__label">{t('level')}</span> <strong>{level}</strong>
-        </span>
+        {/* Level TIDAK ditampilkan di sini: bar di bawah sudah menampilkannya
+            beserta progresnya. Dua tempat untuk satu angka hanya menyempitkan
+            baris ini tanpa menambah informasi apa pun. */}
         {chaos !== null && <span className="badge badge--chaos">{t(CHAOS_LABEL[chaos])}</span>}
       </div>
 
