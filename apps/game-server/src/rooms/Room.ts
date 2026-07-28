@@ -1,11 +1,30 @@
 import {
   ALLOWED_TARGET_SCORES,
   ALLOWED_TIME_LIMITS_SEC,
+  CHAT_HISTORY_LIMIT,
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
-import type { AvatarId, Player, RoomSettings, RoomState, RoomStatus } from '@pixelmatrix/shared';
+import type {
+  AvatarId,
+  ChatMessage,
+  Player,
+  RoomSettings,
+  RoomState,
+  RoomStatus,
+} from '@pixelmatrix/shared';
+
+/**
+ * Kenapa chat boleh atau tidak — bukan sekadar `boolean`.
+ *
+ * Pemanggilnya harus menerjemahkan ini menjadi kode error yang dilihat pemain,
+ * dan dua penolakan ini berarti hal yang sepenuhnya berbeda: "tunggu temanmu
+ * masuk" versus "tidak bisa saat ronde berjalan". Versi pertama mengembalikan
+ * boolean, dan akibatnya keduanya dilaporkan sebagai GAME_IN_PROGRESS — pemain
+ * yang sedang menunggu sendirian di lobby diberi tahu bahwa ada match berjalan.
+ */
+export type ChatVerdict = 'ok' | 'playing' | 'tooFewPlayers';
 
 export interface RoomPlayer {
   readonly id: string;
@@ -32,6 +51,8 @@ export class Room {
   private hostId: string;
   private settings: RoomSettings;
   private status: RoomStatus = 'waiting';
+  /** Beberapa pesan terakhir; hilang bersama room-nya. */
+  private readonly chatLog: ChatMessage[] = [];
 
   constructor(
     code: string,
@@ -199,6 +220,43 @@ export class Room {
   /** Reset kesiapan setelah match selesai, supaya rematch butuh konfirmasi ulang. */
   resetReady(): void {
     for (const player of this.players.values()) player.isReady = false;
+  }
+
+  // ------------------------------------------------------------------- chat
+
+  /**
+   * Boleh chat atau tidak.
+   *
+   * Dua syarat, keduanya diminta dan keduanya punya alasan:
+   *
+   * 1. **Bukan saat match berjalan.** Ini game refleks yang menuntut mata tetap
+   *    di papan; teks yang bergerak di tengah ronde bukan fitur, itu gangguan.
+   * 2. **Minimal dua pemain tersambung.** Mengirim pesan ke ruang kosong hanya
+   *    membuat orang bertanya-tanya apakah chat-nya rusak. Yang dihitung adalah
+   *    yang TERSAMBUNG — teman yang sedang reconnect tidak sedang membaca.
+   */
+  canChat(): ChatVerdict {
+    if (this.status === 'playing' || this.status === 'countdown') return 'playing';
+    if (this.connectedPlayers().length < MIN_PLAYERS_TO_START) return 'tooFewPlayers';
+    return 'ok';
+  }
+
+  /**
+   * Simpan pesan dan kembalikan bentuk yang siap disiarkan.
+   *
+   * Riwayatnya dipotong di CHAT_HISTORY_LIMIT: room bisa hidup lama lewat
+   * berkali-kali rematch, dan menyimpan seluruh percakapan berarti kebocoran
+   * memori yang tumbuh selama room itu ada.
+   */
+  addChatMessage(message: ChatMessage): void {
+    this.chatLog.push(message);
+    if (this.chatLog.length > CHAT_HISTORY_LIMIT) {
+      this.chatLog.splice(0, this.chatLog.length - CHAT_HISTORY_LIMIT);
+    }
+  }
+
+  recentChat(): readonly ChatMessage[] {
+    return [...this.chatLog];
   }
 
   toState(scores: ReadonlyMap<string, { score: number; combo: number }> = new Map()): RoomState {

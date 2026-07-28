@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   ALLOWED_TARGET_SCORES,
   ALLOWED_TIME_LIMITS_SEC,
+  CHAT_HISTORY_LIMIT,
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
+import type { ChatMessage } from '@pixelmatrix/shared';
 import { normalizeSettings, Room } from './Room';
 
 describe('normalizeSettings', () => {
@@ -152,5 +154,82 @@ describe('koneksi pemain & masa tenggang', () => {
     const state = room.toState();
     expect(state.players.find((p) => p.id === 'p2')?.connected).toBe(false);
     expect(state.players.find((p) => p.id === 'p1')?.connected).toBe(true);
+  });
+});
+
+describe('chat lobby', () => {
+  const message = (text: string, playerId = 'p1'): ChatMessage => ({
+    id: `m-${text}`,
+    playerId,
+    nickname: 'Budi',
+    avatar: 'fox',
+    text,
+    at: Date.now(),
+  });
+
+  const twoPlayers = () => {
+    const room = new Room('ABC123', 'p1', 'Budi', 'fox');
+    room.add('p2', 'Siti', 'cat');
+    return room;
+  };
+
+  it('chat mati kalau baru satu pemain', () => {
+    // Mengirim pesan ke ruang kosong hanya membuat orang bertanya-tanya apakah
+    // chat-nya rusak.
+    expect(new Room('ABC123', 'p1', 'Budi', 'fox').canChat()).toBe('tooFewPlayers');
+  });
+
+  it('chat hidup begitu ada dua pemain di lobby', () => {
+    expect(twoPlayers().canChat()).toBe('ok');
+  });
+
+  it('chat mati saat match berjalan', () => {
+    // Game refleks: teks yang bergerak di tengah ronde bukan fitur.
+    const room = twoPlayers();
+    room.setStatus('playing');
+    expect(room.canChat()).toBe('playing');
+  });
+
+  it('chat mati saat hitung mundur', () => {
+    const room = twoPlayers();
+    room.setStatus('countdown');
+    expect(room.canChat()).toBe('playing');
+  });
+
+  it('chat hidup lagi di layar hasil', () => {
+    // `finished` masih "di dalam room, tidak sedang bermain" — justru momen
+    // orang paling ingin berkomentar soal hasilnya.
+    const room = twoPlayers();
+    room.setStatus('finished');
+    expect(room.canChat()).toBe('ok');
+  });
+
+  it('pemain yang terputus tidak dihitung sebagai lawan bicara', () => {
+    const room = twoPlayers();
+    room.setConnected('p2', false);
+    expect(room.canChat()).toBe('tooFewPlayers');
+  });
+
+  it('riwayat dipotong di CHAT_HISTORY_LIMIT', () => {
+    // Room bisa hidup lama lewat berkali-kali rematch. Tanpa pemotongan ini,
+    // riwayatnya tumbuh selama room itu ada.
+    const room = twoPlayers();
+    for (let i = 0; i < CHAT_HISTORY_LIMIT + 15; i += 1) room.addChatMessage(message(String(i)));
+
+    const log = room.recentChat();
+    expect(log).toHaveLength(CHAT_HISTORY_LIMIT);
+    // Yang dibuang adalah yang PALING LAMA, bukan yang paling baru.
+    expect(log.at(-1)?.text).toBe(String(CHAT_HISTORY_LIMIT + 14));
+    expect(log[0]?.text).toBe('15');
+  });
+
+  it('riwayat yang dikembalikan adalah salinan', () => {
+    // Kalau array internalnya yang dikembalikan, pemanggil bisa mengubah
+    // riwayat room dari luar tanpa melewati addChatMessage.
+    const room = twoPlayers();
+    room.addChatMessage(message('halo'));
+    const log = room.recentChat() as ChatMessage[];
+    log.push(message('selundupan'));
+    expect(room.recentChat()).toHaveLength(1);
   });
 });

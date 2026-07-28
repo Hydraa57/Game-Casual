@@ -129,7 +129,12 @@
     "eliminatedShort": "OUT",
     "reconnecting": "Terputus…",
     "reconnectedNotice": "Kamu tersambung lagi — match dilanjutkan.",
-    "dismiss": "Oke"
+    "dismiss": "Oke",
+    "chatTitle": "Obrolan",
+    "chatEmpty": "Belum ada pesan. Sapa dulu!",
+    "chatWaiting": "Chat aktif setelah ada 2 pemain",
+    "chatPlaceholder": "Tulis pesan…",
+    "chatSend": "Kirim"
   },
   "auth": {
     "title": "Akun",

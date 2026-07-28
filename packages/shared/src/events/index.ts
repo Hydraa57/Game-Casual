@@ -1,6 +1,8 @@
 export type {
   Ack,
   BombHitPayload,
+  ChatMessage,
+  ChatSendPayload,
   ClickPayload,
   ClickRejectedPayload,
   ClientToServerEvents,

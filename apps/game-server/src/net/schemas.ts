@@ -1,5 +1,6 @@
 import {
   ALLOWED_TARGET_SCORES,
+  CHAT_MAX_LENGTH,
   AVATAR_IDS,
   ALLOWED_TIME_LIMITS_SEC,
   MAX_PLAYERS_LIMIT,
@@ -78,6 +79,26 @@ export const reconnectSchema = z.object({
     .string()
     .length(48)
     .regex(/^[0-9a-f]+$/),
+});
+
+/**
+ * Pesan chat.
+ *
+ * Karakter kontrol dibuang, bukan ditolak: `\n` dan `\t` yang ikut ter-paste
+ * dari tempat lain adalah kecelakaan yang wajar, dan menolak seluruh pesan
+ * karenanya lebih menjengkelkan daripada membersihkannya. Yang TIDAK boleh
+ * lolos adalah efeknya di layar orang lain — satu pesan berisi puluhan baris
+ * baru bisa mendorong seluruh lobby keluar dari viewport.
+ *
+ * `trim` lalu `min(1)` menutup pesan yang isinya cuma spasi.
+ */
+export const chatSchema = z.object({
+  text: z
+    .string()
+    .max(CHAT_MAX_LENGTH)
+    // eslint-disable-next-line no-control-regex -- karakter kontrol memang yang disasar di sini
+    .transform((value) => value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim())
+    .refine((value) => value.length >= 1),
 });
 
 export const clickSchema = z.object({

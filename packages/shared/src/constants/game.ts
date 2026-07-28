@@ -340,6 +340,39 @@ export const COUNTDOWN_SECONDS = 3;
 export const NICKNAME_MIN_LENGTH = 2;
 export const NICKNAME_MAX_LENGTH = 12;
 
+// ---------------------------------------------------------------------------
+// Chat lobby
+// ---------------------------------------------------------------------------
+
+/**
+ * Chat hanya hidup di lobby, bukan saat match berjalan.
+ *
+ * Ini game refleks yang menuntut mata tetap di papan; kotak pesan yang bergerak
+ * di tengah ronde bukan fitur, itu gangguan. Lobby justru sebaliknya — di situ
+ * orang menunggu, dan menunggu tanpa bisa bicara adalah alasan orang keluar.
+ */
+export const CHAT_MAX_LENGTH = 120;
+
+/**
+ * Berapa pesan terakhir yang disimpan per room.
+ *
+ * Ada supaya pemain yang baru masuk — atau baru kembali setelah koneksinya
+ * putus — tidak melihat lobby yang sunyi padahal barusan ada percakapan.
+ * Sengaja kecil: ini bukan riwayat obrolan, cuma konteks beberapa detik terakhir,
+ * dan semuanya hilang begitu room bubar.
+ */
+export const CHAT_HISTORY_LIMIT = 30;
+
+/**
+ * Batas kirim: CHAT_RATE_MAX pesan per CHAT_RATE_WINDOW_MS.
+ *
+ * Longgar untuk orang yang mengobrol, ketat untuk yang membanjiri. Tanpa ini
+ * satu orang bisa menenggelamkan seluruh riwayat dalam sedetik dan membuat
+ * lobby tidak terbaca oleh semua orang lain.
+ */
+export const CHAT_RATE_MAX = 5;
+export const CHAT_RATE_WINDOW_MS = 5000;
+
 /**
  * Target skor multiplayer, diukur bukan ditebak.
  *

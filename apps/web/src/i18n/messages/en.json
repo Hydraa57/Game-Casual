@@ -129,7 +129,12 @@
     "eliminatedShort": "OUT",
     "reconnecting": "Disconnected…",
     "reconnectedNotice": "You're back — the match continues.",
-    "dismiss": "OK"
+    "dismiss": "OK",
+    "chatTitle": "Chat",
+    "chatEmpty": "No messages yet. Say hi!",
+    "chatWaiting": "Chat opens once 2 players are in",
+    "chatPlaceholder": "Type a message…",
+    "chatSend": "Send"
   },
   "auth": {
     "title": "Account",

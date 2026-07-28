@@ -284,7 +284,7 @@ h3 {
 }
 
 .ready--gone {
-  color: var(--muted);
+  color: var(--text-dim);
   font-style: italic;
 }
 
@@ -874,4 +874,62 @@ h3 {
 .gate .hint {
   margin-top: -4px;
   margin-bottom: 6px;
+}
+
+/* ---------------------------------------------------------------- chat lobby */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Tinggi dibatasi dan digulir di dalamnya sendiri: tanpa itu, percakapan panjang
+   mendorong tombol siap dan mulai keluar dari layar HP. */
+.chat__log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 9rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.chat__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.chat__who {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.chat__row--me .chat__who {
+  color: var(--accent);
+}
+
+/* Pesan panjang tanpa spasi (tempelan URL) harus dipotong, bukan melebarkan
+   seluruh halaman sampai body ikut bisa digulir menyamping. */
+.chat__text {
+  overflow-wrap: anywhere;
+}
+
+.chat__form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat__form .input {
+  flex: 1;
+  min-width: 0;
 }

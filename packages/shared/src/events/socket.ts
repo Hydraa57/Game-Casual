@@ -106,6 +106,35 @@ export interface JoinedRoom {
    * disiarkan ke seluruh room.
    */
   readonly sessionKey: string;
+  /**
+   * Beberapa pesan chat terakhir di room ini.
+   *
+   * Dikirim di ack join/reconnect, BUKAN sebagai event terpisah. Event yang
+   * dikirim server tepat setelah join bisa tiba sebelum komponen lobby terpasang
+   * dan listener-nya siap — persis masalah yang sama dengan potret papan. Di
+   * dalam ack, urutannya tidak mungkin salah.
+   */
+  readonly chat: readonly ChatMessage[];
+}
+
+/**
+ * Satu pesan chat lobby.
+ *
+ * Nickname dan avatar ikut disalin, tidak dirujuk dari daftar pemain: pesan
+ * harus tetap terbaca setelah pengirimnya keluar dari room.
+ */
+export interface ChatMessage {
+  readonly id: string;
+  readonly playerId: string;
+  readonly nickname: string;
+  readonly avatar: AvatarId;
+  readonly text: string;
+  /** Epoch ms saat server menerimanya — jam server, bukan jam pengirim. */
+  readonly at: number;
+}
+
+export interface ChatSendPayload {
+  readonly text: string;
 }
 
 export interface ReconnectPayload {
@@ -249,6 +278,13 @@ export interface ClientToServerEvents {
    * sebelum komponen match terpasang dan listener-nya siap, lalu hilang.
    */
   'game:requestResync': (ack: (result: Ack<ResyncPayload | null>) => void) => void;
+  /**
+   * Kirim pesan ke lobby.
+   *
+   * Server yang memutuskan boleh atau tidak (lihat `Room.canChat`), bukan UI:
+   * tombol yang dinonaktifkan di client bukan aturan, cuma petunjuk.
+   */
+  'chat:send': (payload: ChatSendPayload, ack: (result: Ack<null>) => void) => void;
   'room:leave': () => void;
   /**
    * Pemain selesai melihat layar hasil dan mau kembali ke lobby.
@@ -269,6 +305,7 @@ export interface ClientToServerEvents {
 
 export interface ServerToClientEvents {
   'room:state': (state: RoomState) => void;
+  'chat:message': (message: ChatMessage) => void;
   'game:countdown': (payload: { readonly seconds: number }) => void;
   'game:started': (payload: GameStartedPayload) => void;
   'game:pixelSpawned': (payload: PixelSpawnedPayload) => void;

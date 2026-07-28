@@ -1,5 +1,11 @@
 import type { Server, Socket } from 'socket.io';
-import { RECONNECT_GRACE_MS, verifyPlayerToken } from '@pixelmatrix/shared';
+import { randomUUID } from 'node:crypto';
+import {
+  CHAT_RATE_MAX,
+  CHAT_RATE_WINDOW_MS,
+  RECONNECT_GRACE_MS,
+  verifyPlayerToken,
+} from '@pixelmatrix/shared';
 import type {
   ClientToServerEvents,
   PlayerIdentity,
@@ -10,8 +16,10 @@ import type {
 import type { RoomManager } from '../rooms/RoomManager';
 import type { Room } from '../rooms/Room';
 import type { SessionRegistry } from '../rooms/sessions';
+import { RateLimiter } from '../game/RateLimiter';
 import { fail, socketError, succeed } from './errors';
 import {
+  chatSchema,
   clickSchema,
   createRoomSchema,
   joinRoomSchema,
@@ -96,6 +104,15 @@ async function identify(token: string | undefined): Promise<PlayerIdentity | nul
  */
 const evictions = new Map<string, NodeJS.Timeout>();
 
+/**
+ * Batas kirim chat per pemain, dipakai bersama seluruh koneksi.
+ *
+ * Modul-level seperti `evictions` dan untuk alasan yang sama: yang dibatasi
+ * adalah pemainnya, dan reconnect tidak boleh menjadi cara mengosongkan
+ * hitungannya.
+ */
+const chatLimiter = new RateLimiter(CHAT_RATE_MAX, CHAT_RATE_WINDOW_MS);
+
 export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
   const { io, rooms, match, sessions, schedule = setTimeout } = deps;
 
@@ -132,6 +149,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
           playerId: seat.playerId,
           roomState: stateOf(room, match),
           sessionKey: seat.sessionKey,
+          chat: room.recentChat(),
         }),
       );
       broadcastState(room);
@@ -171,6 +189,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
           playerId: seat.playerId,
           roomState: stateOf(result.room, match),
           sessionKey: seat.sessionKey,
+          chat: result.room.recentChat(),
         }),
       );
       broadcastState(result.room);
@@ -217,6 +236,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
         playerId,
         roomState: stateOf(room, match),
         sessionKey: parsed.data.sessionKey,
+        chat: room.recentChat(),
       }),
     );
     broadcastState(room);
@@ -230,6 +250,47 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
       return;
     }
     ack(succeed(match.snapshotOf(room)));
+  });
+
+  socket.on('chat:send', (payload, ack) => {
+    const parsed = chatSchema.safeParse(payload);
+    if (!parsed.success) {
+      ack(fail('INVALID_PAYLOAD'));
+      return;
+    }
+
+    const playerId = seatOf(socket);
+    const room = roomOfSocket(socket, rooms);
+    const player = playerId === undefined ? undefined : room?.get(playerId);
+    if (!room || playerId === undefined || !player) {
+      ack(fail('NOT_IN_ROOM'));
+      return;
+    }
+    // Aturannya ditegakkan DI SINI, bukan cuma di UI: tombol yang dinonaktifkan
+    // di client sekadar petunjuk, dan siapa pun bisa mengirim event ini langsung.
+    const verdict = room.canChat();
+    if (verdict !== 'ok') {
+      ack(fail(verdict === 'playing' ? 'GAME_IN_PROGRESS' : 'NOT_ENOUGH_PLAYERS'));
+      return;
+    }
+    if (!chatLimiter.allow(playerId, Date.now())) {
+      ack(fail('RATE_LIMITED'));
+      return;
+    }
+
+    const message = {
+      id: randomUUID(),
+      playerId,
+      nickname: player.nickname,
+      avatar: player.avatar,
+      text: parsed.data.text,
+      // Jam SERVER. Kalau jam pengirim yang dipakai, HP yang tanggalnya salah
+      // akan membuat pesannya melompat ke urutan yang aneh bagi semua orang.
+      at: Date.now(),
+    };
+    room.addChatMessage(message);
+    io.to(room.code).emit('chat:message', message);
+    ack(succeed(null));
   });
 
   socket.on('room:leave', () => {

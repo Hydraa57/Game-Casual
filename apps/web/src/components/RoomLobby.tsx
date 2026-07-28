@@ -9,7 +9,8 @@ import {
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
-import type { RoomSettings, RoomState } from '@pixelmatrix/shared';
+import type { ChatMessage, RoomSettings, RoomState } from '@pixelmatrix/shared';
+import { ChatPanel } from './ChatPanel';
 import { PrefetchGame } from './PrefetchGame';
 
 export interface RoomLobbyProps {
@@ -20,6 +21,8 @@ export interface RoomLobbyProps {
   readonly onUpdateSettings: (settings: Partial<RoomSettings>) => void;
   readonly onStart: () => void;
   readonly onLeave: () => void;
+  readonly chat: readonly ChatMessage[];
+  readonly onSendChat: (text: string) => void;
 }
 
 export function RoomLobby({
@@ -30,14 +33,26 @@ export function RoomLobby({
   onUpdateSettings,
   onStart,
   onLeave,
+  chat,
+  onSendChat,
 }: RoomLobbyProps) {
   const t = useTranslations('room');
   const [copied, setCopied] = useState(false);
 
   const me = room.players.find((player) => player.id === playerId);
   const isHost = me?.isHost ?? false;
-  const allReady = room.players.every((player) => player.isReady);
-  const enoughPlayers = room.players.length >= MIN_PLAYERS_TO_START;
+  /**
+   * Kesiapan dihitung dari pemain yang TERSAMBUNG, bukan seluruh daftar.
+   *
+   * Harus cocok dengan `Room.canStart()` di server. Kalau di sini memakai
+   * seluruh daftar, satu pemain yang sedang reconnect akan membuat tombol
+   * "mulai" mati padahal server sudah mengizinkan — host melihat tombol yang
+   * tidak bisa ditekan tanpa penjelasan apa pun.
+   */
+  const connected = room.players.filter((player) => player.connected);
+  const connectedCount = connected.length;
+  const allReady = connected.every((player) => player.isReady);
+  const enoughPlayers = connectedCount >= MIN_PLAYERS_TO_START;
 
   const share = useCallback(() => {
     const url = `${window.location.origin}${window.location.pathname}?code=${room.roomCode}`;
@@ -169,6 +184,19 @@ export function RoomLobby({
       <button className="btn btn--small" type="button" onClick={onLeave}>
         {t('leaveRoom')}
       </button>
+
+      {/* Chat ditaruh SETELAH kontrol match, bukan sebelumnya. Di layar HP yang
+          sempit, yang harus terlihat lebih dulu adalah tombol siap dan mulai —
+          bukan percakapan. */}
+      <ChatPanel
+        messages={chat}
+        playerId={playerId}
+        // Syarat yang sama ditegakkan server di `Room.canChat()`. Di sini ia
+        // hanya untuk menonaktifkan kolomnya, supaya tidak ada yang mengetik
+        // panjang-panjang lalu pesannya ditolak.
+        enabled={connectedCount >= MIN_PLAYERS_TO_START}
+        onSend={onSendChat}
+      />
     </div>
   );
 }

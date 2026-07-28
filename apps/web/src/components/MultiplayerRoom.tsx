@@ -123,6 +123,8 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
           onUpdateSettings={room.updateSettings}
           onStart={() => void room.startMatch()}
           onLeave={room.leaveRoom}
+          chat={room.chat}
+          onSendChat={room.sendChat}
         />
       ) : room.socket ? (
         <MatchView

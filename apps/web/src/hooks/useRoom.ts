@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   Ack,
   AvatarId,
+  ChatMessage,
   JoinedRoom,
   RoomErrorCode,
   RoomSettings,
   RoomState,
 } from '@pixelmatrix/shared';
+import { CHAT_HISTORY_LIMIT } from '@pixelmatrix/shared';
 import { clearRoomSession, readRoomSession, writeRoomSession } from '@/lib/roomSession';
 import { createSocket } from '@/lib/socket';
 import type { GameSocket } from '@/lib/socket';
@@ -30,6 +32,8 @@ export interface UseRoom {
    */
   readonly reconnected: boolean;
   acknowledgeReconnect(): void;
+  readonly chat: readonly ChatMessage[];
+  sendChat(text: string): void;
   createRoom(
     nickname: string,
     avatar: AvatarId,
@@ -59,6 +63,7 @@ export function useRoom(): UseRoom {
   const [errorCode, setErrorCode] = useState<RoomErrorCode | null>(null);
   const [busy, setBusy] = useState(false);
   const [reconnected, setReconnected] = useState(false);
+  const [chat, setChat] = useState<readonly ChatMessage[]>([]);
 
   useEffect(() => {
     const socket = createSocket();
@@ -86,6 +91,7 @@ export function useRoom(): UseRoom {
         }
         setPlayerId(result.data.playerId);
         setRoom(result.data.roomState);
+        setChat(result.data.chat);
         setReconnected(true);
       });
     };
@@ -97,6 +103,12 @@ export function useRoom(): UseRoom {
     socket.on('disconnect', () => setStatus('offline'));
     socket.on('connect_error', () => setStatus('offline'));
     socket.on('room:state', setRoom);
+    socket.on('chat:message', (message) => {
+      // Dipotong di sisi client juga: server memang membatasi riwayat yang
+      // DIKIRIM saat join, tapi lobby yang dibuka lama bisa mengumpulkan jauh
+      // lebih banyak dari itu lewat event.
+      setChat((current) => [...current, message].slice(-CHAT_HISTORY_LIMIT));
+    });
     socket.on('error', (payload) => setErrorCode(payload.code));
 
     if (process.env.NODE_ENV !== 'production') {
@@ -161,6 +173,7 @@ export function useRoom(): UseRoom {
       setPlayerId(result.data.playerId);
       setRoom(result.data.roomState);
       writeRoomSession({ sessionKey: result.data.sessionKey, roomCode: result.data.roomCode });
+      setChat(result.data.chat);
       return true;
     },
     [request, playerToken],
@@ -176,6 +189,7 @@ export function useRoom(): UseRoom {
       setPlayerId(result.data.playerId);
       setRoom(result.data.roomState);
       writeRoomSession({ sessionKey: result.data.sessionKey, roomCode: result.data.roomCode });
+      setChat(result.data.chat);
       return true;
     },
     [request, playerToken],
@@ -191,6 +205,7 @@ export function useRoom(): UseRoom {
     setPlayerId(null);
     setErrorCode(null);
     setReconnected(false);
+    setChat([]);
   }, []);
 
   /**
@@ -223,6 +238,18 @@ export function useRoom(): UseRoom {
 
   const acknowledgeReconnect = useCallback(() => setReconnected(false), []);
 
+  /**
+   * Kirim pesan tanpa menunggu ack-nya.
+   *
+   * Pesan yang berhasil kembali sebagai `chat:message` ke seluruh room, termasuk
+   * ke pengirimnya — jadi tidak ada gunanya menambahkannya dua kali secara
+   * optimistis. Kalau server menolak (rate limit, match sudah mulai), yang
+   * terjadi adalah pesannya tidak muncul, dan itu umpan balik yang cukup.
+   */
+  const sendChat = useCallback((text: string) => {
+    socketRef.current?.emit('chat:send', { text }, () => {});
+  }, []);
+
   return useMemo(
     () => ({
       status,
@@ -233,6 +260,8 @@ export function useRoom(): UseRoom {
       socket: socketRef.current,
       reconnected,
       acknowledgeReconnect,
+      chat,
+      sendChat,
       createRoom,
       joinRoom,
       leaveRoom,
@@ -250,6 +279,8 @@ export function useRoom(): UseRoom {
       busy,
       reconnected,
       acknowledgeReconnect,
+      chat,
+      sendChat,
       createRoom,
       joinRoom,
       leaveRoom,
