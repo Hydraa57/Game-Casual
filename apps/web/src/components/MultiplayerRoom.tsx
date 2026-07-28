@@ -99,7 +99,15 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
 
       {/* Alamat yang dicoba ikut ditampilkan: tanpa itu, "server tidak
           terjangkau" tidak memberi petunjuk apa pun soal apa yang salah. */}
-      {room.status === 'offline' && (
+      {/* Dibedakan dari "server tidak terjangkau": yang ini kita TAHU sementara,
+          jadi pemain tidak perlu mengira ada yang rusak. */}
+      {room.restarting && (
+        <p className="hint hint--warn" role="status">
+          {t('serverRestarting')}
+        </p>
+      )}
+
+      {room.status === 'offline' && !room.restarting && (
         <p className="hint hint--warn">{t('serverOffline', { url: gameServerUrl() })}</p>
       )}
 

@@ -32,6 +32,8 @@ export interface UseRoom {
    */
   readonly reconnected: boolean;
   acknowledgeReconnect(): void;
+  /** Server memberi tahu ia sedang di-restart; koneksi akan putus sebentar. */
+  readonly restarting: boolean;
   readonly chat: readonly ChatMessage[];
   sendChat(text: string): void;
   createRoom(
@@ -64,6 +66,7 @@ export function useRoom(): UseRoom {
   const [busy, setBusy] = useState(false);
   const [reconnected, setReconnected] = useState(false);
   const [chat, setChat] = useState<readonly ChatMessage[]>([]);
+  const [restarting, setRestarting] = useState(false);
 
   useEffect(() => {
     const socket = createSocket();
@@ -98,8 +101,14 @@ export function useRoom(): UseRoom {
 
     socket.on('connect', () => {
       setStatus('online');
+      // Kalau kita sampai di sini, restart-nya sudah selesai.
+      setRestarting(false);
       reclaimSeat();
     });
+    // Dikirim server sebelum ia menutup diri. Bedanya dengan `disconnect`
+    // biasa: kita TAHU ini sementara dan disengaja, jadi pemain bisa diberi
+    // tahu alih-alih dibiarkan menyimpulkan gamenya rusak.
+    socket.on('server:shutdown', () => setRestarting(true));
     socket.on('disconnect', () => setStatus('offline'));
     socket.on('connect_error', () => setStatus('offline'));
     socket.on('room:state', setRoom);
@@ -260,6 +269,7 @@ export function useRoom(): UseRoom {
       socket: socketRef.current,
       reconnected,
       acknowledgeReconnect,
+      restarting,
       chat,
       sendChat,
       createRoom,
@@ -279,6 +289,7 @@ export function useRoom(): UseRoom {
       busy,
       reconnected,
       acknowledgeReconnect,
+      restarting,
       chat,
       sendChat,
       createRoom,

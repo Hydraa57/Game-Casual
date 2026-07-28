@@ -113,6 +113,43 @@ const evictions = new Map<string, NodeJS.Timeout>();
  */
 const chatLimiter = new RateLimiter(CHAT_RATE_MAX, CHAT_RATE_WINDOW_MS);
 
+/**
+ * Pasang handler yang tidak bisa menjatuhkan proses.
+ *
+ * Satu proses melayani SEMUA room. Tanpa batas kesalahan di sini, satu
+ * exception dari satu pemain akan mengakhiri setiap match yang sedang berjalan
+ * di server itu — bukan hanya miliknya. Zod sudah menyaring bentuk payload,
+ * tapi ia tidak menjamin tidak ada bug di jalur setelahnya.
+ *
+ * Yang gagal hanya SATU aksi: pemainnya tidak mendapat balasan (atau mendapat
+ * error), dan semua orang lain terus bermain.
+ */
+function on<E extends keyof ClientToServerEvents>(
+  socket: GameSocket,
+  event: E,
+  handler: ClientToServerEvents[E],
+): void {
+  const guarded = (...args: unknown[]): void => {
+    try {
+      (handler as (...a: unknown[]) => void)(...args);
+    } catch (error) {
+      console.error(`[game-server] handler ${String(event)} gagal`, error);
+      // Argumen terakhir adalah ack kalau event ini punya. Pemain yang menunggu
+      // balasan tidak boleh menggantung selamanya karena ada bug di sini.
+      const ack = args.at(-1);
+      if (typeof ack === 'function') (ack as (result: unknown) => void)(fail('INVALID_PAYLOAD'));
+    }
+  };
+
+  // Socket.IO tidak bisa menyatukan overload `on` untuk parameter tipe generik,
+  // jadi pemasangannya dilakukan lewat tipe yang dilonggarkan. Keamanan tipe
+  // yang sesungguhnya sudah dijaga di parameter `handler` di atas.
+  (socket.on as (event: string, listener: (...args: unknown[]) => void) => void)(
+    event as string,
+    guarded,
+  );
+}
+
 export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
   const { io, rooms, match, sessions, schedule = setTimeout } = deps;
 
@@ -120,7 +157,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     io.to(room.code).emit('room:state', stateOf(room, match));
   };
 
-  socket.on('room:create', (payload, ack) => {
+  on(socket, 'room:create', (payload, ack) => {
     const parsed = createRoomSchema.safeParse(payload);
     if (!parsed.success) {
       ack(fail('INVALID_PAYLOAD'));
@@ -156,7 +193,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     });
   });
 
-  socket.on('room:join', (payload, ack) => {
+  on(socket, 'room:join', (payload, ack) => {
     const parsed = joinRoomSchema.safeParse(payload);
     if (!parsed.success) {
       ack(fail('INVALID_PAYLOAD'));
@@ -205,7 +242,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
    * Menerapkan pemeriksaan itu di jalur ini akan menolak tepat orang yang
    * seharusnya diterima.
    */
-  socket.on('room:reconnect', (payload, ack) => {
+  on(socket, 'room:reconnect', (payload, ack) => {
     const parsed = reconnectSchema.safeParse(payload);
     if (!parsed.success) {
       ack(fail('INVALID_PAYLOAD'));
@@ -242,7 +279,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     broadcastState(room);
   });
 
-  socket.on('game:requestResync', (ack) => {
+  on(socket, 'game:requestResync', (ack) => {
     const playerId = seatOf(socket);
     const room = playerId === undefined ? undefined : rooms.roomOf(playerId);
     if (!room) {
@@ -252,7 +289,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     ack(succeed(match.snapshotOf(room)));
   });
 
-  socket.on('chat:send', (payload, ack) => {
+  on(socket, 'chat:send', (payload, ack) => {
     const parsed = chatSchema.safeParse(payload);
     if (!parsed.success) {
       ack(fail('INVALID_PAYLOAD'));
@@ -293,11 +330,11 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     ack(succeed(null));
   });
 
-  socket.on('room:leave', () => {
+  on(socket, 'room:leave', () => {
     leaveCurrentRoom(socket, deps);
   });
 
-  socket.on('room:backToLobby', () => {
+  on(socket, 'room:backToLobby', () => {
     const room = roomOfSocket(socket, rooms);
     if (!room || room.currentStatus !== 'finished') return;
 
@@ -306,7 +343,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     broadcastState(room);
   });
 
-  socket.on('room:updateSettings', (payload, ack) => {
+  on(socket, 'room:updateSettings', (payload, ack) => {
     const parsed = updateSettingsSchema.safeParse(payload);
     if (!parsed.success) {
       ack(fail('INVALID_PAYLOAD'));
@@ -334,7 +371,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     broadcastState(room);
   });
 
-  socket.on('player:ready', (payload) => {
+  on(socket, 'player:ready', (payload) => {
     const parsed = readySchema.safeParse(payload);
     const playerId = seatOf(socket);
     const room = roomOfSocket(socket, rooms);
@@ -344,7 +381,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     broadcastState(room);
   });
 
-  socket.on('game:start', (ack) => {
+  on(socket, 'game:start', (ack) => {
     const playerId = seatOf(socket);
     const room = roomOfSocket(socket, rooms);
     if (!room || playerId === undefined) {
@@ -368,7 +405,7 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     match.onStart(room, io);
   });
 
-  socket.on('game:click', (payload) => {
+  on(socket, 'game:click', (payload) => {
     const parsed = clickSchema.safeParse(payload);
     if (!parsed.success) {
       socket.emit('error', socketError('INVALID_PAYLOAD'));
@@ -432,6 +469,10 @@ function evict(playerId: string, { io, rooms, match, sessions }: HandlerDeps): v
   match.onPlayerLeft(room, playerId);
   const remaining = rooms.leave(playerId);
   sessions.close(playerId);
+  // Tanpa ini, setiap pemain yang pernah mengirim satu pesan meninggalkan
+  // entri di limiter selamanya. Server yang hidup berhari-hari melayani ribuan
+  // pemain — itu kebocoran memori yang tumbuh selama prosesnya hidup.
+  chatLimiter.forget(playerId);
 
   if (remaining) {
     io.to(remaining.code).emit('room:state', stateOf(remaining, match));

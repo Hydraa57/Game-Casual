@@ -328,6 +328,14 @@ export interface ClientToServerEvents {
 export interface ServerToClientEvents {
   'room:state': (state: RoomState) => void;
   'chat:message': (message: ChatMessage) => void;
+  /**
+   * Server akan mati sebentar lagi (deploy ulang / restart).
+   *
+   * Dikirim SEBELUM koneksinya diputus, supaya client bisa menjelaskan apa yang
+   * terjadi. Tanpa ini pemain hanya melihat "server tidak terjangkau" dan
+   * menyimpulkan gamenya rusak.
+   */
+  'server:shutdown': () => void;
   'game:countdown': (payload: { readonly seconds: number }) => void;
   'game:started': (payload: GameStartedPayload) => void;
   'game:pixelSpawned': (payload: PixelSpawnedPayload) => void;

@@ -139,7 +139,8 @@
     "chatWaiting": "Chat aktif setelah ada 2 pemain",
     "chatPlaceholder": "Tulis pesan…",
     "chatSend": "Kirim",
-    "secondsToLevel": "{count} dtk lagi"
+    "secondsToLevel": "{count} dtk lagi",
+    "serverRestarting": "Server sedang diperbarui. Kamu akan tersambung lagi otomatis sebentar lagi…"
   },
   "auth": {
     "title": "Akun",

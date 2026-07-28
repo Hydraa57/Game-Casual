@@ -139,7 +139,8 @@
     "chatWaiting": "Chat opens once 2 players are in",
     "chatPlaceholder": "Type a message…",
     "chatSend": "Send",
-    "secondsToLevel": "{count}s to go"
+    "secondsToLevel": "{count}s to go",
+    "serverRestarting": "Server is updating. You will reconnect automatically in a moment…"
   },
   "auth": {
     "title": "Account",

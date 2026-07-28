@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@pixelmatrix/shared';
 import { Match } from './game/Match';
 import { registerHandlers } from './net/handlers';
+import { createShutdown, guardProcess } from './net/lifecycle';
 import type { MatchHooks } from './net/handlers';
 import { hasDatabase } from '@pixelmatrix/db';
 import { RoomManager } from './rooms/RoomManager';
@@ -44,6 +45,21 @@ app.get('/health', (_req, res) => {
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: { origin: CORS_ORIGIN },
+  /**
+   * Disetel untuk jaringan seluler, bukan untuk LAN.
+   *
+   * Default Socket.IO (ping 25 dtk, timeout 20 dtk) menganggap koneksi mati
+   * lebih cepat daripada yang wajar di HP: berpindah dari WiFi ke seluler saja
+   * bisa menahan paket beberapa detik. Deteksi yang terlalu cepat membuat
+   * pemain ditandai "terputus" padahal ia masih main.
+   *
+   * Perhitungannya bertingkat dengan RECONNECT_GRACE_MS: deteksi 25 dtk +
+   * tenggang 45 dtk = kursinya ditahan paling lama ~70 detik. Itu longgar untuk
+   * yang kembali, dan masih jauh di bawah durasi match terpendek (90 dtk) jadi
+   * tidak pernah ada kursi hantu yang bertahan melewati match-nya sendiri.
+   */
+  pingInterval: 20_000,
+  pingTimeout: 25_000,
 });
 
 function endMatch(room: Room): void {
@@ -84,3 +100,36 @@ io.on('connection', (socket) => {
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`[game-server] listening on http://0.0.0.0:${PORT}`);
 });
+
+// Satu exception dari satu pemain tidak boleh mengakhiri match semua orang.
+guardProcess((message, error) => console.error(message, error));
+
+const shutdown = createShutdown({
+  notifyClients: () => {
+    // Dikirim selagi koneksinya masih hidup. Tanpa ini pemain hanya melihat
+    // koneksi mati begitu saja dan mengira gamenya rusak, padahal server cuma
+    // sedang diperbarui.
+    io.emit('server:shutdown');
+  },
+  stopMatches: () => {
+    for (const running of matches.values()) running.stop();
+    matches.clear();
+  },
+  closeServers: async () => {
+    await io.close();
+    await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  },
+});
+
+/**
+ * SIGTERM datang dari host setiap kali service ini di-deploy ulang; SIGINT dari
+ * Ctrl-C saat development. Sebelum ini keduanya tidak ditangani sama sekali:
+ * interval game loop terus berjalan, prosesnya tidak pernah keluar sendiri, dan
+ * akhirnya dibunuh paksa di tengah match orang.
+ */
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    console.log(`[game-server] ${signal} diterima, menutup dengan rapi`);
+    void shutdown().then(() => process.exit(0));
+  });
+}
