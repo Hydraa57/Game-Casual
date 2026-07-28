@@ -184,6 +184,18 @@ export class Room {
     player.latencyMs = smoothLatency(player.latencyMs, sampleMs);
   }
 
+  /**
+   * Lupakan latensi pemain ini — kita tidak lagi tahu berapa.
+   *
+   * Dipakai saat ping tidak dibalas dalam batas waktu. Menahan angka lama akan
+   * menampilkan koneksi yang sudah tidak terukur seolah masih baik-baik saja,
+   * dan justru saat itulah pemain lain paling perlu tahu ada yang tidak beres.
+   */
+  clearLatency(playerId: string): void {
+    const player = this.players.get(playerId);
+    if (player) player.latencyMs = null;
+  }
+
   hasNickname(nickname: string): boolean {
     const wanted = nickname.trim().toLowerCase();
     return this.allPlayers().some((player) => player.nickname.trim().toLowerCase() === wanted);

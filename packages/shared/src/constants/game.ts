@@ -350,6 +350,23 @@ export const MP_TICK_BROADCAST_MS = 250;
  */
 export const PING_INTERVAL_MS = 3000;
 
+/**
+ * Berapa lama server menunggu balasan ping sebelum menyerah untuk sampel itu.
+ *
+ * ADA karena ketiadaannya adalah bug sungguhan: versi pertama menahan satu ping
+ * "di udara" sampai balasannya datang, dan kalau balasan itu TIDAK PERNAH datang
+ * — HP yang layarnya mati, tab yang dibekukan browser, paket yang hilang —
+ * pengukuran untuk pemain itu berhenti selamanya. Angkanya membeku di nilai
+ * terakhir dan tidak pulih bahkan setelah koneksinya kembali normal.
+ *
+ * 8 detik: jauh di atas latensi terburuk yang masih bisa disebut bermain
+ * (koneksi seluler yang parah pun jarang di atas 2 detik), jadi tidak ada
+ * gangguan wajar yang menyentuhnya. Balasan yang datang setelah ini diabaikan,
+ * bukan dipakai — HP yang bangun setelah 40 detik akan melaporkan RTT 40 detik,
+ * dan itu bukan ukuran koneksinya, itu ukuran berapa lama layarnya mati.
+ */
+export const PING_TIMEOUT_MS = 8000;
+
 /** Sudden death: papan dikosongkan, satu pixel target, siapa cepat dia menang. */
 export const SUDDEN_DEATH_LIFETIME_MS = 4000;
 

@@ -363,12 +363,10 @@ export function MatchView({
             {entry.bot !== null && (
               <span className="badge badge--bot">{t(`botLevel.${entry.bot}`)}</span>
             )}
-            {/* Hanya muncul kalau koneksinya memang bermasalah. Selama match,
-                yang berguna adalah pengecualiannya — bukan empat angka hijau
-                yang berkedip di samping papan. Bot tidak punya jaringan untuk
-                diukur, jadi ia tidak pernah membawa lencana ini. */}
+            {/* Bot tidak punya jaringan untuk diukur, jadi ia tidak pernah
+                membawa lencana ini. */}
             {entry.bot === null && (
-              <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} hideWhenGood />
+              <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} />
             )}
             {entry.lives !== null && (
               <span

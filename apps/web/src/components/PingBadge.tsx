@@ -7,15 +7,6 @@ interface PingBadgeProps {
   readonly latencyMs: number | null;
   /** Pemain yang koneksinya sedang putus — angkanya sudah basi. */
   readonly connected?: boolean;
-  /**
-   * Sembunyikan kalau koneksinya baik-baik saja.
-   *
-   * Dipakai di scoreboard SELAMA match, di mana yang berguna cuma pengecualian:
-   * lencana hijau di setiap baris hanyalah empat angka yang bergerak-gerak di
-   * samping papan yang sedang direbutkan. Di lobby sebaliknya — di situ orang
-   * memang sedang menimbang, dan angka yang bagus pun adalah jawaban.
-   */
-  readonly hideWhenGood?: boolean;
 }
 
 /**
@@ -26,12 +17,17 @@ interface PingBadgeProps {
  * jadi kemungkinan itu justru lebih besar di sini daripada di aplikasi biasa.
  * Angka saja tidak berarti apa-apa bagi kebanyakan orang: "180" itu bagus atau
  * buruk? Bersama-sama, keduanya bisa dibaca siapa pun.
+ *
+ * Dan ia SELALU tampil, termasuk saat koneksinya bagus. Percobaan pertama
+ * menyembunyikannya di scoreboard saat pingnya bagus, dengan alasan empat angka
+ * hijau di samping papan cuma gangguan. Alasannya salah: lencana yang
+ * muncul-hilang sendiri terbaca sebagai UI rusak, bukan sebagai "koneksimu
+ * aman" — dan yang justru ingin dilihat pemain adalah pingnya. Yang bagus
+ * diredupkan lewat CSS supaya tidak bersaing dengan papan.
  */
-export function PingBadge({ latencyMs, connected = true, hideWhenGood = false }: PingBadgeProps) {
+export function PingBadge({ latencyMs, connected = true }: PingBadgeProps) {
   const t = useTranslations('room');
   const quality = connected ? latencyQuality(latencyMs) : 'unknown';
-
-  if (hideWhenGood && (quality === 'good' || quality === 'unknown')) return null;
 
   // Belum ada sampel: pemain baru masuk dan pengukuran pertama belum kembali.
   // Menampilkan "0 ms" akan berbohong, dan menampilkan "buruk" akan menuduh

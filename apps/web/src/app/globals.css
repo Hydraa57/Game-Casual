@@ -417,6 +417,18 @@ h3 {
   color: var(--text-dim);
 }
 
+/* Di scoreboard, ping yang bagus diredupkan alih-alih disembunyikan.
+   Menyembunyikannya membuat lencana muncul-hilang sendiri selama match, dan itu
+   terbaca sebagai UI rusak — bukan sebagai "koneksimu aman". */
+.scoreboard .ping {
+  font-size: 0.65rem;
+  min-width: 3.2em;
+}
+
+.scoreboard .ping--good {
+  opacity: 0.5;
+}
+
 .ready {
   font-size: 0.65rem;
   letter-spacing: 0.15em;

@@ -4,6 +4,7 @@ import {
   CHAT_RATE_MAX,
   CHAT_RATE_WINDOW_MS,
   PING_INTERVAL_MS,
+  PING_TIMEOUT_MS,
   RECONNECT_GRACE_MS,
   verifyPlayerToken,
 } from '@pixelmatrix/shared';
@@ -76,6 +77,8 @@ interface SocketData {
    * karena antreannya sendiri akan membuat sampel setelahnya makin buruk.
    */
   pingSentAt?: number;
+  /** Batas waktu sampel yang sedang berjalan; dibersihkan saat socket tutup. */
+  pingTimeout?: NodeJS.Timeout;
 }
 
 const seatOf = (socket: GameSocket): string | undefined => (socket.data as SocketData).playerId;
@@ -567,23 +570,47 @@ function startPingLoop(
 
     const sentAt = Date.now();
     data.pingSentAt = sentAt;
-    socket.emit('net:ping', () => {
+
+    /**
+     * Selesaikan sampel ini SEKALI saja, entah karena dibalas atau kehabisan
+     * waktu. Penjaga `settled` yang membuat balasan telat diabaikan alih-alih
+     * dipakai: HP yang bangun setelah 40 detik akan membalas dengan RTT 40
+     * detik, dan itu bukan ukuran koneksinya — itu ukuran berapa lama layarnya
+     * mati.
+     */
+    let settled = false;
+    const settle = (rtt: number | null): void => {
+      if (settled) return;
+      settled = true;
+      if (data.pingTimeout !== undefined) clearTimeout(data.pingTimeout);
+      data.pingTimeout = undefined;
       data.pingSentAt = undefined;
-      // Kursinya dibaca ULANG, tidak dipakai dari closure: ack bisa tiba setelah
-      // pemainnya keluar atau pindah room, dan menulis latensi ke kursi lama
-      // berarti menaruh angka di pemain yang salah.
+
+      // Kursinya dibaca ULANG, tidak dipakai dari closure: balasan bisa tiba
+      // setelah pemainnya keluar atau pindah room, dan menulis latensi ke kursi
+      // lama berarti menaruh angka di pemain yang salah.
       const current = seatOf(socket);
       const currentRoom = current === undefined ? undefined : rooms.roomOf(current);
       if (current === undefined || !currentRoom) return;
 
-      currentRoom.setLatency(current, Date.now() - sentAt);
+      if (rtt === null) currentRoom.clearLatency(current);
+      else currentRoom.setLatency(current, rtt);
       if (currentRoom.currentStatus !== 'playing') broadcastState(currentRoom);
-    });
+    };
+
+    // Batas waktu ini yang menutup bug "ping hilang sendiri". Tanpanya, satu
+    // balasan yang tidak pernah datang menahan `pingSentAt` selamanya, dan
+    // pengukuran untuk pemain itu berhenti untuk seterusnya — angkanya membeku
+    // dan tidak pulih bahkan setelah koneksinya kembali normal.
+    data.pingTimeout = setTimeout(() => settle(null), PING_TIMEOUT_MS);
+    socket.emit('net:ping', () => settle(Date.now() - sentAt));
   }, PING_INTERVAL_MS);
 
   socket.on('disconnect', () => {
     if (data.pingTimer !== undefined) clearInterval(data.pingTimer);
+    if (data.pingTimeout !== undefined) clearTimeout(data.pingTimeout);
     data.pingTimer = undefined;
+    data.pingTimeout = undefined;
     data.pingSentAt = undefined;
   });
 }
