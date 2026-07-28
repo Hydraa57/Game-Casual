@@ -6,6 +6,7 @@ import {
   canContinue,
   CLICKS_PER_LEVEL,
   continueFromCheckpoint,
+  COMBO_STEP,
   comboMultiplier,
   createGameState,
   currentLevel,
@@ -171,7 +172,7 @@ export class BoardScene extends Phaser.Scene {
         case 'clickRejected':
           if (event.reason === 'wrongColor') {
             this.options.sfx.wrong();
-            this.cameras.main.shake(140, 0.008);
+            this.boardView.shake(140, 0.008);
           }
           break;
 
@@ -180,8 +181,8 @@ export class BoardScene extends Phaser.Scene {
           // yang paling mahal, dan pemain harus langsung tahu tanpa lihat HUD.
           this.boardView.remove(event.pixelId, 'pop');
           this.options.sfx.bomb();
-          this.cameras.main.shake(260, 0.016);
-          this.cameras.main.flash(160, 228, 59, 68);
+          this.boardView.shake(260, 0.016);
+          this.boardView.flash(160, 228, 59, 68);
           break;
 
         case 'lifeGained':
@@ -197,9 +198,30 @@ export class BoardScene extends Phaser.Scene {
           this.options.sfx.gameOver();
           break;
 
+        case 'levelUp':
+          // Engine memancarkan ini sejak Patch 4 dan sampai sekarang tidak
+          // pernah digambar. Kenaikan level cuma terlihat kalau pemain melirik
+          // HUD — yang tidak dilakukan siapa pun di tengah ronde.
+          this.boardView.levelBanner(event.level);
+          this.options.sfx.levelUp();
+          break;
+
+        case 'comboBroken':
+          // Hanya combo yang sudah bernilai. Umpan balik untuk setiap kejadian
+          // biasa membuat umpan balik itu berhenti berarti apa-apa.
+          if (event.previousCombo >= COMBO_STEP) {
+            this.boardView.comboBroken(event.previousCombo);
+          }
+          break;
+
+        case 'targetChanged':
+          // Mata pemain ada di PAPAN, dan papan itu satu-satunya tempat yang
+          // tidak memberi tanda apa pun saat aturannya berubah.
+          this.boardView.targetPulse();
+          break;
+
         default:
-          // targetChanged / comboBroken / levelUp / targetScoreReached
-          // ditampilkan lewat HUD di React, tidak perlu efek di canvas.
+          // targetScoreReached ditampilkan lewat HUD di React.
           break;
       }
     }

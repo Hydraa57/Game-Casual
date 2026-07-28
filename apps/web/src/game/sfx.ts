@@ -62,6 +62,16 @@ export class Sfx {
     this.tone(1180, 0.16, 'triangle', 0.09, 0.16);
   }
 
+  /**
+   * Naik level: arpeggio naik yang lebih lebar dari bunyi nyawa, supaya keduanya
+   * tidak tertukar — keduanya kabar baik, tapi artinya berbeda.
+   */
+  levelUp(): void {
+    this.tone(520, 0.1, 'triangle', 0.07, 0);
+    this.tone(700, 0.1, 'triangle', 0.07, 0.09);
+    this.tone(1040, 0.22, 'triangle', 0.08, 0.18);
+  }
+
   gameOver(): void {
     this.tone(420, 0.14, 'square', 0.09, 0);
     this.tone(320, 0.14, 'square', 0.09, 0.14);

@@ -166,7 +166,15 @@ export function MatchView({
 
     const onTick = (payload: TickPayload) => {
       setRemainingMs(payload.remainingMs);
-      setLevel(payload.level);
+      // Kenaikan level di multiplayer tidak punya event tersendiri — ia hanya
+      // terlihat sebagai angka yang berubah di tick. Perbandingan dengan nilai
+      // sebelumnya lah yang mengubahnya menjadi momen.
+      setLevel((previous) => {
+        if (payload.level > previous && previous > 0) {
+          scene()?.levelBanner(payload.level);
+        }
+        return payload.level;
+      });
       setChaos(payload.chaos);
       setScoreboard(payload.scoreboard);
       // Tick membawa warna target juga, jadi HUD tetap benar walau satu event
@@ -205,6 +213,7 @@ export function MatchView({
       // Tidak menunggu tick berikutnya (bisa 250 ms lagi): pada level tinggi
       // seperempat detik mengejar warna yang sudah kadaluarsa itu mahal.
       scene()?.setTargets(colors);
+      scene()?.targetPulse();
       setTargetColors(colors);
       setStroopInk(payload.stroopInk);
       setTargetImminent(false);

@@ -174,6 +174,16 @@ export class RemoteBoardScene extends Phaser.Scene {
    * match. Keduanya sama-sama berarti "lupakan yang sekarang ada di papan,
    * inilah keadaan yang benar".
    */
+  /** Spanduk naik level; dipanggil MatchView saat tick membawa level baru. */
+  levelBanner(level: number): void {
+    this.boardView.levelBanner(level);
+  }
+
+  /** Denyut papan saat warna target berganti. */
+  targetPulse(): void {
+    this.boardView.targetPulse();
+  }
+
   replaceBoard(pixels: readonly Pixel[]): void {
     this.pixels.clear();
     for (const pixel of pixels)

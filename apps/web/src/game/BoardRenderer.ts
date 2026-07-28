@@ -29,7 +29,39 @@ export class BoardRenderer {
   /** Tekstur partikel dibuat sekali per scene, bukan per ledakan. */
   private particleTextureReady = false;
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  /**
+   * Pemain meminta gerakan dikurangi lewat setelan sistemnya.
+   *
+   * Dibaca sekali saat renderer dibuat, bukan tiap efek: nilainya praktis tidak
+   * pernah berubah di tengah ronde, dan memanggil matchMedia puluhan kali per
+   * detik di jalur terpanas permainan itu pemborosan.
+   *
+   * Ini bukan kosmetik opsional. Guncangan kamera dan kilatan layar bisa
+   * memicu mual dan, pada sebagian orang, kejang. Sisi CSS sudah menghormati
+   * setelan ini sejak kartu tutorial; canvas-nya belum sama sekali.
+   */
+  private readonly reducedMotion: boolean;
+
+  constructor(private readonly scene: Phaser.Scene) {
+    this.reducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  }
+
+  /** Guncangan kamera yang menghormati setelan gerakan pemain. */
+  shake(durationMs: number, intensity: number): void {
+    if (this.reducedMotion) return;
+    this.scene.cameras.main.shake(durationMs, intensity);
+  }
+
+  /**
+   * Kilatan layar. Pada mode gerakan-dikurangi tetap ada tapi jauh lebih redup:
+   * ini penanda "kamu kehilangan nyawa" dan menghapusnya sepenuhnya berarti
+   * menghapus informasi, bukan cuma hiasan.
+   */
+  flash(durationMs: number, r: number, g: number, b: number): void {
+    this.scene.cameras.main.flash(this.reducedMotion ? 90 : durationMs, r, g, b, false);
+  }
 
   drawGrid(): void {
     const graphics = this.scene.add.graphics();
@@ -266,6 +298,100 @@ export class BoardRenderer {
       view.glyph.destroy();
     }
     this.views.clear();
+  }
+
+  /**
+   * Spanduk singkat di tengah papan saat level naik.
+   *
+   * Engine sudah memancarkan `levelUp` sejak Patch 4 dan sampai sekarang tidak
+   * pernah digambar — kenaikan level hanya terlihat kalau pemain sempat melirik
+   * HUD, yang justru tidak dilakukan siapa pun di tengah ronde. Progres yang
+   * tidak terasa sama dengan progres yang tidak ada.
+   */
+  levelBanner(level: number): void {
+    const label = this.scene.add.text(BOARD_SIZE / 2, BOARD_SIZE * 0.34, `LEVEL ${level}`, {
+      fontFamily: 'monospace',
+      fontSize: '44px',
+      color: '#ff8906',
+      fontStyle: 'bold',
+    });
+    label.setOrigin(0.5);
+    label.setAlpha(0);
+
+    if (this.reducedMotion) {
+      // Tanpa gerakan: muncul, tertahan, hilang. Informasinya tetap sampai.
+      this.scene.tweens.add({
+        targets: label,
+        alpha: { from: 0, to: 1 },
+        duration: 160,
+        hold: 520,
+        yoyo: true,
+        onComplete: () => label.destroy(),
+      });
+      return;
+    }
+
+    label.setScale(0.6);
+    this.scene.tweens.add({
+      targets: label,
+      alpha: 1,
+      scale: 1,
+      duration: 220,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: label,
+          alpha: 0,
+          y: label.y - CELL * 0.5,
+          duration: 420,
+          delay: 380,
+          onComplete: () => label.destroy(),
+        });
+      },
+    });
+  }
+
+  /**
+   * Combo panjang yang putus.
+   *
+   * Hanya dari ambang tertentu: combo 2 yang putus itu kejadian biasa, dan
+   * memberi umpan balik untuk setiap kejadian biasa membuat umpan balik itu
+   * berhenti berarti apa-apa. Yang layak terasa adalah kehilangan yang mahal.
+   */
+  comboBroken(previousCombo: number): void {
+    const label = this.scene.add.text(
+      BOARD_SIZE / 2,
+      BOARD_SIZE / 2,
+      `COMBO ${previousCombo} HILANG`,
+      { fontFamily: 'monospace', fontSize: '24px', color: '#e43b44', fontStyle: 'bold' },
+    );
+    label.setOrigin(0.5);
+    this.scene.tweens.add({
+      targets: label,
+      alpha: 0,
+      y: this.reducedMotion ? label.y : label.y + CELL * 0.4,
+      duration: 620,
+      onComplete: () => label.destroy(),
+    });
+  }
+
+  /**
+   * Denyut tipis di seluruh papan saat warna target berganti.
+   *
+   * HUD sudah memberi peringatan, tapi mata pemain ada di PAPAN — dan itu
+   * justru satu-satunya tempat yang tidak memberi tanda apa pun saat aturannya
+   * berubah. Sengaja tipis: ini pengingat, bukan gangguan.
+   */
+  targetPulse(): void {
+    if (this.reducedMotion) return;
+    for (const view of this.views.values()) {
+      this.scene.tweens.add({
+        targets: view.rect,
+        scale: { from: 1, to: 1.08 },
+        duration: 130,
+        yoyo: true,
+      });
+    }
   }
 
   redraw(pixels: readonly Pixel[], hideGlyph: boolean): void {
