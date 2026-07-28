@@ -1000,3 +1000,85 @@ h3 {
 .hud__stroopPlus {
   color: var(--text-dim);
 }
+
+/* ------------------------------------------------------------- bar level */
+
+.levelBar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0.5rem 0;
+}
+
+.levelBar__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.levelBar__remaining {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.levelBar__track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.levelBar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  /* Transisi pendek supaya bar tidak tersendat di setiap klik, tapi tetap
+     terbaca sebagai gerakan maju. Di multiplayer tick datang tiap 250 ms, jadi
+     durasi ini menutup jeda antar-tick tanpa terasa lamban. */
+  transition: width 220ms ease-out;
+}
+
+/* Bar penuh lalu kembali ke nol saat naik level. Tanpa penanda ini, gerakan
+   mundur itu terbaca sebagai kemunduran — persis kebalikan dari yang terjadi. */
+.levelBar--up .levelBar__track {
+  animation: levelBarFlash 900ms ease-out;
+}
+
+.levelBar--up .levelBar__fill {
+  /* Isian tidak ikut beranimasi lebar saat reset: melihatnya menyusut mundur
+     dari penuh ke nol lebih membingungkan daripada langsung mulai lagi. */
+  transition: none;
+}
+
+@keyframes levelBarFlash {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent);
+    background: var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+    background: var(--surface-raised);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levelBar__fill {
+    transition: none;
+  }
+
+  /* Kilaunya tetap ada — ia yang memberi tahu bahwa level naik — tapi tanpa
+     pancaran yang meluas. */
+  .levelBar--up .levelBar__track {
+    animation: levelBarFlashReduced 600ms ease-out;
+  }
+
+  @keyframes levelBarFlashReduced {
+    0% {
+      background: var(--accent);
+    }
+    100% {
+      background: var(--surface-raised);
+    }
+  }
+}

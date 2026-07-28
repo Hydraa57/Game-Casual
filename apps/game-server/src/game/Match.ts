@@ -12,6 +12,7 @@ import {
   MP_MAX_KNOCKOUTS,
   MP_STARTING_LIVES,
   MP_TICK_BROADCAST_MS,
+  mpLevelProgress,
   SERVER_TICK_MS,
   step,
   stroopInkFor,
@@ -495,6 +496,8 @@ export class Match {
     this.io.to(this.room.code).emit('game:tick', {
       remainingMs: this.remainingMs(),
       level: this.board.board.level,
+      levelFraction: mpLevelProgress(this.board.elapsedMs).fraction,
+      levelRemainingMs: mpLevelProgress(this.board.elapsedMs).remaining,
       chaos: chaosModifierFor(this.board.board.chaosSeed, this.board.board.level),
       targetColors: this.board.board.targetColors,
       stroopInk: this.stroopInk(),

@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { ChaosModifier } from '@pixelmatrix/shared';
 import type { HudSnapshot } from '@/game/hudSnapshot';
+import { LevelBar } from './LevelBar';
 import { TargetIndicator } from './TargetIndicator';
 
 /** Kunci terjemahan untuk tiap modifier chaos. */
@@ -25,6 +26,16 @@ export function Hud({ snapshot }: { snapshot: HudSnapshot }) {
         )}
       </div>
 
+      {/* Ditaruh tepat di bawah indikator target dan DI ATAS papan: itu satu-satunya
+          tempat yang sudah dilirik pemain sepanjang ronde. Bar di bawah papan
+          praktis tidak pernah terlihat. */}
+      <LevelBar
+        level={snapshot.level}
+        fraction={snapshot.levelFraction}
+        remainingLabel={t('clicksToLevel', { count: snapshot.clicksToNextLevel })}
+        atMax={snapshot.atMaxLevel}
+      />
+
       <div className="hud__stats">
         <Stat label={t('score')} value={snapshot.score} />
         <Stat
@@ -32,12 +43,6 @@ export function Hud({ snapshot }: { snapshot: HudSnapshot }) {
           value={snapshot.combo > 0 ? `${snapshot.combo}` : '—'}
           hint={snapshot.multiplier > 1 ? `×${snapshot.multiplier}` : undefined}
           tone={snapshot.multiplier > 1 ? 'combo' : undefined}
-        />
-        <Stat
-          label={t('level')}
-          value={snapshot.level}
-          hint={snapshot.atMaxLevel ? t('maxLevel') : undefined}
-          tone={snapshot.atMaxLevel ? 'combo' : undefined}
         />
         <Stat
           label={t('lives')}

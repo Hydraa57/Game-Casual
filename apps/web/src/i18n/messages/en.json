@@ -54,7 +54,10 @@
     "chaosBlackout": "Blackout",
     "chaosBombRain": "Bomb Rain",
     "chaosShuffle": "Shuffle",
-    "targetStroop": "READ THE WORD, not its colour"
+    "targetStroop": "READ THE WORD, not its colour",
+    "clicksToLevel": "{count} taps to go",
+    "secondsToLevel": "{count}s to go",
+    "levelProgress": "Progress to next level"
   },
   "room": {
     "back": "Back",
@@ -135,7 +138,8 @@
     "chatEmpty": "No messages yet. Say hi!",
     "chatWaiting": "Chat opens once 2 players are in",
     "chatPlaceholder": "Type a message…",
-    "chatSend": "Send"
+    "chatSend": "Send",
+    "secondsToLevel": "{count}s to go"
   },
   "auth": {
     "title": "Account",

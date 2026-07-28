@@ -66,6 +66,8 @@ export type {
   ScoreState,
 } from './state';
 
+export { mpLevelProgress, soloLevelProgress } from './levelProgress';
+export type { LevelProgress } from './levelProgress';
 export { isStroopActive, stroopInkFor } from './stroop';
 export { pendingTutorial, TUTORIAL_LEVELS, tutorialForLevel } from './tutorial';
 export type { TutorialTopic } from './tutorial';

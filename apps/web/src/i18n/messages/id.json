@@ -54,7 +54,10 @@
     "chaosBlackout": "Gelap",
     "chaosBombRain": "Hujan Bom",
     "chaosShuffle": "Acak",
-    "targetStroop": "BACA KATANYA, bukan warnanya"
+    "targetStroop": "BACA KATANYA, bukan warnanya",
+    "clicksToLevel": "{count} klik lagi",
+    "secondsToLevel": "{count} dtk lagi",
+    "levelProgress": "Progres menuju level berikutnya"
   },
   "room": {
     "back": "Kembali",
@@ -135,7 +138,8 @@
     "chatEmpty": "Belum ada pesan. Sapa dulu!",
     "chatWaiting": "Chat aktif setelah ada 2 pemain",
     "chatPlaceholder": "Tulis pesan…",
-    "chatSend": "Kirim"
+    "chatSend": "Kirim",
+    "secondsToLevel": "{count} dtk lagi"
   },
   "auth": {
     "title": "Akun",

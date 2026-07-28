@@ -228,6 +228,17 @@ export interface ScoreboardEntry {
 export interface TickPayload {
   readonly remainingMs: number;
   readonly level: number;
+  /**
+   * 0..1 menuju level berikutnya.
+   *
+   * Dikirim server dan tidak dihitung client dari `remainingMs`: level MP naik
+   * dari waktu YANG SUDAH BERJALAN, sementara `remainingMs` menghitung mundur
+   * batas waktu match. Menurunkan yang satu dari yang lain butuh batas waktu
+   * room, dan itu tidak ada di payload ini.
+   */
+  readonly levelFraction: number;
+  /** Sisa milidetik menuju level berikutnya. */
+  readonly levelRemainingMs: number;
   readonly chaos: ChaosModifier | null;
   readonly scoreboard: readonly ScoreboardEntry[];
   /**

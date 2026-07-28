@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AVATAR_GLYPH } from '@pixelmatrix/shared';
+import { AVATAR_GLYPH, isMaxCurveLevel } from '@pixelmatrix/shared';
 import type {
   AvatarId,
   BombHitPayload,
@@ -19,6 +19,7 @@ import type {
   TickPayload,
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
+import { LevelBar } from './LevelBar';
 import { TargetIndicator } from './TargetIndicator';
 import { readMuted, writeMuted } from '@/lib/mute';
 import type { GameSocket } from '@/lib/socket';
@@ -75,6 +76,8 @@ export function MatchView({
   const [targetColors, setTargetColors] = useState<readonly Color[]>([]);
   const [targetImminent, setTargetImminent] = useState(false);
   const [stroopInk, setStroopInk] = useState<readonly Color[] | null>(null);
+  const [levelFraction, setLevelFraction] = useState(0);
+  const [levelRemainingMs, setLevelRemainingMs] = useState(0);
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
@@ -169,6 +172,8 @@ export function MatchView({
       // Kenaikan level di multiplayer tidak punya event tersendiri — ia hanya
       // terlihat sebagai angka yang berubah di tick. Perbandingan dengan nilai
       // sebelumnya lah yang mengubahnya menjadi momen.
+      setLevelFraction(payload.levelFraction);
+      setLevelRemainingMs(payload.levelRemainingMs);
       setLevel((previous) => {
         if (payload.level > previous && previous > 0) {
           scene()?.levelBanner(payload.level);
@@ -335,6 +340,21 @@ export function MatchView({
         <div className={`hud__target${targetImminent ? ' hud__target--warning' : ''}`}>
           <TargetIndicator colors={targetColors} ink={stroopInk} />
         </div>
+      )}
+
+      {/* Di multiplayer level naik menurut WAKTU, jadi bar ini juga memberi tahu
+          kapan papan akan berubah — informasi yang sebelumnya tidak ada di mana
+          pun, padahal ia berlaku sama untuk semua pemain. */}
+      {targetColors.length > 0 && (
+        <LevelBar
+          level={level}
+          fraction={levelFraction}
+          remainingLabel={t('secondsToLevel', { count: Math.ceil(levelRemainingMs / 1000) })}
+          // Match 300 detik menembus MAX_CURVE_LEVEL, jadi ini bukan kasus
+          // teoretis: level terus naik tapi kesulitannya tidak lagi bertambah,
+          // dan pemain berhak tahu bedanya.
+          atMax={isMaxCurveLevel(level)}
+        />
       )}
 
       <div className="board" ref={boardRef}>

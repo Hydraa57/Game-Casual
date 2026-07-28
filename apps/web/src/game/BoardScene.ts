@@ -11,6 +11,7 @@ import {
   createGameState,
   currentLevel,
   isStroopActive,
+  soloLevelProgress,
   stroopInkFor,
   chaosHidesGlyphs,
   isComboMilestone,
@@ -265,6 +266,8 @@ export class BoardScene extends Phaser.Scene {
       // Seed-nya waktu ganti target berikutnya: tintanya tetap selama satu
       // periode target lalu berubah bersamaan dengan warnanya. Kalau seed-nya
       // ikut jam berjalan, tintanya akan berkedip-kedip tiap frame.
+      levelFraction: soloLevelProgress(score.correctClicks).fraction,
+      clicksToNextLevel: soloLevelProgress(score.correctClicks).remaining,
       stroopInk: isStroopActive(currentLevel(this.gameState))
         ? stroopInkFor(board.targetColors, board.targetChangesAtMs + board.chaosSeed)
         : null,

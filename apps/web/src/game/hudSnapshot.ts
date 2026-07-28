@@ -1,4 +1,4 @@
-import { MAX_CONTINUES, SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
+import { CLICKS_PER_LEVEL, MAX_CONTINUES, SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
 import type { ChaosModifier, Color, GameStatus } from '@pixelmatrix/shared';
 
 /**
@@ -26,6 +26,10 @@ export interface HudSnapshot {
    * itu. Panjangnya selalu sama dengan `targetColors`.
    */
   readonly stroopInk: readonly Color[] | null;
+  /** 0..1 menuju level berikutnya. */
+  readonly levelFraction: number;
+  /** Sisa klik benar yang dibutuhkan untuk naik level. */
+  readonly clicksToNextLevel: number;
   /** Modifier chaos aktif (Lv 21+), `null` di bawahnya. */
   readonly chaos: ChaosModifier | null;
   readonly targetImminent: boolean;
@@ -52,6 +56,8 @@ export const INITIAL_SNAPSHOT: HudSnapshot = {
   lives: SOLO_STARTING_LIVES,
   level: 1,
   stroopInk: null,
+  levelFraction: 0,
+  clicksToNextLevel: CLICKS_PER_LEVEL,
   atMaxLevel: false,
   targetColors: ['red'],
   chaos: null,
@@ -72,6 +78,7 @@ export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
     a.bestCombo === b.bestCombo &&
     a.lives === b.lives &&
     a.level === b.level &&
+    a.levelFraction === b.levelFraction &&
     sameColors(a.stroopInk, b.stroopInk) &&
     a.atMaxLevel === b.atMaxLevel &&
     a.chaos === b.chaos &&
