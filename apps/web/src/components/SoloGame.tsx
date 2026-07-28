@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { pendingTutorial } from '@pixelmatrix/shared';
+import type { TutorialTopic } from '@pixelmatrix/shared';
 import { INITIAL_SNAPSHOT } from '@/game/hudSnapshot';
 import type { HudSnapshot } from '@/game/hudSnapshot';
 import type { SoloController } from '@/game/createSoloGame';
 import { Link } from '@/i18n/navigation';
 import { readHighScore, writeHighScore } from '@/lib/highScore';
+import { markTutorialSeen, readTutorialSeen } from '@/lib/tutorialSeen';
 import { readMuted, writeMuted } from '@/lib/mute';
 import { Hud } from './Hud';
+import { TutorialCard } from './TutorialCard';
 
 export function SoloGame({ startLevel }: { startLevel?: number }) {
   const t = useTranslations('solo');
@@ -19,10 +23,47 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
   const [highScore, setHighScore] = useState(0);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [tutorial, setTutorial] = useState<TutorialTopic | null>(null);
+
+  /**
+   * Penjelasan yang sudah dilihat, dipegang di ref.
+   *
+   * Sengaja BUKAN state: ia dibaca di dalam effect yang mengamati level, dan
+   * kalau ia jadi dependency maka menandai satu penjelasan sebagai "sudah
+   * dilihat" akan menjalankan effect itu lagi — lalu penjelasan yang sama
+   * muncul kembali seketika.
+   */
+  const seenRef = useRef<readonly TutorialTopic[]>([]);
 
   useEffect(() => {
     setHighScore(readHighScore());
     setMuted(readMuted());
+    seenRef.current = readTutorialSeen();
+  }, []);
+
+  /**
+   * Munculkan penjelasan saat pemain baru naik ke level yang membuka mekanik.
+   *
+   * Papannya dibekukan lewat `pause()` yang sudah ada — jalur yang sama dengan
+   * tombol pause, jadi tidak ada keadaan baru yang perlu dijaga. Tanpa
+   * pembekuan ini pemain harus memilih antara membaca dan bermain, dan ia akan
+   * memilih bermain lalu menutup kartunya tanpa dibaca.
+   */
+  useEffect(() => {
+    if (snapshot.status !== 'running') return;
+
+    const topic = pendingTutorial(snapshot.level, seenRef.current);
+    if (topic === null) return;
+
+    seenRef.current = [...seenRef.current, topic];
+    markTutorialSeen(topic);
+    controllerRef.current?.pause();
+    setTutorial(topic);
+  }, [snapshot.level, snapshot.status]);
+
+  const dismissTutorial = useCallback(() => {
+    setTutorial(null);
+    controllerRef.current?.resume();
   }, []);
 
   // Phaser menyentuh `window` saat di-import, jadi di-import dinamis di dalam
@@ -147,7 +188,14 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
           </div>
         )}
 
-        {snapshot.status === 'paused' && (
+        {tutorial !== null && (
+          <TutorialCard topic={tutorial} level={snapshot.level} onDismiss={dismissTutorial} />
+        )}
+
+        {/* Overlay pause biasa disembunyikan saat kartu tutorial tampil: papan
+            memang sedang dibekukan, tapi yang harus dibaca pemain adalah
+            penjelasannya, bukan tombol "lanjut". */}
+        {tutorial === null && snapshot.status === 'paused' && (
           <div className="overlay">
             <h2 className="overlay__title">{t('paused')}</h2>
             <button className="btn btn--primary" type="button" onClick={togglePause}>

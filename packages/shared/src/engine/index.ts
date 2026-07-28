@@ -66,5 +66,7 @@ export type {
   ScoreState,
 } from './state';
 
+export { pendingTutorial, TUTORIAL_LEVELS, tutorialForLevel } from './tutorial';
+export type { TutorialTopic } from './tutorial';
 export { bombChance, breakCombo, step } from './step';
 export type { StepResult } from './step';

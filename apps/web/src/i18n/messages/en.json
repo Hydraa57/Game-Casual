@@ -192,5 +192,29 @@
     "out": "OUT",
     "guestOnly": "You are playing as a guest, so nothing is saved. Create an account from the home page if you want your history recorded.",
     "goHome": "Go home"
+  },
+  "tutorial": {
+    "unlocked": "Level {level} · New!",
+    "gotIt": "Got it",
+    "gold": {
+      "title": "Gold Pixel",
+      "body": "Worth {multiplier}× the points, and ANY colour counts — it does not have to match the target. Short-lived, so do not hesitate."
+    },
+    "life": {
+      "title": "Life Pixel",
+      "body": "Adds 1 life, up to {maxLives}. Only appears when you are short on lives, and it is rare. Do not miss it."
+    },
+    "bomb": {
+      "title": "Watch for Bombs",
+      "body": "The dark pixel with a red border. Tapping it costs {lives} lives at once and breaks your combo. Just let it fade — ignoring it is never punished."
+    },
+    "dualTarget": {
+      "title": "Two Target Colours",
+      "body": "From now on there are TWO target colours at once. Both score. The number of target pixels stays the same — what grows is tracking two colours at once."
+    },
+    "chaos": {
+      "title": "Chaos Mode",
+      "body": "The difficulty curve has maxed out. From here each level turns on one random twist: faster spawns, hidden glyphs, doubled bombs, or shuffled positions. Its name shows in the HUD."
+    }
   }
 }

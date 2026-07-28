@@ -192,5 +192,29 @@
     "out": "OUT",
     "guestOnly": "Kamu sedang main sebagai guest, jadi tidak ada riwayat yang tersimpan. Buat akun dari beranda kalau mau riwayatnya dicatat.",
     "goHome": "Ke beranda"
+  },
+  "tutorial": {
+    "unlocked": "Level {level} · Baru!",
+    "gotIt": "Paham",
+    "gold": {
+      "title": "Pixel Emas",
+      "body": "Poinnya {multiplier}× lebih besar dan boleh ditekan WARNA APA PUN — tidak perlu cocok warna target. Umurnya pendek, jadi jangan ragu."
+    },
+    "life": {
+      "title": "Pixel Nyawa",
+      "body": "Menambah 1 nyawa, maksimal {maxLives}. Cuma muncul kalau nyawamu sedang kurang, dan langka. Jangan dilewatkan."
+    },
+    "bomb": {
+      "title": "Awas Bom",
+      "body": "Pixel gelap berbingkai merah. Menekannya mengurangi {lives} nyawa sekaligus dan memutus combo. Biarkan saja sampai hilang sendiri — membiarkannya tidak dihukum."
+    },
+    "dualTarget": {
+      "title": "Dua Warna Target",
+      "body": "Mulai sekarang ada DUA warna target sekaligus. Keduanya dapat poin. Jumlah pixel target di papan tetap sama — yang bertambah adalah beban melacak dua warna."
+    },
+    "chaos": {
+      "title": "Mode Chaos",
+      "body": "Kurva kesulitan sudah mentok. Dari sini tiap level mengaktifkan satu gangguan acak: spawn dipercepat, glyph disembunyikan, bom digandakan, atau posisi pixel diacak. Namanya tampil di HUD."
+    }
   }
 }
