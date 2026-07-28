@@ -21,6 +21,11 @@ export interface HudSnapshot {
   readonly atMaxLevel: boolean;
   /** Satu warna sampai Lv 11, dua warna dari Lv 12. */
   readonly targetColors: readonly Color[];
+  /**
+   * Warna tinta untuk tiap kata target saat mode Stroop aktif; `null` sebelum
+   * itu. Panjangnya selalu sama dengan `targetColors`.
+   */
+  readonly stroopInk: readonly Color[] | null;
   /** Modifier chaos aktif (Lv 21+), `null` di bawahnya. */
   readonly chaos: ChaosModifier | null;
   readonly targetImminent: boolean;
@@ -46,6 +51,7 @@ export const INITIAL_SNAPSHOT: HudSnapshot = {
   bestCombo: 0,
   lives: SOLO_STARTING_LIVES,
   level: 1,
+  stroopInk: null,
   atMaxLevel: false,
   targetColors: ['red'],
   chaos: null,
@@ -66,6 +72,7 @@ export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
     a.bestCombo === b.bestCombo &&
     a.lives === b.lives &&
     a.level === b.level &&
+    sameColors(a.stroopInk, b.stroopInk) &&
     a.atMaxLevel === b.atMaxLevel &&
     a.chaos === b.chaos &&
     sameColors(a.targetColors, b.targetColors) &&
@@ -77,6 +84,7 @@ export function isSameSnapshot(a: HudSnapshot, b: HudSnapshot): boolean {
   );
 }
 
-function sameColors(a: readonly Color[], b: readonly Color[]): boolean {
+function sameColors(a: readonly Color[] | null, b: readonly Color[] | null): boolean {
+  if (a === null || b === null) return a === b;
   return a.length === b.length && a.every((color, index) => color === b[index]);
 }

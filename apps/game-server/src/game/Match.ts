@@ -5,6 +5,7 @@ import {
   createGameState,
   createScoreState,
   GRID_SIZE,
+  isStroopActive,
   isTargetChangeImminent,
   MP_FREEZE_MS,
   MP_LEVEL_DURATION_MS,
@@ -13,10 +14,12 @@ import {
   MP_TICK_BROADCAST_MS,
   SERVER_TICK_MS,
   step,
+  stroopInkFor,
   SUDDEN_DEATH_LIFETIME_MS,
 } from '@pixelmatrix/shared';
 import type {
   AvatarId,
+  Color,
   GameConfig,
   MatchEndedPayload,
   GameEvent,
@@ -366,6 +369,7 @@ export class Match {
           this.io.to(code).emit('game:targetChanged', {
             colors: event.colors,
             previousColors: event.previousColors,
+            stroopInk: this.stroopInk(),
           });
           break;
         case 'boardShuffled':
@@ -449,6 +453,19 @@ export class Match {
     }));
   }
 
+  /**
+   * Tinta Stroop untuk periode target sekarang.
+   *
+   * Satu tempat untuk ketiga pemakainya (tick, targetChanged, snapshot): kalau
+   * dihitung ulang di masing-masing, tiga jalur itu bisa mengirim tinta yang
+   * berbeda untuk periode yang sama dan HUD akan berkedip antara dua pengecoh.
+   */
+  private stroopInk(): readonly Color[] | null {
+    const { board } = this.board;
+    if (!isStroopActive(board.level)) return null;
+    return stroopInkFor(board.targetColors, board.targetChangesAtMs + board.chaosSeed);
+  }
+
   private remainingMs(): number {
     return Math.max(0, this.timeLimitMs - this.board.elapsedMs);
   }
@@ -465,6 +482,7 @@ export class Match {
     return {
       pixels: this.board.board.pixels,
       targetColors: this.board.board.targetColors,
+      stroopInk: this.stroopInk(),
       level: this.board.board.level,
       chaos: chaosModifierFor(this.board.board.chaosSeed, this.board.board.level),
       remainingMs: this.remainingMs(),
@@ -479,6 +497,7 @@ export class Match {
       level: this.board.board.level,
       chaos: chaosModifierFor(this.board.board.chaosSeed, this.board.board.level),
       targetColors: this.board.board.targetColors,
+      stroopInk: this.stroopInk(),
       // Saat sudden death warna tidak berganti lagi, jadi peringatannya
       // dimatikan supaya tidak berkedip sia-sia di momen paling menegangkan.
       targetImminent: this.status === 'running' && isTargetChangeImminent(this.board),

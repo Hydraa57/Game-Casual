@@ -983,3 +983,20 @@ h3 {
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------ mode Stroop */
+
+/* Kata dibuat lebih besar dari indikator biasa: tanpa kotak warna di
+   sebelahnya, kata inilah satu-satunya informasi di baris itu — dan ia harus
+   terbaca dalam sekejap sambil mata tetap di papan. */
+.hud__stroop {
+  font-size: 1.35rem;
+  letter-spacing: 0.06em;
+}
+
+/* Tanda "+" antara dua kata memakai warna teks biasa, bukan warna tinta salah
+   satu kata. Kalau ia mewarisi tinta, ia akan terbaca sebagai bagian dari kata
+   di sebelahnya. */
+.hud__stroopPlus {
+  color: var(--text-dim);
+}

@@ -66,6 +66,7 @@ export type {
   ScoreState,
 } from './state';
 
+export { isStroopActive, stroopInkFor } from './stroop';
 export { pendingTutorial, TUTORIAL_LEVELS, tutorialForLevel } from './tutorial';
 export type { TutorialTopic } from './tutorial';
 export { bombChance, breakCombo, step } from './step';

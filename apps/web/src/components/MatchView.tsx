@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AVATAR_GLYPH, COLOR_GLYPH } from '@pixelmatrix/shared';
+import { AVATAR_GLYPH } from '@pixelmatrix/shared';
 import type {
   AvatarId,
   BombHitPayload,
@@ -19,7 +19,7 @@ import type {
   TickPayload,
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
-import { cssColor } from '@/game/palette';
+import { TargetIndicator } from './TargetIndicator';
 import { readMuted, writeMuted } from '@/lib/mute';
 import type { GameSocket } from '@/lib/socket';
 
@@ -74,6 +74,7 @@ export function MatchView({
   const [result, setResult] = useState<MatchEndedPayload | null>(null);
   const [targetColors, setTargetColors] = useState<readonly Color[]>([]);
   const [targetImminent, setTargetImminent] = useState(false);
+  const [stroopInk, setStroopInk] = useState<readonly Color[] | null>(null);
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
@@ -132,6 +133,7 @@ export function MatchView({
 
         setCountdown(null);
         setTargetColors(snapshot.targetColors);
+        setStroopInk(snapshot.stroopInk);
         setLevel(snapshot.level);
         setChaos(snapshot.chaos);
         setRemainingMs(snapshot.remainingMs);
@@ -170,6 +172,7 @@ export function MatchView({
       // Tick membawa warna target juga, jadi HUD tetap benar walau satu event
       // `targetChanged` hilang di jaringan.
       setTargetColors(payload.targetColors);
+      setStroopInk(payload.stroopInk);
       setTargetImminent(payload.targetImminent);
       scene()?.setTargets(payload.targetColors);
       scene()?.setChaos(payload.chaos);
@@ -197,11 +200,13 @@ export function MatchView({
 
     const onShuffled = ({ pixels }: { readonly pixels: readonly Pixel[] }) =>
       scene()?.shuffle(pixels);
-    const onTargetChanged = ({ colors }: TargetChangedPayload) => {
+    const onTargetChanged = (payload: TargetChangedPayload) => {
+      const { colors } = payload;
       // Tidak menunggu tick berikutnya (bisa 250 ms lagi): pada level tinggi
       // seperempat detik mengejar warna yang sudah kadaluarsa itu mahal.
       scene()?.setTargets(colors);
       setTargetColors(colors);
+      setStroopInk(payload.stroopInk);
       setTargetImminent(false);
     };
     const onSuddenDeath = () => setSuddenDeath(true);
@@ -319,24 +324,7 @@ export function MatchView({
           atas papan supaya mata tidak perlu bolak-balik ke ujung layar. */}
       {targetColors.length > 0 && (
         <div className={`hud__target${targetImminent ? ' hud__target--warning' : ''}`}>
-          <span className="hud__swatches">
-            {targetColors.map((color) => (
-              <span
-                key={color}
-                className="hud__swatch"
-                style={{ background: cssColor(color) }}
-                aria-hidden="true"
-              >
-                {COLOR_GLYPH[color]}
-              </span>
-            ))}
-          </span>
-          <span className="hud__targetText">
-            <span className="hud__label">{t('tapColor')}</span>
-            <div className="stat__value">
-              {targetColors.map((color) => color.toUpperCase()).join(' + ')}
-            </div>
-          </span>
+          <TargetIndicator colors={targetColors} ink={stroopInk} />
         </div>
       )}
 

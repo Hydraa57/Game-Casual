@@ -1,10 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { COLOR_GLYPH } from '@pixelmatrix/shared';
-import type { ChaosModifier, Color } from '@pixelmatrix/shared';
+import type { ChaosModifier } from '@pixelmatrix/shared';
 import type { HudSnapshot } from '@/game/hudSnapshot';
-import { cssColor } from '@/game/palette';
+import { TargetIndicator } from './TargetIndicator';
 
 /** Kunci terjemahan untuk tiap modifier chaos. */
 const CHAOS_LABEL: Record<ChaosModifier, string> = {
@@ -20,17 +19,7 @@ export function Hud({ snapshot }: { snapshot: HudSnapshot }) {
   return (
     <div className="hud">
       <div className={`hud__target${snapshot.targetImminent ? ' hud__target--warning' : ''}`}>
-        <span className="hud__swatches">
-          {snapshot.targetColors.map((color) => (
-            <Swatch key={color} color={color} />
-          ))}
-        </span>
-        <span className="hud__targetText">
-          <span className="hud__label">{t('target')}</span>
-          <div className="stat__value">
-            {snapshot.targetColors.map((color) => color.toUpperCase()).join(' + ')}
-          </div>
-        </span>
+        <TargetIndicator colors={snapshot.targetColors} ink={snapshot.stroopInk} />
         {snapshot.chaos !== null && (
           <span className="badge badge--chaos">{t(CHAOS_LABEL[snapshot.chaos])}</span>
         )}
@@ -57,14 +46,6 @@ export function Hud({ snapshot }: { snapshot: HudSnapshot }) {
         />
       </div>
     </div>
-  );
-}
-
-function Swatch({ color }: { color: Color }) {
-  return (
-    <span className="hud__swatch" style={{ background: cssColor(color) }} aria-hidden="true">
-      {COLOR_GLYPH[color]}
-    </span>
   );
 }
 

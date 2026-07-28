@@ -53,7 +53,8 @@
     "chaosRush": "Serbuan",
     "chaosBlackout": "Gelap",
     "chaosBombRain": "Hujan Bom",
-    "chaosShuffle": "Acak"
+    "chaosShuffle": "Acak",
+    "targetStroop": "BACA KATANYA, bukan warnanya"
   },
   "room": {
     "back": "Kembali",
@@ -215,6 +216,10 @@
     "chaos": {
       "title": "Mode Chaos",
       "body": "Kurva kesulitan sudah mentok. Dari sini tiap level mengaktifkan satu gangguan acak: spawn dipercepat, glyph disembunyikan, bom digandakan, atau posisi pixel diacak. Namanya tampil di HUD."
+    },
+    "stroop": {
+      "title": "Baca Katanya!",
+      "body": "Kotak warna hilang. Sekarang targetnya berupa KATA — dan warna tintanya sengaja dibuat berbeda. Contoh: kata \"RED\" bertinta biru berarti targetnya MERAH, bukan biru. Membaca lebih cepat daripada menamai warna, jadi tahan dulu jawaban pertama yang muncul di kepalamu."
     }
   }
 }

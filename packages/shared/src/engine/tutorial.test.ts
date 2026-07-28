@@ -5,6 +5,7 @@ import {
   DUAL_TARGET_FIRST_LEVEL,
   GOLD_FIRST_LEVEL,
   LIFE_FIRST_LEVEL,
+  STROOP_FIRST_LEVEL,
 } from '../constants/index';
 import { pendingTutorial, TUTORIAL_LEVELS, tutorialForLevel } from './tutorial';
 
@@ -15,6 +16,7 @@ describe('tutorial per mekanik', () => {
     expect(tutorialForLevel(LIFE_FIRST_LEVEL)).toBe('life');
     expect(tutorialForLevel(BOMB_FIRST_LEVEL)).toBe('bomb');
     expect(tutorialForLevel(DUAL_TARGET_FIRST_LEVEL)).toBe('dualTarget');
+    expect(tutorialForLevel(STROOP_FIRST_LEVEL)).toBe('stroop');
     expect(tutorialForLevel(CHAOS_FIRST_LEVEL)).toBe('chaos');
   });
 

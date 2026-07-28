@@ -4,6 +4,7 @@ import {
   DUAL_TARGET_FIRST_LEVEL,
   GOLD_FIRST_LEVEL,
   LIFE_FIRST_LEVEL,
+  STROOP_FIRST_LEVEL,
 } from '../constants/index';
 
 /**
@@ -15,7 +16,7 @@ import {
  * Menemukan sendiri itu menyenangkan kalau harganya murah — di sini harganya
  * separuh nyawa awal.
  */
-export type TutorialTopic = 'gold' | 'life' | 'bomb' | 'dualTarget' | 'chaos';
+export type TutorialTopic = 'gold' | 'life' | 'bomb' | 'dualTarget' | 'stroop' | 'chaos';
 
 /**
  * Level tempat setiap penjelasan dipicu.
@@ -29,6 +30,7 @@ export const TUTORIAL_LEVELS: Readonly<Record<TutorialTopic, number>> = {
   life: LIFE_FIRST_LEVEL,
   bomb: BOMB_FIRST_LEVEL,
   dualTarget: DUAL_TARGET_FIRST_LEVEL,
+  stroop: STROOP_FIRST_LEVEL,
   chaos: CHAOS_FIRST_LEVEL,
 };
 

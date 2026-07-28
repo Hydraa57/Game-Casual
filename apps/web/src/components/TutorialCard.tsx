@@ -17,6 +17,7 @@ const TOPIC_GLYPH: Record<TutorialTopic, string> = {
   life: KIND_GLYPH.life,
   bomb: KIND_GLYPH.bomb,
   dualTarget: '◆◆',
+  stroop: 'Aa',
   chaos: '⚡',
 };
 

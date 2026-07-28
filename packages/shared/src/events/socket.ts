@@ -151,6 +151,7 @@ export interface ReconnectPayload {
 export interface ResyncPayload {
   readonly pixels: readonly Pixel[];
   readonly targetColors: readonly Color[];
+  readonly stroopInk: readonly Color[] | null;
   readonly level: number;
   readonly chaos: ChaosModifier | null;
   readonly remainingMs: number | null;
@@ -198,6 +199,8 @@ export interface BombHitPayload {
 export interface TargetChangedPayload {
   readonly colors: readonly Color[];
   readonly previousColors: readonly Color[];
+  /** Lihat `TickPayload.stroopInk`. */
+  readonly stroopInk: readonly Color[] | null;
 }
 
 export interface ScoreboardEntry {
@@ -235,6 +238,14 @@ export interface TickPayload {
    * Tick membuat HUD selalu bisa pulih sendiri.
    */
   readonly targetColors: readonly Color[];
+  /**
+   * Tinta tiap kata target saat mode Stroop aktif; `null` sebelum itu.
+   *
+   * Dihitung SERVER dan disiarkan, tidak diturunkan tiap client: kalau setiap
+   * client mengacak tintanya sendiri, dua pemain mengerjakan soal yang berbeda
+   * sambil memperebutkan papan yang sama.
+   */
+  readonly stroopInk: readonly Color[] | null;
   /** Warna target akan berganti sebentar lagi — HUD memberi peringatan. */
   readonly targetImminent: boolean;
 }

@@ -53,7 +53,8 @@
     "chaosRush": "Rush",
     "chaosBlackout": "Blackout",
     "chaosBombRain": "Bomb Rain",
-    "chaosShuffle": "Shuffle"
+    "chaosShuffle": "Shuffle",
+    "targetStroop": "READ THE WORD, not its colour"
   },
   "room": {
     "back": "Back",
@@ -215,6 +216,10 @@
     "chaos": {
       "title": "Chaos Mode",
       "body": "The difficulty curve has maxed out. From here each level turns on one random twist: faster spawns, hidden glyphs, doubled bombs, or shuffled positions. Its name shows in the HUD."
+    },
+    "stroop": {
+      "title": "Read the Word!",
+      "body": "The colour swatch is gone. The target is now a WORD — and its ink colour is deliberately different. \"RED\" printed in blue means the target is RED, not blue. Reading is faster than naming a colour, so hold back the first answer that pops into your head."
     }
   }
 }

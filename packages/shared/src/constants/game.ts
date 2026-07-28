@@ -222,6 +222,19 @@ export const TARGET_COLOR_SPAWN_WEIGHT = 0.5;
 export const DUAL_TARGET_FIRST_LEVEL = 12;
 
 /**
+ * Level tempat indikator target berubah menjadi KATA bertinta warna lain.
+ *
+ * Ditaruh setelah DUAL_TARGET_FIRST_LEVEL, bukan sebelum: dua beban baru yang
+ * datang bersamaan tidak terasa sebagai tantangan, terasa sebagai game yang
+ * rusak. Pemain diberi tiga level untuk membiasakan melacak dua warna dulu.
+ *
+ * Masih di bawah MAX_CURVE_LEVEL supaya mode ini benar-benar dialami sebelum
+ * kurvanya mentok — kalau ia ditaruh di 21+ ia akan bertumpuk dengan chaos dan
+ * hampir tidak ada yang pernah sampai ke sana.
+ */
+export const STROOP_FIRST_LEVEL = 15;
+
+/**
  * Level pertama mode chaos. Di bawah ini progres selalu bisa diprediksi; di atas
  * ini tiap level mengaktifkan satu modifier acak.
  */

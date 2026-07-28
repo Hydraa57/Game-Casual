@@ -9,6 +9,8 @@ import {
   comboMultiplier,
   createGameState,
   currentLevel,
+  isStroopActive,
+  stroopInkFor,
   chaosHidesGlyphs,
   isComboMilestone,
   chaosModifierFor,
@@ -238,6 +240,12 @@ export class BoardScene extends Phaser.Scene {
       level: currentLevel(this.gameState),
       atMaxLevel: isAtMaxLevel(this.gameState),
       targetColors: board.targetColors,
+      // Seed-nya waktu ganti target berikutnya: tintanya tetap selama satu
+      // periode target lalu berubah bersamaan dengan warnanya. Kalau seed-nya
+      // ikut jam berjalan, tintanya akan berkedip-kedip tiap frame.
+      stroopInk: isStroopActive(currentLevel(this.gameState))
+        ? stroopInkFor(board.targetColors, board.targetChangesAtMs + board.chaosSeed)
+        : null,
       chaos: chaosModifierFor(board.chaosSeed, board.level),
       targetImminent: status === 'running' && isTargetChangeImminent(this.gameState),
       accuracy: totalClicks === 0 ? 1 : score.correctClicks / totalClicks,
