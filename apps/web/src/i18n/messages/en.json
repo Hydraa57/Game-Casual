@@ -58,7 +58,11 @@
     "targetStroop": "READ THE WORD, not its colour",
     "clicksToLevel": "{count} taps to go",
     "secondsToLevel": "{count}s to go",
-    "levelProgress": "Progress to next level"
+    "levelProgress": "Progress to next level",
+    "musicVolume": "Music volume",
+    "leaveTitle": "Leave this round?",
+    "leaveBody": "This round’s score will be lost and cannot be resumed.",
+    "leaveConfirm": "Yes, leave"
   },
   "room": {
     "back": "Back",
@@ -141,7 +145,9 @@
     "chatPlaceholder": "Type a message…",
     "chatSend": "Send",
     "secondsToLevel": "{count}s to go",
-    "serverRestarting": "Server is updating. You will reconnect automatically in a moment…"
+    "serverRestarting": "Server is updating. You will reconnect automatically in a moment…",
+    "leaveRoomTitle": "Leave the room?",
+    "leaveRoomBody": "Your seat is released. If a match is running, it ends for everyone."
   },
   "auth": {
     "title": "Account",
@@ -239,6 +245,11 @@
     "sourceTitle": "Source code",
     "sourceNote": "Fully open — read it, learn from it, or reuse it.",
     "viewSource": "View on GitHub",
-    "techTitle": "Built with"
+    "techTitle": "Built with",
+    "rolePortfolio": "Portfolio"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "dismiss": "Dismiss dialog"
   }
 }

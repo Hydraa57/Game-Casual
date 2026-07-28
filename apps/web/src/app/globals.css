@@ -1131,3 +1131,89 @@ h3 {
   color: var(--text-dim);
   line-height: 1.7;
 }
+
+/* ------------------------------------------------- kontrol bunyi & volume */
+
+.sound {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.sound__volume {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sound__volume input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+  /* Sasaran sentuh yang nyaman di HP; default browser terlalu tipis untuk jempol. */
+  height: 1.75rem;
+}
+
+.sound__volume input[type='range']:disabled {
+  opacity: 0.4;
+}
+
+/* ------------------------------------------------------- dialog konfirmasi */
+
+.confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Tombol, bukan div: latar ini bisa ditekan untuk membatalkan, jadi ia harus
+   bisa dijangkau keyboard dan dibacakan pembaca layar. */
+.confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(15, 14, 23, 0.82);
+  cursor: pointer;
+}
+
+.confirm__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(22rem, 100%);
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.confirm__body {
+  margin: 0;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.confirm__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.confirm__actions .btn {
+  flex: 1;
+}
+
+/* Tindakan yang merusak diberi warna bahaya — bukan hiasan, ini yang membedakan
+   tombol "keluar" dari tombol "batal" dalam sekali lihat. */
+.btn--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--text);
+}

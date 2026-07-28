@@ -20,9 +20,12 @@ import type {
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
 import { Music } from '@/game/music';
+import { ConfirmDialog } from './ConfirmDialog';
 import { LevelBar } from './LevelBar';
+import { SoundControls } from './SoundControls';
 import { TargetIndicator } from './TargetIndicator';
 import { readMuted, writeMuted } from '@/lib/mute';
+import { readMusicVolume, writeMusicVolume } from '@/lib/musicVolume';
 import type { GameSocket } from '@/lib/socket';
 
 /** Waktu tempuh sebagai M:SS — "1:33" jauh lebih mudah dibandingkan daripada "93 dtk". */
@@ -90,6 +93,8 @@ export function MatchView({
   const [levelFraction, setLevelFraction] = useState(0);
   const [levelRemainingMs, setLevelRemainingMs] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(0.6);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const musicRef = useRef<Music | null>(null);
   if (musicRef.current === null && typeof window !== 'undefined') {
@@ -99,6 +104,9 @@ export function MatchView({
   useEffect(() => {
     setMuted(readMuted());
     musicRef.current?.setMuted(readMuted());
+    const savedVolume = readMusicVolume();
+    setVolume(savedVolume);
+    musicRef.current?.setVolume(savedVolume);
     const music = musicRef.current;
     return () => music?.dispose();
   }, []);
@@ -302,6 +310,12 @@ export function MatchView({
     };
   }, [socket, playerId]);
 
+  const changeVolume = useCallback((next: number) => {
+    setVolume(next);
+    musicRef.current?.setVolume(next);
+    writeMusicVolume(next);
+  }, []);
+
   const toggleMute = useCallback(() => {
     setMuted((current) => {
       const next = !current;
@@ -474,14 +488,32 @@ export function MatchView({
         )}
       </div>
 
+      <SoundControls
+        muted={muted}
+        volume={volume}
+        onToggleMute={toggleMute}
+        onVolumeChange={changeVolume}
+      />
+
       <div className="controls">
-        <button className="btn btn--small" type="button" onClick={toggleMute}>
-          {muted ? t('muteOff') : t('muteOn')}
-        </button>
-        <button className="btn btn--small" type="button" onClick={onLeave}>
+        {/* Keluar room SELALU dikonfirmasi, tidak seperti solo yang hanya
+            bertanya saat ronde berjalan. Bedanya: di sini yang hilang bukan
+            cuma skor sendiri — kursinya dilepas, dan kalau match sedang jalan
+            lawan ikut kehilangan match-nya. */}
+        <button className="btn btn--small" type="button" onClick={() => setConfirmLeave(true)}>
           {t('leaveRoom')}
         </button>
       </div>
+
+      {confirmLeave && (
+        <ConfirmDialog
+          title={t('leaveRoomTitle')}
+          body={t('leaveRoomBody')}
+          confirmLabel={t('leaveRoom')}
+          onConfirm={onLeave}
+          onCancel={() => setConfirmLeave(false)}
+        />
+      )}
     </div>
   );
 }

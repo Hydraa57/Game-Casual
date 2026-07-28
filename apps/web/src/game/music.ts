@@ -35,6 +35,22 @@ const CUTOFF_TENSE = 5200;
 const PERCUSSION_FROM = 0.45;
 
 /**
+ * Gain saat volume disetel penuh.
+ *
+ * Bukan 1.0: musik ini latar, dan SFX-lah yang membawa informasi permainan
+ * (klik benar, bom, nyawa). Plafon ini menjaga agar volume maksimum pun tidak
+ * menenggelamkan bunyi yang justru perlu didengar.
+ *
+ * Versi pertama memakai gain tetap 0.12 tanpa pengaturan apa pun, dan pemain
+ * melaporkannya terlalu pelan. 0.12 sekarang jadi kira-kira posisi 0.24 di
+ * slider — masih bisa dipilih, tapi bukan lagi satu-satunya pilihan.
+ */
+const MAX_GAIN = 0.5;
+
+/** Volume awal sebelum pemain menyetelnya. */
+export const DEFAULT_MUSIC_VOLUME = 0.6;
+
+/**
  * Penjadwalan dilakukan di depan, bukan satu-per-satu lewat setTimeout.
  *
  * Ini pola "dua jam" yang baku di Web Audio: timer JavaScript tidak akurat dan
@@ -63,6 +79,7 @@ export class Music {
   private intensity = 0;
   private muted = false;
   private running = false;
+  private volume = DEFAULT_MUSIC_VOLUME;
 
   /** Dipanggil dari gestur pemain — tanpa itu browser menolak memulai audio. */
   start(): void {
@@ -81,9 +98,7 @@ export class Music {
       this.filter.Q.value = 1.2;
 
       this.master = this.context.createGain();
-      // Pelan dengan sengaja: ini latar. SFX harus tetap terdengar di atasnya,
-      // dan SFX-lah yang membawa informasi permainan.
-      this.master.gain.value = this.muted ? 0 : 0.12;
+      this.master.gain.value = this.targetGain();
 
       this.filter.connect(this.master);
       this.master.connect(this.context.destination);
@@ -105,11 +120,25 @@ export class Music {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    if (this.master && this.context) {
-      // Diredam mulus, bukan dipotong: perubahan gain mendadak terdengar sebagai
-      // "klik" di sebagian perangkat.
-      this.master.gain.setTargetAtTime(muted ? 0 : 0.12, this.context.currentTime, 0.05);
-    }
+    this.applyGain();
+  }
+
+  /** Volume 0..1 dari pengaturan pemain. */
+  setVolume(volume: number): void {
+    this.volume = Math.min(1, Math.max(0, volume));
+    this.applyGain();
+  }
+
+  private targetGain(): number {
+    return this.muted ? 0 : this.volume * MAX_GAIN;
+  }
+
+  private applyGain(): void {
+    if (!this.master || !this.context) return;
+    // Digeser mulus, bukan dipotong: perubahan gain mendadak terdengar sebagai
+    // "klik" di sebagian perangkat, dan slider yang digeser cepat akan
+    // menghasilkan deretan klik itu.
+    this.master.gain.setTargetAtTime(this.targetGain(), this.context.currentTime, 0.05);
   }
 
   /**

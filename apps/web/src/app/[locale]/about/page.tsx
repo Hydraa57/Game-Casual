@@ -1,6 +1,12 @@
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
-import { APP_VERSION, GITHUB_OWNER, GITHUB_PROFILE_URL, GITHUB_URL } from '@pixelmatrix/shared';
+import {
+  APP_VERSION,
+  GITHUB_OWNER,
+  GITHUB_PROFILE_URL,
+  GITHUB_URL,
+  PORTFOLIO_URL,
+} from '@pixelmatrix/shared';
 import { Link } from '@/i18n/navigation';
 
 /**
@@ -44,6 +50,13 @@ function About() {
             rel="noreferrer noopener"
           >
             @{GITHUB_OWNER}
+          </a>
+        </div>
+
+        <div className="about__credit">
+          <span className="about__role">{t('rolePortfolio')}</span>
+          <a className="about__link" href={PORTFOLIO_URL} target="_blank" rel="noreferrer noopener">
+            hfdz.my.id
           </a>
         </div>
 

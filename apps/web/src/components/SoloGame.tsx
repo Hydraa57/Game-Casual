@@ -7,16 +7,20 @@ import type { TutorialTopic } from '@pixelmatrix/shared';
 import { INITIAL_SNAPSHOT } from '@/game/hudSnapshot';
 import type { HudSnapshot } from '@/game/hudSnapshot';
 import type { SoloController } from '@/game/createSoloGame';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { readHighScore, writeHighScore } from '@/lib/highScore';
 import { Music } from '@/game/music';
+import { readMusicVolume, writeMusicVolume } from '@/lib/musicVolume';
 import { markTutorialSeen, readTutorialSeen } from '@/lib/tutorialSeen';
 import { readMuted, writeMuted } from '@/lib/mute';
 import { Hud } from './Hud';
+import { ConfirmDialog } from './ConfirmDialog';
+import { SoundControls } from './SoundControls';
 import { TutorialCard } from './TutorialCard';
 
 export function SoloGame({ startLevel }: { startLevel?: number }) {
   const t = useTranslations('solo');
+  const router = useRouter();
   const boardRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<SoloController | null>(null);
 
@@ -25,6 +29,8 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [muted, setMuted] = useState(false);
   const [tutorial, setTutorial] = useState<TutorialTopic | null>(null);
+  const [volume, setVolume] = useState(0.6);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   /**
    * Penjelasan yang sudah dilihat, dipegang di ref.
@@ -76,6 +82,9 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
     setHighScore(readHighScore());
     setMuted(readMuted());
     musicRef.current?.setMuted(readMuted());
+    const savedVolume = readMusicVolume();
+    setVolume(savedVolume);
+    musicRef.current?.setVolume(savedVolume);
     seenRef.current = readTutorialSeen();
   }, []);
 
@@ -98,6 +107,12 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
     controllerRef.current?.pause();
     setTutorial(topic);
   }, [snapshot.level, snapshot.status]);
+
+  const changeVolume = useCallback((next: number) => {
+    setVolume(next);
+    musicRef.current?.setVolume(next);
+    writeMusicVolume(next);
+  }, []);
 
   const dismissTutorial = useCallback(() => {
     setTutorial(null);
@@ -192,9 +207,19 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
   return (
     <main className="shell">
       <div className="topbar">
-        <Link className="btn btn--small" href="/">
-          ← {t('back')}
-        </Link>
+        {/* Konfirmasi HANYA saat ronde sedang berlangsung. Menanyakannya di
+            layar idle atau game over cuma menambah satu ketukan untuk tindakan
+            yang tidak merusak apa pun — dan konfirmasi yang muncul terus akan
+            berhenti dibaca justru saat ia penting. */}
+        {snapshot.status === 'running' || snapshot.status === 'paused' ? (
+          <button className="btn btn--small" type="button" onClick={() => setConfirmLeave(true)}>
+            ← {t('back')}
+          </button>
+        ) : (
+          <Link className="btn btn--small" href="/">
+            ← {t('back')}
+          </Link>
+        )}
         <div>
           <span className="hud__label">{t('highScore')}</span>
           <div className="stat__value">{highScore}</div>
@@ -282,10 +307,24 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
         <button className="btn" type="button" onClick={togglePause} disabled={!canPause}>
           {snapshot.status === 'paused' ? t('resume') : t('pause')}
         </button>
-        <button className="btn" type="button" onClick={toggleMute}>
-          {muted ? t('muteOff') : t('muteOn')}
-        </button>
       </div>
+
+      <SoundControls
+        muted={muted}
+        volume={volume}
+        onToggleMute={toggleMute}
+        onVolumeChange={changeVolume}
+      />
+
+      {confirmLeave && (
+        <ConfirmDialog
+          title={t('leaveTitle')}
+          body={t('leaveBody')}
+          confirmLabel={t('leaveConfirm')}
+          onConfirm={() => router.push('/')}
+          onCancel={() => setConfirmLeave(false)}
+        />
+      )}
     </main>
   );
 }

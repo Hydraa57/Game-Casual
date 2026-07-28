@@ -58,7 +58,11 @@
     "targetStroop": "BACA KATANYA, bukan warnanya",
     "clicksToLevel": "{count} klik lagi",
     "secondsToLevel": "{count} dtk lagi",
-    "levelProgress": "Progres menuju level berikutnya"
+    "levelProgress": "Progres menuju level berikutnya",
+    "musicVolume": "Volume musik",
+    "leaveTitle": "Keluar dari ronde?",
+    "leaveBody": "Skor ronde ini akan hilang dan tidak bisa dilanjutkan.",
+    "leaveConfirm": "Ya, keluar"
   },
   "room": {
     "back": "Kembali",
@@ -141,7 +145,9 @@
     "chatPlaceholder": "Tulis pesan…",
     "chatSend": "Kirim",
     "secondsToLevel": "{count} dtk lagi",
-    "serverRestarting": "Server sedang diperbarui. Kamu akan tersambung lagi otomatis sebentar lagi…"
+    "serverRestarting": "Server sedang diperbarui. Kamu akan tersambung lagi otomatis sebentar lagi…",
+    "leaveRoomTitle": "Keluar dari room?",
+    "leaveRoomBody": "Kursimu dilepas. Kalau match sedang berjalan, match-nya ikut berakhir untuk semua pemain."
   },
   "auth": {
     "title": "Akun",
@@ -239,6 +245,11 @@
     "sourceTitle": "Kode sumber",
     "sourceNote": "Terbuka sepenuhnya — silakan dibaca, dipelajari, atau dipakai ulang.",
     "viewSource": "Lihat di GitHub",
-    "techTitle": "Dibangun dengan"
+    "techTitle": "Dibangun dengan",
+    "rolePortfolio": "Portofolio"
+  },
+  "common": {
+    "cancel": "Batal",
+    "dismiss": "Tutup dialog"
   }
 }

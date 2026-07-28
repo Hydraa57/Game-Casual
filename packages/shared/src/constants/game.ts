@@ -519,3 +519,6 @@ export const GITHUB_OWNER = 'Hydraa57';
 export const GITHUB_REPO = 'Game-Casual';
 export const GITHUB_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
 export const GITHUB_PROFILE_URL = `https://github.com/${GITHUB_OWNER}`;
+
+/** Portofolio pembuat game — ditautkan dari halaman About. */
+export const PORTFOLIO_URL = 'https://hfdz.my.id';

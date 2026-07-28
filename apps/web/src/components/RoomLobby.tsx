@@ -11,6 +11,7 @@ import {
 } from '@pixelmatrix/shared';
 import type { ChatMessage, RoomSettings, RoomState } from '@pixelmatrix/shared';
 import { ChatPanel } from './ChatPanel';
+import { ConfirmDialog } from './ConfirmDialog';
 import { PrefetchGame } from './PrefetchGame';
 
 export interface RoomLobbyProps {
@@ -38,6 +39,7 @@ export function RoomLobby({
 }: RoomLobbyProps) {
   const t = useTranslations('room');
   const [copied, setCopied] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const me = room.players.find((player) => player.id === playerId);
   const isHost = me?.isHost ?? false;
@@ -181,9 +183,19 @@ export function RoomLobby({
       {isHost && enoughPlayers && !allReady && <p className="hint">{t('waitingForReady')}</p>}
       {!isHost && allReady && <p className="hint">{t('waitingForHost')}</p>}
 
-      <button className="btn btn--small" type="button" onClick={onLeave}>
+      <button className="btn btn--small" type="button" onClick={() => setConfirmLeave(true)}>
         {t('leaveRoom')}
       </button>
+
+      {confirmLeave && (
+        <ConfirmDialog
+          title={t('leaveRoomTitle')}
+          body={t('leaveRoomBody')}
+          confirmLabel={t('leaveRoom')}
+          onConfirm={onLeave}
+          onCancel={() => setConfirmLeave(false)}
+        />
+      )}
 
       {/* Chat ditaruh SETELAH kontrol match, bukan sebelumnya. Di layar HP yang
           sempit, yang harus terlihat lebih dulu adalah tombol siap dan mulai —
