@@ -181,6 +181,37 @@ h3 {
   border-radius: 3px;
 }
 
+/* Lawan buatan. Dibedakan dengan garis putus-putus, bukan hanya warna: ini game
+   tentang warna, jadi pemain buta warna lebih mungkin ada di sini daripada di
+   aplikasi lain — dan mereka tetap harus bisa membedakan bot dari manusia. */
+.badge--bot {
+  background: transparent;
+  border: 1px dashed var(--text-dim);
+  letter-spacing: 0.08em;
+  margin-left: 6px;
+}
+
+/* Pemilih tingkat kesulitan bot. Membungkus di layar sempit supaya tombol
+   ketiga tidak terpotong di HP kecil. */
+.botPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.botPicker .btn {
+  flex: 1 1 auto;
+  min-width: 88px;
+}
+
+/* Tombol sekunder: hadir tapi tidak bersaing dengan tombol utama di lobby. */
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
 /* ------------------------------------------------- multiplayer: entry & lobby */
 
 .pageTitle {

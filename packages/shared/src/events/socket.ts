@@ -1,3 +1,4 @@
+import type { BotDifficulty } from '../engine/bot';
 import type {
   AvatarId,
   Cell,
@@ -141,6 +142,14 @@ export interface ReconnectPayload {
   readonly sessionKey: string;
 }
 
+export interface AddBotPayload {
+  readonly difficulty: BotDifficulty;
+}
+
+export interface RemoveBotPayload {
+  readonly botId: string;
+}
+
 /**
  * Keadaan papan lengkap untuk pemain yang baru kembali di tengah match.
  *
@@ -225,6 +234,8 @@ export interface ScoreboardEntry {
   readonly connected: boolean;
   /** Lihat `Player.latencyMs`. */
   readonly latencyMs: number | null;
+  /** Lihat `Player.bot` — ditampilkan juga di scoreboard saat match berjalan. */
+  readonly bot: BotDifficulty | null;
 }
 
 export interface TickPayload {
@@ -309,6 +320,15 @@ export interface ClientToServerEvents {
    * tombol yang dinonaktifkan di client bukan aturan, cuma petunjuk.
    */
   'chat:send': (payload: ChatSendPayload, ack: (result: Ack<null>) => void) => void;
+  /**
+   * Isi satu kursi kosong dengan lawan buatan. Host saja, dan hanya di lobby.
+   *
+   * Ada supaya kurang pemain tidak berarti tidak bisa main. Bot menempati kursi
+   * SUNGGUHAN — ia ikut menghabiskan kapasitas room, jadi tidak ada cara
+   * menumpuk lawan buatan di luar batas yang sama dengan pemain manusia.
+   */
+  'room:addBot': (payload: AddBotPayload, ack: (result: Ack<RoomState>) => void) => void;
+  'room:removeBot': (payload: RemoveBotPayload, ack: (result: Ack<RoomState>) => void) => void;
   'room:leave': () => void;
   /**
    * Pemain selesai melihat layar hasil dan mau kembali ke lobby.

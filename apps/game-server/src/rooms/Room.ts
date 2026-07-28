@@ -9,6 +9,7 @@ import {
 } from '@pixelmatrix/shared';
 import type {
   AvatarId,
+  BotDifficulty,
   ChatMessage,
   Player,
   RoomSettings,
@@ -35,6 +36,16 @@ export interface RoomPlayer {
   connected: boolean;
   /** Latensi bolak-balik hasil pengukuran server; `null` sebelum sampel pertama. */
   latencyMs: number | null;
+  /**
+   * Tingkat kesulitan kalau kursi ini diisi bot; `null` untuk manusia.
+   *
+   * Bot menempati kursi yang SAMA dengan manusia — bukan daftar terpisah. Itu
+   * keputusan yang menghemat seluruh sisa fitur ini: kapasitas room, keunikan
+   * avatar, entri di scoreboard, dan perhitungan skor di Match semuanya bekerja
+   * tanpa satu pun kasus khusus. Daftar terpisah berarti setiap aturan lobby
+   * harus ditulis dua kali, dan yang kedua pasti akan tertinggal.
+   */
+  bot: BotDifficulty | null;
   /**
    * Akun pemilik, kalau identitasnya terbukti lewat token bertanda tangan.
    * `null` untuk guest — dan guest adalah cara main yang sepenuhnya sah.
@@ -75,6 +86,7 @@ export class Room {
       isReady: false,
       connected: true,
       latencyMs: null,
+      bot: null,
       userId: hostUserId,
     });
   }
@@ -149,7 +161,10 @@ export class Room {
       // "siap", match yang belum mulai bisa berjalan tanpa dia hadir.
       player.isReady = false;
       if (this.hostId === playerId) {
-        const next = this.connectedPlayers()[0];
+        // Host HARUS manusia. Bot tidak bisa menekan "mulai", tidak bisa
+        // mengubah pengaturan, dan tidak bisa mengeluarkan dirinya sendiri —
+        // menyerahkan host kepadanya akan mengunci room secara permanen.
+        const next = this.connectedPlayers().find((player) => player.bot === null);
         if (next) this.hostId = next.id;
       }
     }
@@ -187,8 +202,55 @@ export class Room {
       isReady: false,
       connected: true,
       latencyMs: null,
+      bot: null,
       userId,
     });
+  }
+
+  // -------------------------------------------------------------------- bot
+
+  /**
+   * Pemain manusia. Sengaja dipisah dari `allPlayers()`.
+   *
+   * Setiap aturan yang menanyakan "apakah ada orang di sini" harus memakai ini,
+   * bukan jumlah total. Bot tidak membaca chat, tidak bisa menekan tombol
+   * mulai, dan tidak ada gunanya menunggu — room berisi bot saja bukan room
+   * yang hidup, itu proses yang lupa dimatikan.
+   */
+  humanPlayers(): readonly RoomPlayer[] {
+    return this.allPlayers().filter((player) => player.bot === null);
+  }
+
+  botPlayers(): readonly RoomPlayer[] {
+    return this.allPlayers().filter((player) => player.bot !== null);
+  }
+
+  /**
+   * Tambahkan lawan buatan ke kursi kosong.
+   *
+   * Selalu `isReady: true` dan `connected: true`: bot tidak punya tombol siap,
+   * dan menunggu kesiapan sesuatu yang tidak bisa menekan apa pun akan membuat
+   * room macet selamanya.
+   */
+  addBot(botId: string, nickname: string, avatar: AvatarId, difficulty: BotDifficulty): void {
+    this.players.set(botId, {
+      id: botId,
+      nickname,
+      avatar,
+      isReady: true,
+      connected: true,
+      latencyMs: null,
+      bot: difficulty,
+      userId: null,
+    });
+  }
+
+  /** Keluarkan bot. `false` kalau id-nya bukan bot — manusia dikeluarkan lewat jalur lain. */
+  removeBot(botId: string): boolean {
+    const player = this.players.get(botId);
+    if (!player || player.bot === null) return false;
+    this.players.delete(botId);
+    return true;
   }
 
   /**
@@ -200,7 +262,9 @@ export class Room {
     if (this.hostId === playerId) {
       // Yang tersambung didahulukan: menyerahkan host ke pemain yang sedang
       // putus akan membuat room macet sampai masa tenggangnya habis.
-      const next = this.connectedPlayers()[0] ?? this.allPlayers()[0];
+      // Lihat catatan di `setConnected`: host tidak boleh jatuh ke bot.
+      const humans = this.humanPlayers();
+      const next = humans.find((player) => player.connected) ?? humans[0];
       if (next) this.hostId = next.id;
     }
   }
@@ -228,8 +292,13 @@ export class Room {
    */
   canStart(): boolean {
     const ready = this.connectedPlayers();
+    // Minimal satu manusia. Tanpa syarat ini, room yang ditinggal pemiliknya
+    // bisa memulai match antar-bot dan berjalan terus memakan tick server
+    // tanpa ada seorang pun yang menontonnya.
+    const anyHuman = ready.some((player) => player.bot === null);
     return (
       this.status === 'waiting' &&
+      anyHuman &&
       ready.length >= MIN_PLAYERS_TO_START &&
       ready.every((player) => player.isReady)
     );
@@ -237,7 +306,9 @@ export class Room {
 
   /** Reset kesiapan setelah match selesai, supaya rematch butuh konfirmasi ulang. */
   resetReady(): void {
-    for (const player of this.players.values()) player.isReady = false;
+    // Bot tetap siap. Ia tidak punya tombol untuk menekannya lagi, jadi
+    // meresetnya berarti rematch tidak akan pernah bisa dimulai.
+    for (const player of this.players.values()) player.isReady = player.bot !== null;
   }
 
   // ------------------------------------------------------------------- chat
@@ -255,7 +326,10 @@ export class Room {
    */
   canChat(): ChatVerdict {
     if (this.status === 'playing' || this.status === 'countdown') return 'playing';
-    if (this.connectedPlayers().length < MIN_PLAYERS_TO_START) return 'tooFewPlayers';
+    // Yang dihitung MANUSIA yang tersambung. Bot tidak membaca apa pun, jadi
+    // membuka chat karena ada dua bot di lobby sama saja dengan bicara sendiri.
+    const humans = this.humanPlayers().filter((player) => player.connected);
+    if (humans.length < MIN_PLAYERS_TO_START) return 'tooFewPlayers';
     return 'ok';
   }
 
@@ -288,6 +362,7 @@ export class Room {
       combo: scores.get(player.id)?.combo ?? 0,
       connected: player.connected,
       latencyMs: player.latencyMs,
+      bot: player.bot,
     }));
 
     return {

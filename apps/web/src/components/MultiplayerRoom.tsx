@@ -131,6 +131,8 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
           onUpdateSettings={room.updateSettings}
           onStart={() => void room.startMatch()}
           onLeave={room.leaveRoom}
+          onAddBot={room.addBot}
+          onRemoveBot={room.removeBot}
           chat={room.chat}
           onSendChat={room.sendChat}
         />

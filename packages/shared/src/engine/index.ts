@@ -67,6 +67,15 @@ export type {
 } from './state';
 
 export { matchIntensity, soloIntensity } from './intensity';
+export {
+  BOT_NAME_PREFIX,
+  BOT_DIFFICULTIES,
+  BOT_PROFILES,
+  botDisplayName,
+  botReactionMs,
+  pickBotTarget,
+} from './bot';
+export type { BotChoice, BotDifficulty, BotProfile } from './bot';
 export { LATENCY_FAIR_MAX_MS, LATENCY_GOOD_MAX_MS, latencyQuality, smoothLatency } from './latency';
 export type { LatencyQuality } from './latency';
 export { mpLevelProgress, soloLevelProgress } from './levelProgress';

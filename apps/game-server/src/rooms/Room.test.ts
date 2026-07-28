@@ -7,7 +7,7 @@ import {
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
-import type { ChatMessage } from '@pixelmatrix/shared';
+import type { BotDifficulty, ChatMessage } from '@pixelmatrix/shared';
 import { normalizeSettings, Room } from './Room';
 
 describe('normalizeSettings', () => {
@@ -231,5 +231,95 @@ describe('chat lobby', () => {
     const log = room.recentChat() as ChatMessage[];
     log.push(message('selundupan'));
     expect(room.recentChat()).toHaveLength(1);
+  });
+});
+
+describe('lawan bot', () => {
+  const withBot = (difficulty: BotDifficulty = 'medium') => {
+    const room = new Room('ABC123', 'p1', 'Budi', 'fox');
+    room.addBot('bot-1', 'Bot 1', 'robot', difficulty);
+    return room;
+  };
+
+  it('bot menempati kursi sungguhan, bukan daftar terpisah', () => {
+    // Kalau bot ada di daftar sendiri, setiap aturan lobby harus ditulis dua
+    // kali — dan yang kedua pasti akan tertinggal.
+    const room = withBot();
+    expect(room.playerCount).toBe(2);
+    expect(room.has('bot-1')).toBe(true);
+    expect(room.humanPlayers()).toHaveLength(1);
+    expect(room.botPlayers()).toHaveLength(1);
+  });
+
+  it('bot selalu siap, karena tidak punya tombol untuk menekannya', () => {
+    const room = withBot();
+    expect(room.get('bot-1')?.isReady).toBe(true);
+
+    // Termasuk setelah match selesai: reset kesiapan tidak boleh membuat
+    // rematch mustahil dimulai.
+    room.resetReady();
+    expect(room.get('bot-1')?.isReady).toBe(true);
+    expect(room.get('p1')?.isReady).toBe(false);
+  });
+
+  it('satu manusia + satu bot sudah cukup untuk mulai', () => {
+    // Ini seluruh alasan fitur ini ada.
+    const room = withBot();
+    room.setReady('p1', true);
+    expect(room.canStart()).toBe(true);
+  });
+
+  it('room berisi bot saja TIDAK bisa memulai match', () => {
+    // Tanpa syarat ini, match antar-bot bisa berjalan terus memakan tick
+    // server tanpa ada seorang pun yang menontonnya.
+    const room = new Room('ABC123', 'p1', 'Budi', 'fox');
+    room.addBot('bot-1', 'Bot 1', 'robot', 'medium');
+    room.addBot('bot-2', 'Bot 2', 'bee', 'hard');
+    room.remove('p1');
+    expect(room.playerCount).toBe(2);
+    expect(room.canStart()).toBe(false);
+  });
+
+  it('host tidak pernah jatuh ke bot', () => {
+    // Bot tidak bisa menekan "mulai" maupun mengubah pengaturan; menyerahkan
+    // host kepadanya mengunci room secara permanen.
+    const room = new Room('ABC123', 'p1', 'Budi', 'fox');
+    room.addBot('bot-1', 'Bot 1', 'robot', 'medium');
+    room.add('p2', 'Siti', 'cat');
+
+    room.remove('p1');
+    expect(room.host).toBe('p2');
+
+    // Sama saat host cuma terputus, bukan keluar.
+    room.setConnected('p2', false);
+    expect(room.host).toBe('p2');
+  });
+
+  it('chat tetap tertutup kalau yang menemani cuma bot', () => {
+    // Bot tidak membaca apa pun. Membuka chat karena ada bot di lobby sama
+    // saja dengan menyuruh pemain bicara sendiri.
+    const room = withBot();
+    expect(room.canChat()).toBe('tooFewPlayers');
+
+    room.add('p2', 'Siti', 'cat');
+    expect(room.canChat()).toBe('ok');
+  });
+
+  it('removeBot menolak id manusia', () => {
+    // Kalau tidak, event `room:removeBot` menjadi pintu belakang buat host
+    // menendang pemain manusia.
+    const room = withBot();
+    expect(room.removeBot('p1')).toBe(false);
+    expect(room.has('p1')).toBe(true);
+    expect(room.removeBot('bot-1')).toBe(true);
+    expect(room.has('bot-1')).toBe(false);
+  });
+
+  it('tingkat kesulitannya ikut disiarkan ke semua orang', () => {
+    // Menyembunyikan bahwa lawanmu bukan orang berarti skor yang kamu
+    // kalahkan tidak berarti apa-apa.
+    const state = withBot('hard').toState();
+    expect(state.players.find((p) => p.id === 'bot-1')?.bot).toBe('hard');
+    expect(state.players.find((p) => p.id === 'p1')?.bot).toBeNull();
   });
 });

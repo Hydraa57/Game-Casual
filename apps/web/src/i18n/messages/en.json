@@ -137,6 +137,15 @@
     "eliminatedHint": "Knocked out three times. You are a spectator until the match ends.",
     "eliminatedShort": "OUT",
     "reconnecting": "Disconnected…",
+    "botLevel": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "addBotTitle": "Play against bots",
+    "addBotHint": "Short on players? Fill an empty seat with a bot. Easy to warm up, Hard once you know the game.",
+    "addBotFull": "No seats left. Remove a player or raise the max first.",
+    "removeBot": "Remove",
     "pingTitle": "Latency to the server — lower means your taps land sooner",
     "pingValue": "Ping {ms} milliseconds",
     "pingUnknown": "Ping not measured yet",

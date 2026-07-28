@@ -20,12 +20,14 @@ import type { SessionRegistry } from '../rooms/sessions';
 import { RateLimiter } from '../game/RateLimiter';
 import { fail, socketError, succeed } from './errors';
 import {
+  addBotSchema,
   chatSchema,
   clickSchema,
   createRoomSchema,
   joinRoomSchema,
   readySchema,
   reconnectSchema,
+  removeBotSchema,
   updateSettingsSchema,
 } from './schemas';
 
@@ -339,6 +341,78 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     room.addChatMessage(message);
     io.to(room.code).emit('chat:message', message);
     ack(succeed(null));
+  });
+
+  /**
+   * Isi kursi kosong dengan lawan buatan.
+   *
+   * Host saja dan hanya di lobby — sama seperti `room:updateSettings`, dan
+   * untuk alasan yang sama: menambah peserta di tengah match berarti masuk
+   * dengan skor awal yang tidak sebanding.
+   */
+  on(socket, 'room:addBot', (payload, ack) => {
+    const parsed = addBotSchema.safeParse(payload);
+    if (!parsed.success) {
+      ack(fail('INVALID_PAYLOAD'));
+      return;
+    }
+
+    const playerId = seatOf(socket);
+    const room = roomOfSocket(socket, rooms);
+    if (!room || playerId === undefined) {
+      ack(fail('NOT_IN_ROOM'));
+      return;
+    }
+    if (!room.isHost(playerId)) {
+      ack(fail('NOT_HOST'));
+      return;
+    }
+    if (room.currentStatus !== 'waiting') {
+      ack(fail('GAME_IN_PROGRESS'));
+      return;
+    }
+    if (room.isFull) {
+      ack(fail('ROOM_FULL'));
+      return;
+    }
+
+    if (rooms.addBot(room, parsed.data.difficulty) === null) {
+      ack(fail('ROOM_FULL'));
+      return;
+    }
+    ack(succeed(stateOf(room, match)));
+    broadcastState(room);
+  });
+
+  on(socket, 'room:removeBot', (payload, ack) => {
+    const parsed = removeBotSchema.safeParse(payload);
+    if (!parsed.success) {
+      ack(fail('INVALID_PAYLOAD'));
+      return;
+    }
+
+    const playerId = seatOf(socket);
+    const room = roomOfSocket(socket, rooms);
+    if (!room || playerId === undefined) {
+      ack(fail('NOT_IN_ROOM'));
+      return;
+    }
+    if (!room.isHost(playerId)) {
+      ack(fail('NOT_HOST'));
+      return;
+    }
+    if (room.currentStatus !== 'waiting') {
+      ack(fail('GAME_IN_PROGRESS'));
+      return;
+    }
+    // `removeBot` menolak id yang bukan bot, jadi event ini tidak bisa dipakai
+    // sebagai cara host menendang pemain manusia lewat pintu belakang.
+    if (!rooms.removeBot(room, parsed.data.botId)) {
+      ack(fail('NOT_IN_ROOM'));
+      return;
+    }
+    ack(succeed(stateOf(room, match)));
+    broadcastState(room);
   });
 
   on(socket, 'room:leave', () => {

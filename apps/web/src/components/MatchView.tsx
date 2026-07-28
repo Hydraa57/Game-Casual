@@ -357,10 +357,19 @@ export function MatchView({
               {AVATAR_GLYPH[entry.avatar]}
             </span>
             <span className="scoreboard__name">{entry.nickname}</span>
+            {/* Tingkatnya, bukan sekadar "BOT": nama botnya netral ("Bot 2"),
+                jadi lencana inilah satu-satunya tempat lawan bisa tahu ia
+                sedang berhadapan dengan yang mana. */}
+            {entry.bot !== null && (
+              <span className="badge badge--bot">{t(`botLevel.${entry.bot}`)}</span>
+            )}
             {/* Hanya muncul kalau koneksinya memang bermasalah. Selama match,
                 yang berguna adalah pengecualiannya — bukan empat angka hijau
-                yang berkedip di samping papan. */}
-            <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} hideWhenGood />
+                yang berkedip di samping papan. Bot tidak punya jaringan untuk
+                diukur, jadi ia tidak pernah membawa lencana ini. */}
+            {entry.bot === null && (
+              <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} hideWhenGood />
+            )}
             {entry.lives !== null && (
               <span
                 className={`lives${entry.frozenMs > 0 || entry.eliminated ? ' lives--out' : ''}`}

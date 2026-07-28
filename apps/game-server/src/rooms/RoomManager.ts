@@ -1,4 +1,6 @@
-import type { AvatarId, RoomSettings } from '@pixelmatrix/shared';
+import { randomUUID } from 'node:crypto';
+import { botDisplayName } from '@pixelmatrix/shared';
+import type { AvatarId, BotDifficulty, RoomSettings } from '@pixelmatrix/shared';
 import { resolveAvatar } from './avatar';
 import { Room } from './Room';
 import { generateRoomCode, isValidRoomCode, normalizeRoomCode } from './roomCode';
@@ -65,6 +67,31 @@ export class RoomManager {
     return { ok: true, room };
   }
 
+  /**
+   * Isi satu kursi dengan lawan buatan.
+   *
+   * Nama dan avatarnya dipilih di sini supaya keduanya dijamin unik di room
+   * ini — avatar kembar membuat cap di sel papan kehilangan artinya, dan nama
+   * kembar membuat scoreboard mustahil dibaca. Keduanya masalah yang sudah
+   * diselesaikan untuk manusia; bot memakai jalur yang sama.
+   */
+  addBot(room: Room, difficulty: BotDifficulty): string | null {
+    if (room.isFull || room.currentStatus !== 'waiting') return null;
+
+    const botId = `bot-${randomUUID()}`;
+    const nickname = botDisplayName(room.allPlayers().map((player) => player.nickname));
+    room.addBot(botId, nickname, resolveAvatar('robot', room.takenAvatars()), difficulty);
+    this.playerRooms.set(botId, room.code);
+    return botId;
+  }
+
+  /** Keluarkan bot dari room. `false` kalau id-nya bukan bot di room itu. */
+  removeBot(room: Room, botId: string): boolean {
+    if (!room.removeBot(botId)) return false;
+    this.playerRooms.delete(botId);
+    return true;
+  }
+
   roomOf(playerId: string): Room | undefined {
     const code = this.playerRooms.get(playerId);
     return code === undefined ? undefined : this.rooms.get(code);
@@ -84,7 +111,14 @@ export class RoomManager {
     if (!room) return undefined;
 
     room.remove(playerId);
-    if (room.isEmpty) {
+    // Room yang tinggal berisi bot BUBAR, bukan bertahan.
+    //
+    // `isEmpty` saja tidak cukup sejak bot menempati kursi sungguhan: manusia
+    // terakhir yang keluar akan meninggalkan room yang tidak akan pernah kosong
+    // sendiri, dan proses server menyimpannya selamanya. Tidak ada yang bisa
+    // masuk ke dalamnya juga — kodenya sudah tidak dibagikan siapa pun lagi.
+    if (room.isEmpty || room.humanPlayers().length === 0) {
+      for (const player of room.allPlayers()) this.playerRooms.delete(player.id);
       this.rooms.delete(room.code);
       return undefined;
     }

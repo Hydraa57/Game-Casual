@@ -1,5 +1,6 @@
 import {
   ALLOWED_TARGET_SCORES,
+  BOT_DIFFICULTIES,
   CHAT_MAX_LENGTH,
   AVATAR_IDS,
   ALLOWED_TIME_LIMITS_SEC,
@@ -100,6 +101,11 @@ export const chatSchema = z.object({
     .transform((value) => value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim())
     .refine((value) => value.length >= 1),
 });
+
+export const addBotSchema = z.object({ difficulty: z.enum(BOT_DIFFICULTIES) });
+
+/** Id bot selalu dibuat server (`bot-<uuid>`); panjangnya dibatasi seperlunya. */
+export const removeBotSchema = z.object({ botId: z.string().min(1).max(64) });
 
 export const clickSchema = z.object({
   pixelId: z.string().min(1).max(32),

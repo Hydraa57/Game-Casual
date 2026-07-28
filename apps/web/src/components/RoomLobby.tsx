@@ -6,10 +6,11 @@ import {
   ALLOWED_TARGET_SCORES,
   ALLOWED_TIME_LIMITS_SEC,
   AVATAR_GLYPH,
+  BOT_DIFFICULTIES,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
 } from '@pixelmatrix/shared';
-import type { ChatMessage, RoomSettings, RoomState } from '@pixelmatrix/shared';
+import type { BotDifficulty, ChatMessage, RoomSettings, RoomState } from '@pixelmatrix/shared';
 import { ChatPanel } from './ChatPanel';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PingBadge } from './PingBadge';
@@ -23,6 +24,8 @@ export interface RoomLobbyProps {
   readonly onUpdateSettings: (settings: Partial<RoomSettings>) => void;
   readonly onStart: () => void;
   readonly onLeave: () => void;
+  readonly onAddBot: (difficulty: BotDifficulty) => void;
+  readonly onRemoveBot: (botId: string) => void;
   readonly chat: readonly ChatMessage[];
   readonly onSendChat: (text: string) => void;
 }
@@ -35,6 +38,8 @@ export function RoomLobby({
   onUpdateSettings,
   onStart,
   onLeave,
+  onAddBot,
+  onRemoveBot,
   chat,
   onSendChat,
 }: RoomLobbyProps) {
@@ -54,6 +59,7 @@ export function RoomLobby({
    */
   const connected = room.players.filter((player) => player.connected);
   const connectedCount = connected.length;
+  const roomFull = room.players.length >= room.settings.maxPlayers;
   const allReady = connected.every((player) => player.isReady);
   const enoughPlayers = connectedCount >= MIN_PLAYERS_TO_START;
 
@@ -111,13 +117,32 @@ export function RoomLobby({
                 </span>
                 {player.nickname}
                 {player.isHost && <span className="badge">{t('host')}</span>}
+                {/* Selalu terlihat. Menyembunyikan bahwa lawanmu bukan orang
+                    berarti skor yang kamu kalahkan tidak berarti apa-apa. */}
+                {player.bot !== null && (
+                  <span className="badge badge--bot">{t(`botLevel.${player.bot}`)}</span>
+                )}
               </span>
               <span className="playerList__right">
-                {/* Ping ditampilkan sejak di lobby, bukan hanya saat match:
-                    di situlah keputusan yang bisa diambil masih ada — menunggu
-                    sebentar, atau memulai tanpa menunggu koneksi yang buruk. */}
-                <PingBadge latencyMs={player.latencyMs} connected={player.connected} />
-                {player.connected ? (
+                {/* Bot tidak punya jaringan untuk diukur. Menampilkan "0 ms"
+                    untuknya akan terbaca sebagai lawan berkoneksi sempurna,
+                    padahal yang benar adalah pertanyaannya tidak berlaku. */}
+                {player.bot === null && (
+                  // Ping ditampilkan sejak di lobby, bukan hanya saat match: di
+                  // situlah keputusan yang bisa diambil masih ada — menunggu
+                  // sebentar, atau memulai tanpa menunggu koneksi yang buruk.
+                  <PingBadge latencyMs={player.latencyMs} connected={player.connected} />
+                )}
+                {player.bot !== null && isHost ? (
+                  <button
+                    className="btn btn--small btn--ghost"
+                    type="button"
+                    onClick={() => onRemoveBot(player.id)}
+                    disabled={busy}
+                  >
+                    {t('removeBot')}
+                  </button>
+                ) : player.connected ? (
                   <span className={player.isReady ? 'ready ready--yes' : 'ready'}>
                     {player.isReady ? t('ready') : t('notReady')}
                   </span>
@@ -129,6 +154,32 @@ export function RoomLobby({
           ))}
         </ul>
       </section>
+
+      {/* Hanya host. Pemain lain tetap melihat botnya di daftar di atas —
+          yang tidak mereka punya cuma tombolnya, sama seperti pengaturan. */}
+      {isHost && room.status === 'waiting' && (
+        <section className="card">
+          <h2 className="card__title">{t('addBotTitle')}</h2>
+          <p className="hint">{t('addBotHint')}</p>
+          <div className="botPicker">
+            {BOT_DIFFICULTIES.map((difficulty) => (
+              <button
+                key={difficulty}
+                className="btn btn--small"
+                type="button"
+                onClick={() => onAddBot(difficulty)}
+                // Kursi habis berarti tombolnya tidak akan berhasil. Membiarkannya
+                // hidup lalu menjawab ROOM_FULL membuat pemain menebak-nebak
+                // apakah yang rusak tombolnya atau koneksinya.
+                disabled={busy || roomFull}
+              >
+                {t(`botLevel.${difficulty}`)}
+              </button>
+            ))}
+          </div>
+          {roomFull && <p className="hint">{t('addBotFull')}</p>}
+        </section>
+      )}
 
       <section className="card">
         <h2 className="card__title">{t('settings')}</h2>

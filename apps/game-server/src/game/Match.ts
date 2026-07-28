@@ -20,6 +20,7 @@ import {
 } from '@pixelmatrix/shared';
 import type {
   AvatarId,
+  BotDifficulty,
   Color,
   GameConfig,
   MatchEndedPayload,
@@ -32,6 +33,7 @@ import type {
   ScoreState,
 } from '@pixelmatrix/shared';
 import type { Room } from '../rooms/Room';
+import { BotDriver } from './BotDriver';
 import type { GameServer } from '../net/handlers';
 import { saveMatch } from '../persistence/matchStore';
 import {
@@ -60,6 +62,8 @@ interface PlayerStats {
   knockouts: number;
   /** Sudah keluar dari permainan; hanya bisa menonton sampai match usai. */
   eliminated: boolean;
+  /** Tingkat kesulitan kalau ini bot; `null` untuk manusia. */
+  bot: BotDifficulty | null;
 }
 
 /**
@@ -75,6 +79,8 @@ interface PlayerStats {
 export class Match {
   private board: GameState;
   private readonly players = new Map<string, PlayerStats>();
+  /** Satu penggerak per bot, digerakkan dari tick yang sama dengan papannya. */
+  private readonly bots: BotDriver[] = [];
   private readonly limiter = new RateLimiter();
   private status: MatchStatus = 'countdown';
   private timer: NodeJS.Timeout | null = null;
@@ -99,7 +105,9 @@ export class Match {
         frozenUntil: 0,
         knockouts: 0,
         eliminated: false,
+        bot: player.bot,
       });
+      if (player.bot !== null) this.bots.push(new BotDriver(player.id, player.bot));
     }
   }
 
@@ -138,9 +146,16 @@ export class Match {
     this.limiter.forget(playerId);
     if (!this.players.has(playerId)) return;
 
-    // Kalau tinggal satu (atau nol) pemain tersisa, match tidak ada artinya lagi.
+    // Match yang tidak lagi ditonton siapa pun harus berhenti.
+    //
+    // Dua syarat, dan keduanya perlu sejak ada bot. `remaining < 2` menjaga
+    // agar match satu peserta tidak berjalan sendirian seperti sebelumnya —
+    // tapi itu saja akan membiarkan satu bot terus mengetuk papan setelah
+    // manusia terakhir menutup tabnya, sampai batas waktunya habis, memakan
+    // tick server untuk pertandingan tanpa penonton.
     const remaining = this.room.allPlayers().filter((player) => player.id !== playerId);
-    if (remaining.length < 2 && this.status !== 'ended') {
+    const humansLeft = remaining.filter((player) => player.bot === null).length;
+    if ((remaining.length < 2 || humansLeft === 0) && this.status !== 'ended') {
       this.finish('timeUp');
     }
   }
@@ -262,6 +277,7 @@ export class Match {
     this.forwardBoardEvents(result.events);
 
     this.reviveThawedPlayers(now);
+    this.driveBots();
 
     if (this.status === 'running' && this.board.elapsedMs >= this.timeLimitMs) {
       this.onTimeUp();
@@ -275,6 +291,20 @@ export class Match {
       this.lastBroadcastAt = now;
       this.broadcastTick();
     }
+  }
+
+  /**
+   * Match sudah usai.
+   *
+   * Metode, bukan pembacaan `this.status` langsung: di dalam `driveBots` status
+   * sudah dipersempit TypeScript ke 'running' | 'suddenDeath' oleh penjaga di
+   * awal loop, padahal `handleClick` di tengah loop bisa mengubahnya. Pembacaan
+   * langsung di sana akan dianggap perbandingan yang mustahil dan dihapus dari
+   * pikiran pembaca berikutnya — padahal justru itu yang menahan bot mengetuk
+   * papan yang sudah selesai.
+   */
+  private hasEnded(): boolean {
+    return this.status === 'ended';
   }
 
   /** Pemain yang masih boleh bermain — belum tereliminasi dan masih terhubung. */
@@ -302,6 +332,35 @@ export class Match {
       revived = true;
     }
     if (revived) this.broadcastTick();
+  }
+
+  /**
+   * Beri tiap bot satu kesempatan mengetuk, memakai papan tick ini.
+   *
+   * Urutannya diacak setiap tick. Kalau tidak, dengan dua bot setingkat yang
+   * mengincar pixel yang sama, bot pertama di daftar akan SELALU menang —
+   * bukan karena lebih cepat, tapi karena ia lebih dulu diiterasi. Papan
+   * rebutan yang hasilnya ditentukan urutan array bukan perlombaan.
+   */
+  private driveBots(): void {
+    if (this.bots.length === 0) return;
+    if (this.status !== 'running' && this.status !== 'suddenDeath') return;
+
+    const order = this.bots.length === 1 ? this.bots : shuffled(this.bots);
+    for (const bot of order) {
+      const pixelId = bot.step(
+        this.board.board.pixels,
+        this.board.board.targetColors,
+        this.board.elapsedMs,
+      );
+      if (pixelId === null) continue;
+      // Jalur yang SAMA dengan klik manusia — termasuk rate limiter, aturan
+      // beku, dan penalti bom. Tidak ada pintu belakang untuk bot.
+      this.handleClick(bot.botId, pixelId);
+      // `handleClick` bisa mengakhiri match (target tercapai / eliminasi).
+      // Melanjutkan loop setelah itu berarti mengetuk papan yang sudah selesai.
+      if (this.hasEnded()) return;
+    }
   }
 
   private onTimeUp(): void {
@@ -452,6 +511,7 @@ export class Match {
       // diketahui pemain lain.
       connected: this.room.get(id)?.connected === true,
       latencyMs: this.room.get(id)?.latencyMs ?? null,
+      bot: player.bot,
     }));
   }
 
@@ -578,6 +638,16 @@ export class Match {
     this.broadcastRoomState();
     this.onFinished(this.room);
   }
+}
+
+/** Salinan teracak — Fisher-Yates. Lihat `driveBots`. */
+function shuffled<T>(items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
 }
 
 /**

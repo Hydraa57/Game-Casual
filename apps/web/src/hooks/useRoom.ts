@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   Ack,
   AvatarId,
+  BotDifficulty,
   ChatMessage,
   JoinedRoom,
   RoomErrorCode,
@@ -46,6 +47,9 @@ export interface UseRoom {
   backToLobby(): void;
   setReady(ready: boolean): void;
   updateSettings(settings: Partial<RoomSettings>): void;
+  /** Isi satu kursi kosong dengan lawan buatan (host saja, hanya di lobby). */
+  addBot(difficulty: BotDifficulty): void;
+  removeBot(botId: string): void;
   startMatch(): Promise<boolean>;
   clearError(): void;
 }
@@ -242,6 +246,24 @@ export function useRoom(): UseRoom {
     [request],
   );
 
+  const addBot = useCallback(
+    (difficulty: BotDifficulty) => {
+      void request<RoomState>((socket, resolve) =>
+        socket.emit('room:addBot', { difficulty }, resolve),
+      );
+    },
+    [request],
+  );
+
+  const removeBot = useCallback(
+    (botId: string) => {
+      void request<RoomState>((socket, resolve) =>
+        socket.emit('room:removeBot', { botId }, resolve),
+      );
+    },
+    [request],
+  );
+
   const startMatch = useCallback(async () => {
     const result = await request<null>((socket, resolve) => socket.emit('game:start', resolve));
     return result?.ok ?? false;
@@ -282,6 +304,8 @@ export function useRoom(): UseRoom {
       backToLobby,
       setReady,
       updateSettings,
+      addBot,
+      removeBot,
       startMatch,
       clearError,
     }),
@@ -302,6 +326,8 @@ export function useRoom(): UseRoom {
       backToLobby,
       setReady,
       updateSettings,
+      addBot,
+      removeBot,
       startMatch,
       clearError,
     ],

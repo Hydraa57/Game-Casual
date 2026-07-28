@@ -177,6 +177,27 @@ Dengan aturan sekarang, **3 klik warna salah = 1 KO**, dan **3 KO = tereliminasi
 
 Itu keras, dan memang dimaksudkan keras. Tapi kalau saat main bareng ternyata ada yang tereliminasi di menit pertama secara rutin, tuas yang paling tepat diputar adalah **`MP_MAX_KNOCKOUTS`** (3 → 4/5) atau **`MP_STARTING_LIVES`** — bukan menghapus penalti nyawa pada klik salah, karena justru itu yang membuat ketelitian punya arti.
 
+**Simulasi lawan bot memberi bukti angka untuk peringatan di atas.** `apps/game-server/scripts/sim-bot.mts` mengadu profil bot melawan dua acuan manusia dengan aturan MP lengkap. Hasilnya: pada akurasi yang masuk akal untuk manusia (96–98,5%), **hampir setiap match berakhir karena eliminasi dalam 30–55 detik** — target skor dan batas waktu praktis tidak pernah tercapai. Jadi pilihan target skor 500/1000/1500 dan batas waktu 90–300 detik saat ini sebagian besar tidak terpakai.
+
+Ini belum tentu masalah: kalau pemain sungguhan lebih teliti dari 98,5% (sangat mungkin, karena hukumannya terlihat dan orang cepat belajar), eliminasi jadi jarang. Yang perlu dilakukan adalah **memeriksanya di playtest**, dan tuasnya sudah disebut di paragraf sebelumnya.
+
+### Lawan bot (`easy` / `medium` / `hard`)
+
+Ada supaya "kurang pemain" tidak berarti "tidak bisa main". Host mengisi kursi kosong dari lobby; bot menempati **kursi sungguhan** — ikut menghabiskan kapasitas room, punya avatar unik, dan muncul di scoreboard seperti pemain lain.
+
+Aturan yang menentukan seluruh rancangannya: **bot bermain lewat jalur yang sama persis dengan manusia.** Ketukannya masuk lewat `Match.handleClick`, jadi ia tunduk pada rate limiter, aturan beku, penalti bom, dan rumus skor yang sama. Tidak ada jalur khusus — kalau ada, mengalahkannya tidak berarti apa-apa.
+
+Yang membedakan tingkat kesulitan hanya dua hal yang juga membedakan manusia satu dengan lainnya: **seberapa cepat ia bereaksi** dan **seberapa sering ia salah**. Angkanya ada di `BOT_PROFILES` (`packages/shared/src/engine/bot.ts`), lengkap dengan tabel hasil penalaannya.
+
+Empat hal yang mudah dilanggar tanpa sadar saat mengubahnya:
+
+1. **Minimal satu manusia untuk memulai match.** Tanpa syarat ini, room yang ditinggal pemiliknya bisa menjalankan match antar-bot yang memakan tick server tanpa penonton.
+2. **Host tidak pernah jatuh ke bot.** Bot tidak bisa menekan "mulai" maupun mengubah pengaturan; menyerahkan host kepadanya mengunci room permanen.
+3. **Room yang tinggal berisi bot langsung bubar.** `isEmpty` saja tidak cukup sejak bot menempati kursi — manusia terakhir yang keluar akan meninggalkan room yang tidak akan pernah kosong sendiri.
+4. **Chat tetap menghitung manusia saja.** Bot tidak membaca apa pun; membuka chat karena ada bot di lobby sama saja menyuruh pemain bicara sendiri.
+
+Bot juga **tidak menampilkan lencana ping**: ia tidak punya jaringan untuk diukur, dan "0 ms" akan terbaca sebagai lawan berkoneksi sempurna.
+
 ### Avatar & umpan balik "siapa yang merebut"
 
 Ditambahkan setelah playtest pertama di HP. Keluhannya: papannya terasa seperti main sendiri-sendiri, karena tidak ada tanda apa pun bahwa pixel yang hilang itu direbut orang lain.
@@ -241,7 +262,7 @@ Semua ini muncul dari pertanyaan yang tidak terjawab oleh rencana awal, dan seng
 2. **Papan bersama, skor terpisah.** Server memanggil engine yang sama dengan solo, dengan papan bersama dipasangkan sementara ke skor pemain yang mengklik; papan hasilnya langsung menjadi papan bersama yang baru. Itulah yang membuat first-arrival bekerja tanpa penguncian apa pun.
 3. **Kalah cepat bukan kesalahan.** Klik yang datang setelah pixelnya diklaim orang lain dijawab `notFound` **tanpa penalti apa pun** — tidak memotong skor, tidak memutus combo. Kalau tidak, pemain dengan koneksi lebih lambat dihukum dua kali.
 4. **Pixel target yang lewat tanpa diklaim siapa pun memutus combo SEMUA pemain.** Tidak ada yang berhasil mengambilnya, jadi tidak adil kalau hanya sebagian yang kehilangan combo.
-5. **Bom memotong 15 poin** (`BOMB_SCORE_PENALTY`), bukan nyawa — tidak ada sistem nyawa di MP. Pixel nyawa ♥ tidak pernah spawn di MP, dan checkpoint/continue tidak berlaku.
+5. **Checkpoint/continue tidak berlaku di MP** — itu fitur solo, digating dari mode. (Catatan ini sebelumnya berbunyi "tidak ada sistem nyawa di MP"; itu sudah tidak benar sejak nyawa, KO, dan eliminasi ditambahkan — lihat tabel di atas.)
 6. **Batas akhir match dipegang `Match`, bukan engine.** Config papan MP memakai `timeLimitMs: null` dan `targetScore: null`. Kalau engine yang menghentikan papan saat waktu habis, sudden death — yang justru harus berjalan melewati batas itu — ikut mati.
 7. **Sudden death hanya dipicu seri di puncak.** Seri di posisi 2–3 tidak menahan match; yang diperebutkan hanya juara. Pixelnya berumur `SUDDEN_DEATH_LIFETIME_MS` (4 dtk) dan langsung diganti kalau habis, jadi tidak mungkin buntu.
 8. **Room ditahan di status `finished` sampai pemain menutup layar hasil.** Mengembalikannya ke `waiting` begitu match selesai membuat client berpindah ke lobby sebelum sempat menggambar hasilnya. Penutupnya event eksplisit `room:backToLobby`.

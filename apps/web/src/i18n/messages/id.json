@@ -137,6 +137,15 @@
     "eliminatedHint": "KO tiga kali. Kamu jadi penonton sampai match selesai.",
     "eliminatedShort": "OUT",
     "reconnecting": "Terputus…",
+    "botLevel": {
+      "easy": "Santai",
+      "medium": "Jago",
+      "hard": "Sangar"
+    },
+    "addBotTitle": "Lawan bot",
+    "addBotHint": "Kurang pemain? Isi kursi kosong dengan bot. Santai buat pemanasan, Sangar buat yang sudah jago.",
+    "addBotFull": "Kursi sudah penuh. Keluarkan satu pemain atau naikkan maks pemain dulu.",
+    "removeBot": "Keluarkan",
     "pingTitle": "Latensi ke server — makin kecil makin cepat kliknya sampai",
     "pingValue": "Ping {ms} milidetik",
     "pingUnknown": "Ping belum terukur",

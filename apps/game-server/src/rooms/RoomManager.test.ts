@@ -308,3 +308,58 @@ describe('toState', () => {
     expect(state.players.find((p) => p.id === 'host')?.score).toBe(0);
   });
 });
+
+describe('bot di RoomManager', () => {
+  it('nama dan avatarnya dijamin unik di room', () => {
+    // Avatar kembar membuat cap di sel papan kehilangan artinya, dan nama
+    // kembar membuat scoreboard mustahil dibaca.
+    const manager = new RoomManager();
+    const room = manager.create('host', 'Budi', 'robot');
+    room.updateSettings({ maxPlayers: 4 });
+
+    manager.addBot(room, 'medium');
+    manager.addBot(room, 'medium');
+    manager.addBot(room, 'hard');
+
+    const names = room.allPlayers().map((p) => p.nickname);
+    const avatars = room.allPlayers().map((p) => p.avatar);
+    expect(new Set(names).size).toBe(4);
+    expect(new Set(avatars).size).toBe(4);
+  });
+
+  it('bot ikut menghabiskan kapasitas room', () => {
+    const manager = new RoomManager();
+    const room = manager.create('host', 'Budi', 'fox');
+    room.updateSettings({ maxPlayers: 2 });
+
+    expect(manager.addBot(room, 'easy')).not.toBeNull();
+    expect(room.isFull).toBe(true);
+    // Kursi habis: bot berikutnya ditolak, dan pemain manusia juga.
+    expect(manager.addBot(room, 'easy')).toBeNull();
+    expect(manager.join(room.code, 'p2', 'Siti', 'cat')).toEqual({
+      ok: false,
+      code: 'ROOM_FULL',
+    });
+  });
+
+  it('room yang tinggal berisi bot BUBAR, tidak menggantung selamanya', () => {
+    // `isEmpty` saja tidak cukup sejak bot menempati kursi sungguhan: manusia
+    // terakhir yang keluar akan meninggalkan room yang tidak akan pernah
+    // kosong sendiri, dan tidak ada yang bisa masuk lagi ke dalamnya.
+    const manager = new RoomManager();
+    const room = manager.create('host', 'Budi', 'fox');
+    manager.addBot(room, 'hard');
+
+    expect(manager.leave('host')).toBeUndefined();
+    expect(manager.roomCount).toBe(0);
+    // Kursinya juga dilepas, kalau tidak petanya bocor sepanjang umur proses.
+    expect(manager.playerCount).toBe(0);
+  });
+
+  it('tidak menambah bot ke match yang sudah berjalan', () => {
+    const manager = new RoomManager();
+    const room = manager.create('host', 'Budi', 'fox');
+    room.setStatus('playing');
+    expect(manager.addBot(room, 'easy')).toBeNull();
+  });
+});

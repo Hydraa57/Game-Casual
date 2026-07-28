@@ -1,3 +1,5 @@
+import type { BotDifficulty } from '../engine/bot';
+
 export type RoomStatus = 'waiting' | 'countdown' | 'playing' | 'finished';
 
 /**
@@ -32,6 +34,14 @@ export interface Player {
    * hal yang paling masuk akal untuk dibohongi.
    */
   readonly latencyMs: number | null;
+  /**
+   * Tingkat kesulitan kalau kursi ini diisi bot; `null` untuk manusia.
+   *
+   * Selalu ditampilkan di UI. Menyembunyikan bahwa lawanmu bukan orang berarti
+   * skor yang kamu kalahkan tidak berarti apa-apa — dan pemain akan tahu
+   * sendiri dalam dua ronde, lalu berhenti percaya pada papan skornya.
+   */
+  readonly bot: BotDifficulty | null;
 }
 
 export interface RoomState {
