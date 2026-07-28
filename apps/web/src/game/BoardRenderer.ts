@@ -118,11 +118,21 @@ export class BoardRenderer {
     if (!view) return;
     this.views.delete(pixelId);
 
+    /**
+     * Dua cara pixel hilang, dua kurva yang berbeda — dan bedanya bukan hiasan.
+     *
+     * `pop` (direbut) memakai easeOut: cepat di awal lalu melambat, terbaca
+     * sebagai sesuatu yang MELEDAK keluar karena tindakanmu. `fade` (kedaluwarsa)
+     * memakai easeIn: pelan di awal lalu menghilang, terbaca sebagai sesuatu
+     * yang LOLOS begitu saja. Sebelumnya keduanya linier dan karena itu terasa
+     * sama — padahal yang satu hadiah dan yang satu kehilangan.
+     */
     this.scene.tweens.add({
       targets: [view.rect, view.glyph],
       scale: style === 'pop' ? 1.4 : 0.7,
       alpha: 0,
       duration: style === 'pop' ? 130 : 180,
+      ease: style === 'pop' ? 'Quad.easeOut' : 'Quad.easeIn',
       onComplete: () => {
         view.rect.destroy();
         view.glyph.destroy();
@@ -138,12 +148,43 @@ export class BoardRenderer {
       { fontFamily: 'monospace', fontSize: '26px', color, fontStyle: 'bold' },
     );
     label.setOrigin(0.5);
+
+    /**
+     * Angka poin melesat lalu mengambang, bukan naik dengan kecepatan tetap.
+     *
+     * Kenaikan linier terbaca sebagai animasi; `Cubic.easeOut` terbaca sebagai
+     * REAKSI terhadap ketukan. Bedanya kecil di satu klik dan besar setelah
+     * ratusan — ini elemen paling sering muncul di seluruh permainan.
+     *
+     * Alpha meredup lebih cepat daripada geraknya berhenti, jadi angkanya sudah
+     * tidak terbaca sebelum benar-benar berhenti — kalau tidak, angka lama
+     * menumpuk di atas pixel berikutnya yang harus diketuk.
+     */
+    if (this.reducedMotion) {
+      this.scene.tweens.add({
+        targets: label,
+        alpha: 0,
+        duration: 420,
+        onComplete: () => label.destroy(),
+      });
+      return;
+    }
+
+    label.setScale(0.7);
     this.scene.tweens.add({
       targets: label,
       y: label.y - CELL * 0.7,
-      alpha: 0,
+      scale: 1,
       duration: 520,
+      ease: 'Cubic.easeOut',
       onComplete: () => label.destroy(),
+    });
+    this.scene.tweens.add({
+      targets: label,
+      alpha: 0,
+      duration: 340,
+      delay: 180,
+      ease: 'Quad.easeIn',
     });
   }
 
