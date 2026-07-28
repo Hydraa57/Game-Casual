@@ -1,4 +1,12 @@
 {
+  "loading": {
+    "title": "Getting Pixel Matrix ready",
+    "step": {
+      "engine": "Loading the game engine",
+      "multiplayer": "Preparing multiplayer",
+      "art": "Preparing visuals"
+    }
+  },
   "meta": {
     "title": "Pixel Matrix — Casual Brain Games Together",
     "description": "A pixel-art reflex game you can play alone or with friends, straight from your phone's browser."

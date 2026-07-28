@@ -1,4 +1,12 @@
 {
+  "loading": {
+    "title": "Menyiapkan Pixel Matrix",
+    "step": {
+      "engine": "Memuat mesin game",
+      "multiplayer": "Menyiapkan mode bareng teman",
+      "art": "Menyiapkan tampilan"
+    }
+  },
   "meta": {
     "title": "Pixel Matrix — Otak Santai Bareng",
     "description": "Game refleks pixel art yang bisa dimainkan sendiri atau bareng teman langsung dari browser HP."

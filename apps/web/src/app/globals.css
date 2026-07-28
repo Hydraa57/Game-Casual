@@ -212,6 +212,89 @@ h3 {
   color: var(--text-dim);
 }
 
+/* ------------------------------------------------------------------ loading */
+
+.loading {
+  min-height: 70dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.loading__bar {
+  width: 100%;
+  max-width: 320px;
+  height: 14px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/*
+  Lebarnya HANYA mengikuti tugas yang benar-benar selesai — ia tidak pernah
+  merayap sendiri supaya terlihat sibuk. Transisinya cuma memuluskan lompatan
+  antar-tonggak, bukan mengarang kemajuan di antaranya.
+*/
+.loading__fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 320ms ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+/*
+  Kilau inilah yang bergerak sendiri, dan itu jujur: ia tidak mengaku sebagai
+  kemajuan, ia cuma menunjukkan bahwa prosesnya masih hidup. Tanpa sesuatu yang
+  bergerak, bar yang berhenti di 33% selama beberapa detik terbaca sebagai
+  macet.
+*/
+.loading__fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  animation: loadingShimmer 1.1s linear infinite;
+}
+
+@keyframes loadingShimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.loading__step {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Pemain yang meminta gerakan dikurangi tidak butuh kilau yang berdenyut terus
+   di layar pertama yang ia lihat. Barnya tetap bekerja tanpa itu. */
+@media (prefers-reduced-motion: reduce) {
+  .loading__fill::after {
+    animation: none;
+  }
+
+  .loading__fill {
+    transition: none;
+  }
+}
+
 /* ------------------------------------------------- multiplayer: entry & lobby */
 
 .pageTitle {
