@@ -66,6 +66,7 @@ export type {
   ScoreState,
 } from './state';
 
+export { matchIntensity, soloIntensity } from './intensity';
 export { mpLevelProgress, soloLevelProgress } from './levelProgress';
 export type { LevelProgress } from './levelProgress';
 export { isStroopActive, stroopInkFor } from './stroop';

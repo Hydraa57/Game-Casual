@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AVATAR_GLYPH, isMaxCurveLevel } from '@pixelmatrix/shared';
+import { AVATAR_GLYPH, isMaxCurveLevel, matchIntensity } from '@pixelmatrix/shared';
 import type {
   AvatarId,
   BombHitPayload,
@@ -19,6 +19,7 @@ import type {
   TickPayload,
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
+import { Music } from '@/game/music';
 import { LevelBar } from './LevelBar';
 import { TargetIndicator } from './TargetIndicator';
 import { readMuted, writeMuted } from '@/lib/mute';
@@ -49,6 +50,15 @@ export interface MatchViewProps {
    */
   readonly avatars: ReadonlyMap<string, AvatarId>;
   readonly targetScore: number;
+  /**
+   * Batas waktu room. Dioper dari `room.settings`, BUKAN diturunkan dari
+   * `remainingMs`: percobaan pertama memakai `remainingMs + 1` sebagai batas,
+   * yang membuat "sisa waktu / batas" selalu ≈ 1 dan tekanan waktu tidak pernah
+   * aktif sama sekali. Nilai ini juga tetap benar untuk pemain yang baru
+   * reconnect, karena ia datang dari state room dan bukan dari event yang
+   * sudah lewat.
+   */
+  readonly timeLimitSec: number;
   readonly onLeave: () => void;
   /** Menutup layar hasil dan mengembalikan room ke lobby (untuk rematch). */
   readonly onBackToLobby: () => void;
@@ -59,6 +69,7 @@ export function MatchView({
   playerId,
   avatars,
   targetScore,
+  timeLimitSec,
   onLeave,
   onBackToLobby,
 }: MatchViewProps) {
@@ -80,9 +91,38 @@ export function MatchView({
   const [levelRemainingMs, setLevelRemainingMs] = useState(0);
   const [muted, setMuted] = useState(false);
 
+  const musicRef = useRef<Music | null>(null);
+  if (musicRef.current === null && typeof window !== 'undefined') {
+    musicRef.current = new Music();
+  }
+
   useEffect(() => {
     setMuted(readMuted());
+    musicRef.current?.setMuted(readMuted());
+    const music = musicRef.current;
+    return () => music?.dispose();
   }, []);
+
+  /**
+   * Ketegangan multiplayer mengikuti skor TERTINGGI di papan, bukan skor pemain
+   * ini: momen paling genting justru saat LAWAN hampir menang, dan musik yang
+   * mengikuti skor sendiri akan terdengar paling tenang tepat di situ.
+   */
+  useEffect(() => {
+    const music = musicRef.current;
+    if (!music) return;
+
+    const finished = result !== null;
+    if (countdown !== null || finished) {
+      music.stop();
+      return;
+    }
+    if (scoreboard.length === 0) return;
+
+    const top = Math.max(...scoreboard.map((entry) => entry.score));
+    music.setIntensity(matchIntensity(top, targetScore, remainingMs ?? 0, timeLimitSec * 1000));
+    music.start();
+  }, [scoreboard, targetScore, timeLimitSec, remainingMs, countdown, result]);
 
   /**
    * Avatar disimpan di ref, bukan dipakai langsung sebagai dependency effect.
@@ -266,6 +306,7 @@ export function MatchView({
     setMuted((current) => {
       const next = !current;
       controllerRef.current?.setMuted(next);
+      musicRef.current?.setMuted(next);
       writeMuted(next);
       return next;
     });

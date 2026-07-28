@@ -140,6 +140,7 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
           playerId={room.playerId}
           avatars={avatars}
           targetScore={room.room.settings.targetScore}
+          timeLimitSec={room.room.settings.timeLimitSec}
           onLeave={room.leaveRoom}
           onBackToLobby={room.backToLobby}
         />

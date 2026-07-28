@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { pendingTutorial } from '@pixelmatrix/shared';
+import { pendingTutorial, SOLO_STARTING_LIVES, soloIntensity } from '@pixelmatrix/shared';
 import type { TutorialTopic } from '@pixelmatrix/shared';
 import { INITIAL_SNAPSHOT } from '@/game/hudSnapshot';
 import type { HudSnapshot } from '@/game/hudSnapshot';
 import type { SoloController } from '@/game/createSoloGame';
 import { Link } from '@/i18n/navigation';
 import { readHighScore, writeHighScore } from '@/lib/highScore';
+import { Music } from '@/game/music';
 import { markTutorialSeen, readTutorialSeen } from '@/lib/tutorialSeen';
 import { readMuted, writeMuted } from '@/lib/mute';
 import { Hud } from './Hud';
@@ -35,9 +36,46 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
    */
   const seenRef = useRef<readonly TutorialTopic[]>([]);
 
+  /**
+   * Musik latar hidup selama komponen ini terpasang.
+   *
+   * Dibuat sekali di ref, bukan per render: AudioContext itu sumber daya OS,
+   * dan membuatnya berulang kali akan ditolak browser setelah beberapa kali.
+   */
+  const musicRef = useRef<Music | null>(null);
+  if (musicRef.current === null && typeof window !== 'undefined') {
+    musicRef.current = new Music();
+  }
+
+  useEffect(() => {
+    const music = musicRef.current;
+    return () => music?.dispose();
+  }, []);
+
+  /**
+   * Ketegangan mengikuti keadaan permainan, dihitung di `shared` supaya bisa
+   * diuji tanpa audio sama sekali.
+   */
+  useEffect(() => {
+    musicRef.current?.setIntensity(
+      soloIntensity(snapshot.level, snapshot.lives, SOLO_STARTING_LIVES),
+    );
+  }, [snapshot.level, snapshot.lives]);
+
+  // Musik hanya berbunyi saat benar-benar bermain. Di layar jeda, game over,
+  // dan saat kartu tutorial terbuka, ia berhenti — itu momen untuk membaca,
+  // bukan momen untuk didesak.
+  useEffect(() => {
+    const music = musicRef.current;
+    if (!music) return;
+    if (snapshot.status === 'running' && tutorial === null) music.start();
+    else music.stop();
+  }, [snapshot.status, tutorial]);
+
   useEffect(() => {
     setHighScore(readHighScore());
     setMuted(readMuted());
+    musicRef.current?.setMuted(readMuted());
     seenRef.current = readTutorialSeen();
   }, []);
 
@@ -131,6 +169,7 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
     setMuted((current) => {
       const next = !current;
       controllerRef.current?.setMuted(next);
+      musicRef.current?.setMuted(next);
       writeMuted(next);
       return next;
     });
