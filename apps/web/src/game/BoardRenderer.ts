@@ -1,7 +1,7 @@
 // Hanya tipe yang dipakai di sini — objek Phaser dibuat lewat `scene` yang
 // diberikan pemanggil, jadi modulnya tidak perlu ikut masuk ke bundle.
 import type * as Phaser from 'phaser';
-import { GRID_SIZE, remainingRatio } from '@pixelmatrix/shared';
+import { ALL_COLORS, COLOR_HEX, GRID_SIZE, remainingRatio } from '@pixelmatrix/shared';
 import type { Cell, Pixel } from '@pixelmatrix/shared';
 import { GRID_LINE, pixelStyle } from './palette';
 
@@ -339,6 +339,65 @@ export class BoardRenderer {
       view.glyph.destroy();
     }
     this.views.clear();
+  }
+
+  /**
+   * Perayaan naik level: seluruh papan menyala warna-warni, lalu spanduk
+   * "LEVEL N" muncul di tengahnya.
+   *
+   * Satu keputusan yang menentukan seluruh desainnya: kotak-kotak ini digambar
+   * DI BAWAH pixel yang sedang hidup (depth -1). Perayaan yang menutupi papan
+   * akan merampas peluang ketuk tepat di momen pemain paling bersemangat —
+   * hadiah yang justru menghukum. Dengan di bawah, ia murni hiasan: pixel asli
+   * tetap terlihat, tetap bisa diketuk, dan permainan tidak berhenti sedetik pun.
+   *
+   * Nyalanya menyapu diagonal (delay dari row + col) alih-alih serentak. Kilatan
+   * serentak terbaca sebagai kedipan/kesalahan render; sapuan terbaca sebagai
+   * sesuatu yang disengaja dan punya arah.
+   */
+  levelCelebration(level: number): void {
+    const palette = ALL_COLORS;
+    const cells: Phaser.GameObjects.Rectangle[] = [];
+
+    for (let row = 0; row < GRID_SIZE; row += 1) {
+      for (let col = 0; col < GRID_SIZE; col += 1) {
+        const tile = this.scene.add.rectangle(
+          col * CELL + CELL / 2,
+          row * CELL + CELL / 2,
+          CELL - PIXEL_INSET * 2,
+          CELL - PIXEL_INSET * 2,
+          COLOR_HEX[palette[(row + col) % palette.length]!],
+        );
+        // Di bawah pixel permainan, di atas latar. Ini barisnya.
+        tile.setDepth(-1);
+        tile.setAlpha(0);
+        cells.push(tile);
+
+        const wave = (row + col) * 18;
+        this.scene.tweens.add({
+          targets: tile,
+          alpha: this.reducedMotion ? 0.35 : 0.55,
+          duration: this.reducedMotion ? 200 : 140,
+          delay: this.reducedMotion ? 0 : wave,
+          yoyo: true,
+          hold: this.reducedMotion ? 260 : 200,
+          ease: 'Sine.easeOut',
+        });
+      }
+    }
+
+    // Dibersihkan setelah sapuan terjauh selesai. Sudut terjauh menunggu
+    // (7+7)*18 ms sebelum mulai, jadi angkanya dihitung dari situ — bukan
+    // ditebak, supaya tidak ada kotak yang terhapus selagi masih terlihat.
+    const longestWave = this.reducedMotion ? 0 : (GRID_SIZE - 1) * 2 * 18;
+    const total = longestWave + 140 * 2 + 260;
+    this.scene.time.delayedCall(total, () => {
+      for (const tile of cells) tile.destroy();
+    });
+
+    // Spanduk menyusul di tengah sapuan, bukan di awalnya: kalau muncul
+    // bersamaan, keduanya berebut perhatian dan tidak ada yang terbaca.
+    this.scene.time.delayedCall(this.reducedMotion ? 0 : 160, () => this.levelBanner(level));
   }
 
   /**

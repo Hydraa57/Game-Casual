@@ -203,7 +203,7 @@ export class BoardScene extends Phaser.Scene {
           // Engine memancarkan ini sejak Patch 4 dan sampai sekarang tidak
           // pernah digambar. Kenaikan level cuma terlihat kalau pemain melirik
           // HUD — yang tidak dilakukan siapa pun di tengah ronde.
-          this.boardView.levelBanner(event.level);
+          this.boardView.levelCelebration(event.level);
           this.options.sfx.levelUp();
           break;
 

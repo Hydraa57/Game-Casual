@@ -19,7 +19,8 @@
     "comingSoon": "soon",
     "switchLanguage": "Bahasa Indonesia",
     "leaderboard": "Leaderboard",
-    "profile": "Profile"
+    "profile": "Profile",
+    "about": "About & Version"
   },
   "solo": {
     "title": "Solo",
@@ -226,5 +227,18 @@
       "title": "Read the Word!",
       "body": "The colour swatch is gone. The target is now a WORD — and its ink colour is deliberately different. \"RED\" printed in blue means the target is RED, not blue. Reading is faster than naming a colour, so hold back the first answer that pops into your head."
     }
+  },
+  "about": {
+    "back": "Back",
+    "title": "About",
+    "tagline": "A colour-reflex game you can play solo or fight over one shared board with 2-4 friends, straight from a phone browser.",
+    "creditsTitle": "Made by",
+    "roleCreator": "Idea, direction & design",
+    "roleBuilt": "Co-written with",
+    "creditsNote": "Every design and balancing decision came from real playtesting, not guesswork.",
+    "sourceTitle": "Source code",
+    "sourceNote": "Fully open — read it, learn from it, or reuse it.",
+    "viewSource": "View on GitHub",
+    "techTitle": "Built with"
   }
 }

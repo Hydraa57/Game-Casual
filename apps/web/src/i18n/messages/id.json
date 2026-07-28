@@ -19,7 +19,8 @@
     "comingSoon": "segera",
     "switchLanguage": "English",
     "leaderboard": "Papan Skor",
-    "profile": "Profil"
+    "profile": "Profil",
+    "about": "Tentang & Versi"
   },
   "solo": {
     "title": "Solo",
@@ -226,5 +227,18 @@
       "title": "Baca Katanya!",
       "body": "Kotak warna hilang. Sekarang targetnya berupa KATA — dan warna tintanya sengaja dibuat berbeda. Contoh: kata \"RED\" bertinta biru berarti targetnya MERAH, bukan biru. Membaca lebih cepat daripada menamai warna, jadi tahan dulu jawaban pertama yang muncul di kepalamu."
     }
+  },
+  "about": {
+    "back": "Kembali",
+    "title": "Tentang",
+    "tagline": "Game refleks warna yang bisa dimainkan sendirian atau berebut satu papan bareng 2-4 teman, langsung dari browser HP.",
+    "creditsTitle": "Dibuat oleh",
+    "roleCreator": "Ide, arahan & desain",
+    "roleBuilt": "Ditulis bersama",
+    "creditsNote": "Setiap keputusan desain dan balancing datang dari playtest sungguhan, bukan tebakan.",
+    "sourceTitle": "Kode sumber",
+    "sourceNote": "Terbuka sepenuhnya — silakan dibaca, dipelajari, atau dipakai ulang.",
+    "viewSource": "Lihat di GitHub",
+    "techTitle": "Dibangun dengan"
   }
 }

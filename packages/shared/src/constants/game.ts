@@ -498,3 +498,24 @@ export const MAX_PLAUSIBLE_SOLO_SECONDS = 1800;
  * klaim: rekor hanya bisa dibawa selagi akunnya belum punya skor sama sekali.
  */
 export const MAX_CLAIMABLE_SOLO_SCORE = MAX_POINTS_PER_SECOND * MAX_PLAUSIBLE_SOLO_SECONDS;
+
+// ---------------------------------------------------------------------------
+// Identitas rilis
+// ---------------------------------------------------------------------------
+
+/**
+ * Versi yang ditampilkan di halaman About.
+ *
+ * Ditaruh di `shared` dan bukan dibaca dari package.json: paket-paket di
+ * monorepo ini semuanya `private` dengan versi 0.0.0 yang tidak pernah
+ * dinaikkan, dan membaca dari sana berarti menampilkan angka yang tidak
+ * berarti apa-apa. Yang ini dinaikkan manual saat ada rilis yang layak
+ * disebut rilis.
+ */
+export const APP_VERSION = '1.0.0';
+
+/** Repositori sumber — ditautkan dari halaman About. */
+export const GITHUB_OWNER = 'Hydraa57';
+export const GITHUB_REPO = 'Game-Casual';
+export const GITHUB_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
+export const GITHUB_PROFILE_URL = `https://github.com/${GITHUB_OWNER}`;

@@ -176,7 +176,7 @@ export class RemoteBoardScene extends Phaser.Scene {
    */
   /** Spanduk naik level; dipanggil MatchView saat tick membawa level baru. */
   levelBanner(level: number): void {
-    this.boardView.levelBanner(level);
+    this.boardView.levelCelebration(level);
   }
 
   /** Denyut papan saat warna target berganti. */

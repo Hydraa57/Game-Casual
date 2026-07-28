@@ -38,6 +38,12 @@ export function LandingMenu() {
             {t('profile')}
           </Link>
         )}
+
+        {/* Paling bawah dan bergaya kecil: ini bukan tujuan utama siapa pun yang
+            membuka game, tapi harus ada dan mudah ditemukan. */}
+        <Link className="btn btn--small btn--block" href="/about">
+          {t('about')}
+        </Link>
       </div>
     </IdentityGate>
   );
