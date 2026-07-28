@@ -12,6 +12,7 @@ import {
 import type { ChatMessage, RoomSettings, RoomState } from '@pixelmatrix/shared';
 import { ChatPanel } from './ChatPanel';
 import { ConfirmDialog } from './ConfirmDialog';
+import { PingBadge } from './PingBadge';
 import { PrefetchGame } from './PrefetchGame';
 
 export interface RoomLobbyProps {
@@ -111,13 +112,19 @@ export function RoomLobby({
                 {player.nickname}
                 {player.isHost && <span className="badge">{t('host')}</span>}
               </span>
-              {player.connected ? (
-                <span className={player.isReady ? 'ready ready--yes' : 'ready'}>
-                  {player.isReady ? t('ready') : t('notReady')}
-                </span>
-              ) : (
-                <span className="ready ready--gone">{t('reconnecting')}</span>
-              )}
+              <span className="playerList__right">
+                {/* Ping ditampilkan sejak di lobby, bukan hanya saat match:
+                    di situlah keputusan yang bisa diambil masih ada — menunggu
+                    sebentar, atau memulai tanpa menunggu koneksi yang buruk. */}
+                <PingBadge latencyMs={player.latencyMs} connected={player.connected} />
+                {player.connected ? (
+                  <span className={player.isReady ? 'ready ready--yes' : 'ready'}>
+                    {player.isReady ? t('ready') : t('notReady')}
+                  </span>
+                ) : (
+                  <span className="ready ready--gone">{t('reconnecting')}</span>
+                )}
+              </span>
             </li>
           ))}
         </ul>

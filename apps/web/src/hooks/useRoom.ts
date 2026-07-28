@@ -119,6 +119,10 @@ export function useRoom(): UseRoom {
       setChat((current) => [...current, message].slice(-CHAT_HISTORY_LIMIT));
     });
     socket.on('error', (payload) => setErrorCode(payload.code));
+    // Balas secepat mungkin dan jangan kerjakan apa pun di sini: apa pun yang
+    // ditambahkan sebelum `ack()` akan ikut terhitung sebagai latensi jaringan
+    // padahal itu waktu pemrosesan kita sendiri.
+    socket.on('net:ping', (ack) => ack());
 
     if (process.env.NODE_ENV !== 'production') {
       // Kait uji end-to-end; tidak ada di build produksi.

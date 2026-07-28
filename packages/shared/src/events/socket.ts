@@ -223,6 +223,8 @@ export interface ScoreboardEntry {
   /** Sudah keluar dari permainan dan hanya bisa menonton. */
   readonly eliminated: boolean;
   readonly connected: boolean;
+  /** Lihat `Player.latencyMs`. */
+  readonly latencyMs: number | null;
 }
 
 export interface TickPayload {
@@ -336,6 +338,14 @@ export interface ServerToClientEvents {
    * menyimpulkan gamenya rusak.
    */
   'server:shutdown': () => void;
+  /**
+   * Pengukuran latensi. Client cukup memanggil ack-nya secepat mungkin; SERVER
+   * yang menghitung selisihnya.
+   *
+   * Arahnya sengaja server → client. Kalau client yang mengukur lalu melapor,
+   * angkanya jadi klaim yang tidak bisa diperiksa siapa pun.
+   */
+  'net:ping': (ack: () => void) => void;
   'game:countdown': (payload: { readonly seconds: number }) => void;
   'game:started': (payload: GameStartedPayload) => void;
   'game:pixelSpawned': (payload: PixelSpawnedPayload) => void;

@@ -67,6 +67,8 @@ export type {
 } from './state';
 
 export { matchIntensity, soloIntensity } from './intensity';
+export { LATENCY_FAIR_MAX_MS, LATENCY_GOOD_MAX_MS, latencyQuality, smoothLatency } from './latency';
+export type { LatencyQuality } from './latency';
 export { mpLevelProgress, soloLevelProgress } from './levelProgress';
 export type { LevelProgress } from './levelProgress';
 export { isStroopActive, stroopInkFor } from './stroop';

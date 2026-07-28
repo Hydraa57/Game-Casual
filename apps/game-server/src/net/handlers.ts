@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import {
   CHAT_RATE_MAX,
   CHAT_RATE_WINDOW_MS,
+  PING_INTERVAL_MS,
   RECONNECT_GRACE_MS,
   verifyPlayerToken,
 } from '@pixelmatrix/shared';
@@ -65,6 +66,14 @@ export interface HandlerDeps {
  */
 interface SocketData {
   playerId?: string;
+  pingTimer?: NodeJS.Timeout;
+  /**
+   * Kapan ping terakhir dikirim; `undefined` berarti tidak ada yang menunggu
+   * balasan. Dipakai supaya hanya ada SATU ping di udara per socket — koneksi
+   * lambat yang belum sempat membalas tidak boleh ditumpuki ping berikutnya,
+   * karena antreannya sendiri akan membuat sampel setelahnya makin buruk.
+   */
+  pingSentAt?: number;
 }
 
 const seatOf = (socket: GameSocket): string | undefined => (socket.data as SocketData).playerId;
@@ -156,6 +165,8 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
   const broadcastState = (room: Room): void => {
     io.to(room.code).emit('room:state', stateOf(room, match));
   };
+
+  startPingLoop(socket, deps, broadcastState);
 
   on(socket, 'room:create', (payload, ack) => {
     const parsed = createRoomSchema.safeParse(payload);
@@ -449,6 +460,57 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
         evict(playerId, deps);
       }, RECONNECT_GRACE_MS),
     );
+  });
+}
+
+/**
+ * Ukur latensi pemain secara berkala, dari sisi SERVER.
+ *
+ * Server mengirim paket kosong dan menghitung berapa lama ack-nya kembali.
+ * Arahnya sengaja begini dan bukan client yang melapor: di papan rebutan,
+ * latensi menentukan siapa yang menang klik, jadi ia adalah hal yang paling
+ * masuk akal untuk dibohongi. Angka yang dilaporkan client hanyalah klaim —
+ * yang ini adalah pengukuran.
+ *
+ * Hasilnya disiarkan ulang hanya SAAT DI LOBBY. Selama match, `game:tick` sudah
+ * membawa `latencyMs` di scoreboard-nya empat kali sedetik; menyiarkan
+ * `room:state` di atasnya berarti mengirim dua kali data yang sama.
+ */
+function startPingLoop(
+  socket: GameSocket,
+  { rooms }: HandlerDeps,
+  broadcastState: (room: Room) => void,
+): void {
+  const data = socket.data as SocketData;
+
+  data.pingTimer = setInterval(() => {
+    const playerId = seatOf(socket);
+    const room = playerId === undefined ? undefined : rooms.roomOf(playerId);
+    // Sebelum masuk room tidak ada yang perlu diukur: tidak ada lawan yang
+    // ingin tahu, dan tidak ada tempat menyimpan angkanya.
+    if (playerId === undefined || !room) return;
+    if (data.pingSentAt !== undefined) return;
+
+    const sentAt = Date.now();
+    data.pingSentAt = sentAt;
+    socket.emit('net:ping', () => {
+      data.pingSentAt = undefined;
+      // Kursinya dibaca ULANG, tidak dipakai dari closure: ack bisa tiba setelah
+      // pemainnya keluar atau pindah room, dan menulis latensi ke kursi lama
+      // berarti menaruh angka di pemain yang salah.
+      const current = seatOf(socket);
+      const currentRoom = current === undefined ? undefined : rooms.roomOf(current);
+      if (current === undefined || !currentRoom) return;
+
+      currentRoom.setLatency(current, Date.now() - sentAt);
+      if (currentRoom.currentStatus !== 'playing') broadcastState(currentRoom);
+    });
+  }, PING_INTERVAL_MS);
+
+  socket.on('disconnect', () => {
+    if (data.pingTimer !== undefined) clearInterval(data.pingTimer);
+    data.pingTimer = undefined;
+    data.pingSentAt = undefined;
   });
 }
 

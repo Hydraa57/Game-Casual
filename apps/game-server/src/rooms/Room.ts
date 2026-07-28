@@ -5,6 +5,7 @@ import {
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
+  smoothLatency,
 } from '@pixelmatrix/shared';
 import type {
   AvatarId,
@@ -32,6 +33,8 @@ export interface RoomPlayer {
   avatar: AvatarId;
   isReady: boolean;
   connected: boolean;
+  /** Latensi bolak-balik hasil pengukuran server; `null` sebelum sampel pertama. */
+  latencyMs: number | null;
   /**
    * Akun pemilik, kalau identitasnya terbukti lewat token bertanda tangan.
    * `null` untuk guest — dan guest adalah cara main yang sepenuhnya sah.
@@ -71,6 +74,7 @@ export class Room {
       avatar: hostAvatar,
       isReady: false,
       connected: true,
+      latencyMs: null,
       userId: hostUserId,
     });
   }
@@ -152,6 +156,19 @@ export class Room {
     return true;
   }
 
+  /**
+   * Catat hasil pengukuran latensi, diratakan supaya lencana tidak berkedip.
+   *
+   * Diredam DI SINI dan bukan di UI: kalau tiap client meratakan sendiri,
+   * pemain yang baru masuk melihat angka mentah sementara yang sudah lama
+   * melihat angka halus — untuk koneksi yang sama.
+   */
+  setLatency(playerId: string, sampleMs: number): void {
+    const player = this.players.get(playerId);
+    if (!player) return;
+    player.latencyMs = smoothLatency(player.latencyMs, sampleMs);
+  }
+
   hasNickname(nickname: string): boolean {
     const wanted = nickname.trim().toLowerCase();
     return this.allPlayers().some((player) => player.nickname.trim().toLowerCase() === wanted);
@@ -169,6 +186,7 @@ export class Room {
       avatar,
       isReady: false,
       connected: true,
+      latencyMs: null,
       userId,
     });
   }
@@ -269,6 +287,7 @@ export class Room {
       score: scores.get(player.id)?.score ?? 0,
       combo: scores.get(player.id)?.combo ?? 0,
       connected: player.connected,
+      latencyMs: player.latencyMs,
     }));
 
     return {

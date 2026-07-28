@@ -332,6 +332,60 @@ h3 {
   font-weight: 700;
 }
 
+/* Ping dan status siap dikelompokkan supaya keduanya tetap rapat di kanan;
+   tanpa ini `space-between` di baris induk akan melemparkannya ke dua ujung
+   yang berbeda. */
+.playerList__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------- ping */
+
+.ping {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  /* Lebar dikunci supaya angka yang berubah dari 2 ke 3 digit tidak menggeser
+     apa pun di sebelahnya — di scoreboard, pergeseran itu terbaca sebagai
+     papan yang bergetar. */
+  min-width: 3.6em;
+  justify-content: flex-end;
+}
+
+.ping__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.ping__unit {
+  opacity: 0.6;
+}
+
+.ping--good {
+  color: var(--success);
+}
+
+.ping--fair {
+  color: var(--accent);
+}
+
+.ping--poor {
+  color: var(--danger);
+}
+
+.ping--unknown {
+  color: var(--text-dim);
+}
+
 .ready {
   font-size: 0.65rem;
   letter-spacing: 0.15em;

@@ -339,6 +339,17 @@ export const RECONNECT_GRACE_MS = 45_000;
 /** Seberapa sering scoreboard & sisa waktu disiarkan (loop tetap 20Hz). */
 export const MP_TICK_BROADCAST_MS = 250;
 
+/**
+ * Jarak antar pengukuran latensi.
+ *
+ * 3 detik: cukup rapat untuk menangkap koneksi yang memburuk di tengah match,
+ * cukup jarang untuk tidak menambah beban yang justru ingin diukur. Satu
+ * pengukuran hanyalah paket kosong bolak-balik, tapi mengirimnya tiap 250 ms
+ * (seirama tick) berarti menambah lalu lintas di jalur yang sedang sesak —
+ * pengukurannya sendiri akan memperburuk angkanya.
+ */
+export const PING_INTERVAL_MS = 3000;
+
 /** Sudden death: papan dikosongkan, satu pixel target, siapa cepat dia menang. */
 export const SUDDEN_DEATH_LIFETIME_MS = 4000;
 

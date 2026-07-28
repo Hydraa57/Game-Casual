@@ -451,6 +451,7 @@ export class Match {
       // sebagai tersambung dan menyembunyikan satu-satunya hal yang ingin
       // diketahui pemain lain.
       connected: this.room.get(id)?.connected === true,
+      latencyMs: this.room.get(id)?.latencyMs ?? null,
     }));
   }
 

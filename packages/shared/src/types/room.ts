@@ -24,6 +24,14 @@ export interface Player {
   readonly score: number;
   readonly combo: number;
   readonly connected: boolean;
+  /**
+   * Latensi bolak-balik dalam ms, `null` kalau belum sempat terukur.
+   *
+   * DIUKUR SERVER, bukan dilaporkan client. Kalau client yang melapor, angkanya
+   * jadi klaim yang tidak bisa diperiksa — dan di papan rebutan, latensi adalah
+   * hal yang paling masuk akal untuk dibohongi.
+   */
+  readonly latencyMs: number | null;
 }
 
 export interface RoomState {

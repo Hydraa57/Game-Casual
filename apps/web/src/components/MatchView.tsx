@@ -22,6 +22,7 @@ import type { RemoteController } from '@/game/createRemoteGame';
 import { Music } from '@/game/music';
 import { ConfirmDialog } from './ConfirmDialog';
 import { LevelBar } from './LevelBar';
+import { PingBadge } from './PingBadge';
 import { SoundControls } from './SoundControls';
 import { TargetIndicator } from './TargetIndicator';
 import { readMuted, writeMuted } from '@/lib/mute';
@@ -356,6 +357,10 @@ export function MatchView({
               {AVATAR_GLYPH[entry.avatar]}
             </span>
             <span className="scoreboard__name">{entry.nickname}</span>
+            {/* Hanya muncul kalau koneksinya memang bermasalah. Selama match,
+                yang berguna adalah pengecualiannya — bukan empat angka hijau
+                yang berkedip di samping papan. */}
+            <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} hideWhenGood />
             {entry.lives !== null && (
               <span
                 className={`lives${entry.frozenMs > 0 || entry.eliminated ? ' lives--out' : ''}`}
