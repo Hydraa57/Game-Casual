@@ -98,7 +98,9 @@ export function RoomLobby({
         <h2 className="card__title">
           {t('players')} ({room.players.length}/{room.settings.maxPlayers})
         </h2>
-        <ul className="playerList">
+        {/* Sama seperti scoreboard match: mulai tiga pemain, daftarnya dipecah
+            dua kolom supaya lobby berempat tidak menjulur melewati layar. */}
+        <ul className={`playerList${room.players.length > 2 ? ' playerList--grid' : ''}`}>
           {room.players.map((player) => (
             <li
               key={player.id}

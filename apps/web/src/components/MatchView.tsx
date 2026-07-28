@@ -367,7 +367,16 @@ export function MatchView({
 
   return (
     <div className="match">
-      <ol className="scoreboard">
+      {/*
+        Berempat, satu baris per pemain mendorong papan sampai 460 px dari atas
+        layar dan membuat halaman lebih tinggi dari viewport — kontrol bawah
+        kepotong, dan di HP yang lebih pendek papannya sendiri ikut kepotong.
+        Mulai tiga pemain, daftarnya dipecah dua kolom.
+
+        Ambangnya di TIGA, bukan empat: dua pemain masih lega satu baris penuh,
+        dan memaksanya jadi dua kolom hanya membuang ruang.
+      */}
+      <ol className={`scoreboard${sorted.length > 2 ? ' scoreboard--grid' : ''}`}>
         {sorted.map((entry) => (
           <li
             key={entry.playerId}
@@ -375,35 +384,39 @@ export function MatchView({
               entry.connected ? '' : ' scoreboard__row--gone'
             }`}
           >
-            <span className="avatarMark" aria-hidden="true">
-              {AVATAR_GLYPH[entry.avatar]}
-            </span>
-            <span className="scoreboard__name">{entry.nickname}</span>
-            {/* Tingkatnya, bukan sekadar "BOT": nama botnya netral ("Bot 2"),
-                jadi lencana inilah satu-satunya tempat lawan bisa tahu ia
-                sedang berhadapan dengan yang mana. */}
-            {entry.bot !== null && (
-              <span className="badge badge--bot">{t(`botLevel.${entry.bot}`)}</span>
-            )}
-            {/* Bot tidak punya jaringan untuk diukur, jadi ia tidak pernah
-                membawa lencana ini. */}
-            {entry.bot === null && (
-              <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} />
-            )}
-            {entry.lives !== null && (
-              <span
-                className={`lives${entry.frozenMs > 0 || entry.eliminated ? ' lives--out' : ''}`}
-                aria-label={`${entry.lives}`}
-              >
-                {entry.eliminated
-                  ? t('eliminatedShort')
-                  : entry.frozenMs > 0
-                    ? t('down')
-                    : '▮'.repeat(entry.lives)}
+            <span className="scoreboard__top">
+              <span className="avatarMark" aria-hidden="true">
+                {AVATAR_GLYPH[entry.avatar]}
               </span>
-            )}
-            {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}
-            <span className="scoreboard__score">{entry.score}</span>
+              <span className="scoreboard__name">{entry.nickname}</span>
+              <span className="scoreboard__score">{entry.score}</span>
+            </span>
+            <span className="scoreboard__meta">
+              {/* Tingkatnya, bukan sekadar "BOT": nama botnya netral ("Bot 2"),
+                  jadi lencana inilah satu-satunya tempat lawan bisa tahu ia
+                  sedang berhadapan dengan yang mana. */}
+              {entry.bot !== null && (
+                <span className="badge badge--bot">{t(`botLevel.${entry.bot}`)}</span>
+              )}
+              {/* Bot tidak punya jaringan untuk diukur, jadi ia tidak pernah
+                  membawa lencana ini. */}
+              {entry.bot === null && (
+                <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} />
+              )}
+              {entry.lives !== null && (
+                <span
+                  className={`lives${entry.frozenMs > 0 || entry.eliminated ? ' lives--out' : ''}`}
+                  aria-label={`${entry.lives}`}
+                >
+                  {entry.eliminated
+                    ? t('eliminatedShort')
+                    : entry.frozenMs > 0
+                      ? t('down')
+                      : '▮'.repeat(entry.lives)}
+                </span>
+              )}
+              {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}
+            </span>
           </li>
         ))}
       </ol>
