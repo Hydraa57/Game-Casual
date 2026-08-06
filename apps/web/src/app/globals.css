@@ -116,6 +116,28 @@ body {
 }
 
 /*
+  Jarak tepi. DIKEMBALIKAN setelah hilang tanpa sengaja.
+
+  Saat latar halaman dipindahkan ke `html` di patch tema, blok `body` yang
+  memuat padding ini ikut terhapus — dan seluruh isi halaman menempel rapat
+  ke tepi layar: tombol menyentuh sisi kiri, skor terpotong di sisi kanan.
+  Tidak ada test yang menjaganya, dan tidak ada error yang muncul.
+
+  Angkanya sekaligus dinaikkan dari 12 px ke 18 px sesuai keluhan pemain: di
+  layar 360 px, 12 px terasa mepet karena kartu-kartunya sendiri sudah
+  berbingkai tebal, jadi isinya seolah menempel dua kali.
+*/
+body {
+  min-height: 100dvh;
+  /* Keempat sisi memakai safe-area karena viewport-nya `cover`: saat dipasang
+     sebagai PWA, halaman membentang sampai ke belakang notch dan indikator
+     home. Tanpa ini tombol paling atas/bawah bisa tidak bisa ditekan. */
+  padding: calc(14px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right))
+    calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
   Noda-noda warna di latar.
   ------------------------------------------------------------------------
   Krem polos sudah jauh lebih ceria daripada tema gelap, tapi masih datar.
@@ -303,36 +325,133 @@ h3 {
 }
 
 /*
-  Judul pelangi. Enam warna papan dipakai ulang sebagai gradien teks, jadi
-  yang pertama dilihat pemain sudah memberi tahu tentang apa gamenya.
-  `background-clip: text` ditopang warna solid sebagai cadangan — kalau
-  browsernya tidak mendukung, yang tampil tetap judul oranye yang terbaca,
-  bukan teks tak terlihat.
+  Logo: dua kata, dua warna, digaris tebal seperti stiker — ditambah
+  kotak-kotak pixel yang melayang di sekelilingnya.
+
+  Kenapa bukan gradien pelangi seperti versi pertama: pemain membacanya
+  sebagai bendera pelangi, bukan sebagai logo game. Dua warna tidak punya
+  bacaan itu, dan ornamen kotaknya justru lebih jujur menceritakan gamenya.
+
+  Warnanya dipilih yang lulus kontras sendirian (grape 5,90:1, bubblegum
+  4,51:1 di krem), jadi keterbacaannya tidak bergantung pada garis tepinya.
 */
+.landing__logo {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  /* Ruang untuk kotak-kotak yang menonjol keluar dari kotak judulnya. */
+  padding: 18px 26px;
+}
+
 .landing__title {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 0.32em;
   font-size: clamp(2.2rem, 13vw, 3.6rem);
-  color: var(--accent);
-  background: linear-gradient(
-    100deg,
-    #e0323c 0%,
-    #ff8b3d 22%,
-    #ffc531 42%,
-    #1f9e6b 62%,
-    #2f80cf 80%,
-    #7238dd 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  padding-bottom: 0.08em;
+  /* Garis tepi putih tebal + bayangan padat: bentuk baku logo game kasual.
+     `paint-order` yang membuat garisnya di BELAKANG isian — tanpa itu, garis
+     tebal memakan bagian dalam huruf dan bentuknya jadi kurus. */
+  -webkit-text-stroke: 6px var(--surface);
+  paint-order: stroke fill;
+  text-shadow: 0 5px 0 rgba(53, 41, 107, 0.22);
+}
+
+.landing__word--a {
+  color: var(--grape);
+}
+
+.landing__word--b {
+  color: var(--bubblegum);
+}
+
+/*
+  Kotak pixel. Warnanya diambil dari palet papan yang sesungguhnya, jadi
+  hiasannya bukan hiasan asal — ia memperkenalkan warna yang akan ditap
+  pemain sebentar lagi.
+*/
+.landing__pixel {
+  position: absolute;
+  border-radius: 5px;
+  border: 3px solid var(--border-strong);
+  box-shadow: 0 3px 0 rgba(53, 41, 107, 0.2);
+}
+
+.landing__pixel--1 {
+  width: 26px;
+  height: 26px;
+  top: 2px;
+  left: 4%;
+  background: #e43b44;
+  transform: rotate(-12deg);
+}
+
+.landing__pixel--2 {
+  width: 18px;
+  height: 18px;
+  top: 12%;
+  right: -1%;
+  background: #4d9be6;
+  transform: rotate(14deg);
+}
+
+.landing__pixel--3 {
+  width: 22px;
+  height: 22px;
+  bottom: 0;
+  left: 12%;
+  background: #63c74d;
+  transform: rotate(9deg);
+}
+
+.landing__pixel--4 {
+  width: 16px;
+  height: 16px;
+  top: 6px;
+  right: 16%;
+  background: #fee761;
+  transform: rotate(-18deg);
+}
+
+.landing__pixel--5 {
+  width: 20px;
+  height: 20px;
+  bottom: -2px;
+  right: 4%;
+  background: #f77622;
+  transform: rotate(-7deg);
 }
 
 .landing__tagline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
   color: var(--text-dim);
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.02em;
+}
+
+.landing__taglineWord {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Belah ketupat kecil, bukan titik bulat: bentuknya sama dengan glyph warna
+   ungu di papan, jadi pemisahnya pun berasal dari gamenya sendiri. */
+.landing__taglineDot {
+  /* Oranye cerah cuma 2,18:1 di krem. Pemisah ini memang hiasan dan sudah
+     `aria-hidden`, jadi secara aturan ia dikecualikan — tapi pemisah yang
+     nyaris tak terlihat juga tidak memisahkan apa pun. Merah muda lulus
+     (4,51:1) sekaligus mengulang warna kata kedua di judul. */
+  color: var(--bubblegum);
+  font-size: 0.55em;
+  margin: 0 0.6em;
 }
 
 .landing__intro {
@@ -1125,8 +1244,19 @@ h3 {
   user-select: none;
 }
 
+/*
+  Kanvasnya dipaksa seukuran KOTAK ISI papan.
+
+  Phaser menghitung ukurannya sendiri dan hasilnya sama dengan lebar luar
+  papan — tidak dikurangi bingkai 5 px, jadi 10 px kanvas terpotong diam-diam
+  oleh `overflow: hidden` dan kolom paling kanan papan ikut tergunting.
+  Papannya persegi dan bingkainya sama tebal di keempat sisi, jadi memaksanya
+  100%/100% di sini aman untuk rasio aspeknya.
+*/
 .board canvas {
   display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /*
