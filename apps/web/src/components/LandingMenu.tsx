@@ -27,14 +27,14 @@ export function LandingMenu() {
         <Link className="btn btn--primary btn--block" href="/play/solo">
           {t('playSolo')}
         </Link>
-        <Link className="btn btn--block" href="/play/room">
+        <Link className="btn btn--grape btn--block" href="/play/room">
           {t('playMultiplayer')}
         </Link>
-        <Link className="btn btn--block" href="/leaderboard">
+        <Link className="btn btn--sky btn--block" href="/leaderboard">
           {t('leaderboard')}
         </Link>
         {identity.kind === 'account' && (
-          <Link className="btn btn--block" href="/profile">
+          <Link className="btn btn--bubblegum btn--block" href="/profile">
             {t('profile')}
           </Link>
         )}

@@ -21,8 +21,32 @@ Game harus nyaman dimainkan **di HP maupun desktop** — skenario utamanya orang
 | Canvas | Persegi, responsif: mengisi lebar layar hingga maksimum 640×640 px |
 | Warna pixel | 6 warna: merah, biru, hijau, kuning, ungu, oranye |
 | Aksesibilitas | Setiap warna punya **glyph unik** kecil di dalam pixel (dukungan buta warna) |
-| Gaya | Retro pixel art: kotak berwarna + border 1px, font "Press Start 2P" |
+| Gaya | UI ceria bergaya game anak: halaman terang berwarna, huruf membulat, tombol chunky (lihat "Arah visual" di bawah) |
 | HUD | Warna target (besar, tengah atas), skor, combo meter, nyawa (solo) / leaderboard live (MP), timer |
+
+### Arah visual (dirombak setelah masukan pemain)
+
+Tema gelap bergaya terminal diganti total menjadi UI ceria: latar krem hangat dengan noda-noda pastel, kartu putih bersudut besar, tombol chunky yang benar-benar tertekan, dan huruf membulat (**Fredoka** untuk judul/tombol, **Nunito** untuk kalimat) — keduanya di-*host* sendiri lewat `next/font`, jadi tidak ada permintaan ke server font pihak ketiga saat pemain membuka game.
+
+**Satu pengecualian yang disengaja: papannya TETAP berlatar dalam (`--board`, nila #2b1b53).**
+
+Ini bukan sisa tema lama yang lupa diganti. Enam warna pixel game ini ditala untuk latar gelap, dan diukur terhadap latar terang hasilnya:
+
+| warna | kontras di latar terang |
+|---|---|
+| kuning | 1,25:1 |
+| emas ★ | 1,40:1 |
+| hijau | 2,14:1 |
+| oranye | 2,77:1 |
+| biru | 2,94:1 |
+
+Di bawah 3:1 pixelnya praktis lenyap ke latarnya — dan membedakan warna ADALAH gamenya. Nila #2b1b53 menjaga semua warna yang bisa ditap di atas 3,2:1 sekaligus terasa jauh lebih ceria daripada abu-abu tua yang lama. Papannya lalu dibingkai tebal putih dengan sudut besar supaya terbaca sebagai **layar mainan yang ditempel di halaman**, bukan lubang gelap di tengahnya. Prinsipnya standar di desain game: turunkan saturasi/luminansi latar untuk mendorong maju objek yang bisa disentuh.
+
+Konsekuensi yang mudah dilanggar tanpa sadar: **komponen yang sama bisa muncul di halaman terang MAUPUN di atas papan.** Overlay, tutorial, dan layar hasil semuanya menempel di papan, jadi `.overlay` menimpa `--text`, `--text-dim`, dan kawan-kawannya menjadi versi terang untuk seluruh isinya sekaligus. Tombol yang warnanya harus tetap gelap (`.btn--primary`, `.btn--lemon`) memakai nilai yang **dipatok**, bukan `var(--text)` — kalau tidak, teksnya ikut memutih di dalam overlay dan jatuh ke 2,33:1.
+
+Aturan kedua yang sama pentingnya: **`--accent` untuk MENGISI, `--accent-ink` untuk MENULIS.** Oranye cerah bekerja baik sebagai latar tombol dengan teks gelap (5,36:1), tapi sebagai warna teks di halaman krem ia cuma 2,18:1. Palet ceria selalu punya jebakan ini.
+
+Seluruh pasangan teks/latar diperiksa otomatis dengan menyapu setiap elemen berteks yang benar-benar dirender di lima halaman, bukan dengan memeriksa palet di atas kertas — versi pertama patch ini lolos di atas kertas dan gagal di enam tempat saat disapu.
 
 ### Siklus hidup pixel
 

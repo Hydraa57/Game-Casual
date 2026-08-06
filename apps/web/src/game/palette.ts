@@ -14,8 +14,23 @@ export function cssColor(color: Color): string {
   return `#${COLOR_HEX[color].toString(16).padStart(6, '0')}`;
 }
 
-export const BOARD_BACKGROUND = 0x1c1b2a;
-export const GRID_LINE = 0x2a2840;
+/**
+ * Latar papan, dan alasannya tetap dalam padahal seluruh halaman sudah terang.
+ *
+ * Enam warna pixel game ini ditala untuk latar gelap. Diukur terhadap latar
+ * terang: kuning 1,25:1, emas 1,40:1, hijau 2,14:1 — jauh di bawah 3:1 dan
+ * praktis lenyap ke latarnya. Warna nila ini menjaga SEMUA warna yang bisa
+ * ditap di atas 3,2:1 sekaligus terasa jauh lebih ceria daripada abu-abu tua
+ * yang lama; ia sewarna dengan bingkai papan di CSS (`--board`).
+ *
+ * Mengubahnya berarti mengukur ulang seluruh palet papan, bukan sekadar
+ * mengganti angka.
+ */
+export const BOARD_BACKGROUND = 0x2b1b53;
+
+/** Garis kisi: cukup terlihat untuk memberi bentuk, cukup redup untuk tidak
+ *  bersaing dengan pixelnya sendiri. */
+export const GRID_LINE = 0x3f2b73;
 
 export interface PixelStyle {
   readonly fill: number;

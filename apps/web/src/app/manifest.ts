@@ -21,8 +21,8 @@ export default function manifest(): MetadataRoute.Manifest {
     // Papannya persegi dan HUD-nya satu kolom; landscape di HP hanya membuat
     // papan mengecil tanpa memberi apa pun.
     orientation: 'portrait',
-    background_color: '#0f0e17',
-    theme_color: '#0f0e17',
+    background_color: '#fff6e9',
+    theme_color: '#fff6e9',
     categories: ['games'],
     icons: [
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

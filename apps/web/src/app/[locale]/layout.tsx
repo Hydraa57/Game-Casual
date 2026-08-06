@@ -1,10 +1,44 @@
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Fredoka, Nunito } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { routing } from '@/i18n/routing';
 import '../globals.css';
+
+/**
+ * Dua font, dua pekerjaan yang berbeda.
+ *
+ * Sebelumnya seluruh game memakai monospace sistem — pilihan yang membuat
+ * tampilannya terbaca sebagai terminal, bukan sebagai mainan. Untuk game
+ * kasual yang ingin terasa ceria, huruf berujung bulat adalah setengah dari
+ * kesannya.
+ *
+ * `Fredoka` untuk judul, tombol, dan angka: gemuk dan membulat, jenis huruf
+ * yang memang dipakai aplikasi anak dan game kasual. `Nunito` untuk kalimat:
+ * ujungnya juga bulat sehingga nadanya menyambung, tapi jauh lebih tenang —
+ * paragraf yang diset dengan huruf display akan melelahkan dibaca.
+ *
+ * Keduanya diambil lewat `next/font`, yang mengunduhnya SAAT BUILD lalu
+ * menyajikannya dari domain kita sendiri. Tidak ada permintaan ke server font
+ * pihak ketiga saat pemain membuka game, jadi tidak ada blokir CSP, tidak ada
+ * kedipan teks tanpa font, dan tidak ada satu pun byte tambahan dari jaringan
+ * asing di jalur pemuatan.
+ */
+const fredoka = Fredoka({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-display-src',
+  display: 'swap',
+});
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-body-src',
+  display: 'swap',
+});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -17,7 +51,10 @@ export const viewport: Viewport = {
   // tap kedua hilang dan pemain merasa game-nya yang salah.
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0f0e17',
+  // Warna bilah sistem mengikuti latar halaman yang sekarang terang. Kalau
+  // dibiarkan gelap, notch dan bilah status membingkai halaman krem dengan
+  // pita hitam — persis kesan yang dirombak di patch ini.
+  themeColor: '#fff6e9',
   // Papan mengisi layar sampai ke area notch saat dipasang sebagai PWA;
   // jarak amannya diurus `env(safe-area-inset-*)` di globals.css.
   viewportFit: 'cover',
@@ -40,7 +77,7 @@ export async function generateMetadata({
     appleWebApp: {
       capable: true,
       title: 'Pixel Matrix',
-      statusBarStyle: 'black-translucent',
+      statusBarStyle: 'default',
     },
     other: {
       // Next hanya memancarkan `mobile-web-app-capable` (nama standar yang
@@ -73,7 +110,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${fredoka.variable} ${nunito.variable}`}>
       <body>
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>

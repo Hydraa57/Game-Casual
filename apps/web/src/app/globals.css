@@ -1,18 +1,104 @@
-:root {
-  --bg: #0f0e17;
-  --surface: #1c1b2a;
-  --surface-raised: #2a2840;
-  --border: #3d3a5c;
-  --text: #fffffe;
-  --text-dim: #a7a4c4;
-  --accent: #ff8906;
-  --danger: #e43b44;
-  --success: #63c74d;
+/*
+  Tema ceria — dirombak total dari tema gelap yang lama.
+  ==========================================================================
 
-  /* Retro tanpa dependensi font eksternal: monospace sistem + letter-spacing.
-     Bisa diganti font pixel yang di-self-host nanti tanpa mengubah layout. */
-  --font-pixel:
-    ui-monospace, 'SF Mono', 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+  Dua keputusan yang menentukan seluruh berkas ini, dan keduanya lahir dari
+  pengukuran, bukan selera:
+
+  1. HALAMANNYA terang dan berwarna. Latar krem hangat dengan noda-noda warna,
+     kartu putih berbingkai tebal, tombol chunky yang bisa "ditekan". Ini yang
+     membuatnya terasa seperti mainan, bukan seperti terminal.
+
+  2. PAPANNYA tetap berlatar dalam (--board). Ini tampak bertentangan dengan
+     poin pertama, dan memang disengaja. Gamenya soal membedakan warna, dan
+     enam warna pixelnya ditala untuk latar gelap. Diukur di latar terang:
+
+       kuning 1,25:1   emas 1,40:1   hijau 2,14:1   oranye 2,77:1
+
+     Di bawah 3:1 pixelnya nyaris lenyap ke latarnya. Jadi keceriaannya
+     ditaruh di SEKELILING papan, dan papannya sendiri dibingkai tebal supaya
+     terbaca sebagai layar mainan — bukan sebagai sisa tema gelap yang lupa
+     diganti. Prinsipnya standar di desain game: turunkan saturasi latar untuk
+     mendorong maju objek yang bisa disentuh.
+
+  Setiap pasangan warna teks/latar di bawah sudah diuji terhadap WCAG AA
+  (4,5:1 untuk teks, 3:1 untuk objek besar). Kalau ada warna yang diganti,
+  ukur ulang — jangan dikira-kira.
+*/
+:root {
+  /* --- permukaan ------------------------------------------------------- */
+  --bg: #fff6e9;
+  --surface: #ffffff;
+  --surface-raised: #fdf3ff;
+  --border: #e6dcf5;
+  /* Batas yang lebih tegas untuk kartu & tombol chunky. */
+  --border-strong: #35296b;
+
+  /* --- teks (semua >= 4,5:1 di krem maupun putih) ----------------------- */
+  --text: #35296b;
+  /*
+    Ini lebih gelap daripada yang tampak perlu, dan itu disengaja.
+    #6a5f96 lulus 5,69:1 di kartu putih — aman kalau hanya itu yang diperiksa.
+    Tapi teks redup juga muncul LANGSUNG di atas halaman, dan halaman itu
+    punya noda-noda warna: di titik dua noda bertumpuk, angkanya jatuh ke
+    3,86:1. Warna ini punya cadangan untuk kasus terburuk itu (4,67:1).
+  */
+  --text-dim: #5e5289;
+  --text-on-deep: #ffffff;
+
+  /* --- palet ceria ------------------------------------------------------ */
+  /*
+    Warna LATAR dan warna TEKS dipisah, dan itu bukan kerapian belaka.
+
+    Oranye cerah bekerja sangat baik sebagai latar tombol dengan teks gelap
+    (5,36:1), tapi sebagai warna TEKS di halaman krem ia cuma 2,18:1 — tidak
+    terbaca. Versi pertama patch ini memakai satu variabel untuk keduanya, dan
+    audit kontras otomatis menangkap empat tempat yang gagal karenanya: judul
+    halaman, dan ketiga tautan di halaman Tentang.
+
+    Aturannya: `--accent` untuk MENGISI, `--accent-ink` untuk MENULIS.
+  */
+  --accent: #ff8b3d;
+  --accent-ink: #b54d0a;
+  --sky: #2a72b8;
+  --mint: #1f9e6b;
+  --bubblegum: #d12e72;
+  --lemon: #ffc531;
+  --grape: #7238dd;
+  --danger: #cc2a34;
+  --success: #1f9e6b;
+
+  /* --- papan ------------------------------------------------------------ */
+  /* Lihat catatan besar di atas: nilai ini menjaga keenam warna pixel tetap
+     di atas 3:1. Mengubahnya berarti mengukur ulang seluruh palet papan. */
+  --board: #2b1b53;
+  --board-frame: #ffffff;
+
+  /* --- bentuk ----------------------------------------------------------- */
+  --radius: 18px;
+  --radius-sm: 12px;
+  /* Bayangan chunky: tanpa blur, murni offset. Itu yang membuat tombolnya
+     terlihat punya ketebalan — bayangan yang kabur terbaca sebagai kartu
+     material, bukan sebagai mainan plastik. */
+  --lift: 0 4px 0 rgba(53, 41, 107, 0.28);
+  --lift-lg: 0 6px 0 rgba(53, 41, 107, 0.22);
+
+  /* --- huruf ------------------------------------------------------------ */
+  /*
+    `--font-*-src` diisi `next/font` di layout; yang dipakai seluruh berkas ini
+    adalah `--font-*` di bawahnya, yang menambahkan cadangannya.
+
+    Namanya WAJIB berbeda. Percobaan pertama memakai nama yang sama di kedua
+    sisi (`--font-display: var(--font-display), ...`), dan properti kustom yang
+    merujuk dirinya sendiri membuat seluruh deklarasinya tidak sah — hasilnya
+    bukan font cadangan yang rapi, melainkan Times New Roman di seluruh game.
+    Kegagalan yang diam-diam, karena CSS tidak mengeluh sama sekali.
+
+    Cadangannya sengaja huruf berujung agak bulat, bukan sans-serif generik:
+    kalau font-nya belum tiba, nadanya tidak berubah drastis.
+  */
+  --font-display: var(--font-display-src), 'Trebuchet MS', 'Segoe UI', sans-serif;
+  --font-body: var(--font-body-src), 'Segoe UI', system-ui, sans-serif;
 }
 
 * {
@@ -23,29 +109,47 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--text);
-  font-family: var(--font-pixel);
+  font-family: var(--font-body);
   /* Cegah bounce-scroll iOS saat papan ditap berkali-kali. */
   overscroll-behavior: none;
 }
 
-body {
-  min-height: 100dvh;
-  /* Keempat sisi memakai safe-area karena viewport-nya `cover`: saat dipasang
-     sebagai PWA, halaman membentang sampai ke belakang notch dan indikator
-     home. Tanpa ini tombol paling atas/bawah bisa tidak bisa ditekan. */
-  padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
-    calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
-  -webkit-tap-highlight-color: transparent;
+/*
+  Noda-noda warna di latar.
+  ------------------------------------------------------------------------
+  Krem polos sudah jauh lebih ceria daripada tema gelap, tapi masih datar.
+  Empat gradien radial memberinya kedalaman tanpa satu pun berkas gambar —
+  penting karena game ini dibuka di jaringan seluler, dan setiap kilobyte
+  latar adalah kilobyte yang tidak dipakai untuk papannya.
+
+  Ditaruh di latar `html`, BUKAN di `body::before` dengan z-index negatif.
+  Versi pertama memakai pseudo-element dan nodanya tidak pernah terlihat sama
+  sekali: dalam urutan cat CSS, keturunan ber-z-index negatif digambar SEBELUM
+  latar kotak yang mengalir di dalamnya — jadi latar krem `body` menutupinya
+  rapat-rapat. Gagal tanpa satu pun error.
+
+  `fixed` supaya nodanya tidak ikut bergeser saat halaman di-scroll: latar
+  yang ikut bergerak menarik mata ke arah yang salah selama permainan.
+*/
+html {
+  background:
+    radial-gradient(48vw 48vw at 10% 4%, rgba(173, 216, 255, 0.85), transparent 70%),
+    radial-gradient(54vw 54vw at 94% 20%, rgba(255, 205, 232, 0.8), transparent 68%),
+    radial-gradient(46vw 46vw at 88% 78%, rgba(255, 238, 170, 0.7), transparent 70%),
+    radial-gradient(60vw 60vw at 46% 106%, rgba(186, 242, 214, 0.85), transparent 70%), var(--bg);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 h1,
 h2,
 h3 {
   margin: 0;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
 }
 
 /* ------------------------------------------------------------------ layout */
@@ -68,17 +172,27 @@ h3 {
 
 /* ------------------------------------------------------------------ button */
 
+/*
+  Tombol chunky: punya ketebalan, dan benar-benar tertekan.
+
+  Bayangannya tanpa blur dan murni offset ke bawah — itu yang membaca sebagai
+  "tebal". Saat ditekan, tombolnya turun sejauh bayangannya lalu bayangannya
+  hilang, jadi gerakannya bukan sekadar animasi melainkan konsekuensi bentuk.
+  Ini pola baku UI game kasual, dan alasannya bukan gaya-gayaan: di layar
+  sentuh tidak ada hover, jadi umpan balik menekan harus datang dari
+  bentuknya sendiri.
+*/
 .btn {
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   text-decoration: none;
   color: var(--text);
-  background: var(--surface-raised);
-  border: 2px solid var(--border);
-  border-radius: 4px;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--lift);
   /* Minimal 44px: target sentuh jempol. */
   min-height: 48px;
   padding: 12px 18px;
@@ -88,22 +202,84 @@ h3 {
   gap: 8px;
   cursor: pointer;
   touch-action: manipulation;
+  transition:
+    transform 90ms ease-out,
+    box-shadow 90ms ease-out;
 }
 
 .btn:active {
-  transform: translateY(2px);
+  transform: translateY(4px);
+  box-shadow: 0 0 0 rgba(53, 41, 107, 0.28);
 }
 
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--lift);
 }
 
+.btn:focus-visible {
+  outline: 3px solid var(--grape);
+  outline-offset: 2px;
+}
+
+/* Tombol utama: oranye cerah dengan teks gelap (5,36:1). Teks putih di atas
+   oranye tidak akan pernah lulus kontras — itu jebakan paling umum di palet
+   ceria, dan cara keluarnya bukan mengganti warnanya tapi membalik tekstnya. */
 .btn--primary {
   background: var(--accent);
-  border-color: var(--accent);
-  color: #0f0e17;
-  font-size: 1.1rem;
+  border-color: var(--border-strong);
+  /*
+    Warnanya DIPATOK, tidak mewarisi `--text`.
+
+    Tombol ini juga muncul di dalam overlay papan, dan overlay menimpa
+    `--text` menjadi putih supaya teksnya terbaca di atas nila. Mewarisi di
+    sini berarti teks putih di atas oranye — 2,33:1, tidak terbaca. Persis itu
+    yang terjadi di versi pertama patch ini, dan audit kontras yang
+    menemukannya.
+  */
+  color: #35296b;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/*
+  Warna tombol menurut TUJUANNYA, bukan sekadar dekorasi.
+
+  Menu utama sebelumnya deretan tombol yang identik semua; mata harus membaca
+  tiap labelnya untuk membedakan. Dengan warna, tujuan yang berbeda punya
+  bentuk yang berbeda dari jauh — dan itu justru yang membuat UI game kasual
+  terasa ramah, bukan sekadar meriah.
+
+  Semua pasangan teks/latar di bawah sudah diukur: yang berlatar terang
+  memakai teks gelap, yang berlatar dalam memakai teks putih. Teks putih di
+  atas oranye atau kuning tidak akan pernah lulus kontras — itu jebakan paling
+  umum di palet ceria.
+*/
+.btn--grape {
+  background: var(--grape);
+  border-color: var(--border-strong);
+  color: var(--text-on-deep);
+}
+
+.btn--sky {
+  background: var(--sky);
+  border-color: var(--border-strong);
+  color: var(--text-on-deep);
+}
+
+.btn--bubblegum {
+  background: var(--bubblegum);
+  border-color: var(--border-strong);
+  color: var(--text-on-deep);
+}
+
+.btn--lemon {
+  background: var(--lemon);
+  border-color: var(--border-strong);
+  /* Dipatok, dengan alasan yang sama seperti `.btn--primary`. */
+  color: #35296b;
 }
 
 .btn--block {
@@ -126,16 +302,37 @@ h3 {
   text-align: center;
 }
 
+/*
+  Judul pelangi. Enam warna papan dipakai ulang sebagai gradien teks, jadi
+  yang pertama dilihat pemain sudah memberi tahu tentang apa gamenya.
+  `background-clip: text` ditopang warna solid sebagai cadangan — kalau
+  browsernya tidak mendukung, yang tampil tetap judul oranye yang terbaca,
+  bukan teks tak terlihat.
+*/
 .landing__title {
-  font-size: clamp(2rem, 12vw, 3.5rem);
+  font-size: clamp(2.2rem, 13vw, 3.6rem);
   color: var(--accent);
+  background: linear-gradient(
+    100deg,
+    #e0323c 0%,
+    #ff8b3d 22%,
+    #ffc531 42%,
+    #1f9e6b 62%,
+    #2f80cf 80%,
+    #7238dd 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 0.08em;
 }
 
 .landing__tagline {
   color: var(--text-dim);
-  font-size: 0.8rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .landing__intro {
@@ -145,26 +342,42 @@ h3 {
   margin: 0;
 }
 
+/*
+  Kartu: putih, bersudut besar, berbingkai tebal, dan sedikit terangkat.
+  Sudut 18 px dan bingkai 3 px adalah rentang yang dipakai UI mainan; sudut
+  6 px yang lama terbaca sebagai panel aplikasi.
+*/
 .card {
   background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  padding: 16px;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--lift-lg);
+  padding: 18px;
   text-align: left;
 }
 
 .card__title {
-  font-size: 0.8rem;
-  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--grape);
   margin-bottom: 12px;
 }
 
 .steps {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 22px;
   color: var(--text-dim);
-  line-height: 1.9;
-  font-size: 0.85rem;
+  line-height: 1.85;
+  font-size: 0.95rem;
+}
+
+/* Nomor langkah ikut berwarna supaya daftarnya terbaca sebagai bagian dari
+   permainan, bukan sebagai syarat & ketentuan. */
+.steps li::marker {
+  color: var(--bubblegum);
+  font-family: var(--font-display);
+  font-weight: 700;
 }
 
 .actions {
@@ -174,11 +387,13 @@ h3 {
 }
 
 .badge {
-  font-size: 0.65rem;
-  background: var(--border);
-  color: var(--text-dim);
-  padding: 3px 6px;
-  border-radius: 3px;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--lemon);
+  color: var(--text);
+  padding: 3px 8px;
+  border-radius: 999px;
 }
 
 /* Lawan buatan. Dibedakan dengan garis putus-putus, bukan hanya warna: ini game
@@ -186,8 +401,9 @@ h3 {
    aplikasi lain — dan mereka tetap harus bisa membedakan bot dari manusia. */
 .badge--bot {
   background: transparent;
-  border: 1px dashed var(--text-dim);
-  letter-spacing: 0.08em;
+  border: 2px dashed var(--grape);
+  color: var(--grape);
+  letter-spacing: 0.02em;
   margin-left: 6px;
 }
 
@@ -207,9 +423,14 @@ h3 {
 
 /* Tombol sekunder: hadir tapi tidak bersaing dengan tombol utama di lobby. */
 .btn--ghost {
-  background: transparent;
-  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  border: 2px solid var(--border);
   color: var(--text-dim);
+  box-shadow: none;
+}
+
+.btn--ghost:active {
+  transform: translateY(2px);
 }
 
 /* ------------------------------------------------------------------ loading */
@@ -278,9 +499,10 @@ h3 {
 .loading__step {
   margin: 0;
   color: var(--text-dim);
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 /* Pemain yang meminta gerakan dikurangi tidak butuh kilau yang berdenyut terus
@@ -298,20 +520,28 @@ h3 {
 /* ------------------------------------------------- multiplayer: entry & lobby */
 
 .pageTitle {
-  font-size: clamp(1.4rem, 7vw, 2rem);
-  color: var(--accent);
+  font-size: clamp(1.5rem, 7.5vw, 2.1rem);
+  color: var(--accent-ink);
   text-align: center;
 }
 
+/* Label kecil TETAP huruf besar — di ukuran ini ia berfungsi sebagai penanda,
+   bukan sebagai kalimat. Yang dibuang cuma spasi hurufnya yang lebar, karena
+   itulah yang membuat tampilan lama terbaca sebagai terminal. */
 .status {
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-dim);
 }
 
+/* Hijau `--success` (#1f9e6b) cuma 3,18:1 di krem pada ukuran 11,5 px —
+   cukup untuk objek besar, kurang untuk teks kecil. Ini versi yang lebih
+   gelap khusus untuk label mungil ini. */
 .status--online {
-  color: var(--success);
+  color: #147a51;
 }
 
 .status--offline {
@@ -363,7 +593,7 @@ h3 {
   color: var(--text-dim);
   font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.04em;
 }
 
 .entry__divider::before,
@@ -387,7 +617,7 @@ h3 {
 }
 
 .hint--ok {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* Pemain yang koneksinya putus tapi kursinya masih ditahan. Diredupkan, tidak
@@ -413,8 +643,8 @@ h3 {
 .lobby__codeValue {
   font-size: clamp(2rem, 13vw, 3rem);
   font-weight: 700;
-  letter-spacing: 0.25em;
-  color: var(--accent);
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
 }
 
 .playerList {
@@ -478,7 +708,7 @@ h3 {
 }
 
 .playerList__me {
-  color: var(--accent);
+  color: var(--accent-ink);
   font-weight: 700;
 }
 
@@ -525,7 +755,7 @@ h3 {
 }
 
 .ping--fair {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .ping--poor {
@@ -550,7 +780,7 @@ h3 {
 
 .ready {
   font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-dim);
   flex-shrink: 0;
@@ -595,8 +825,8 @@ h3 {
 
 .chip--active {
   background: var(--accent);
-  border-color: var(--accent);
-  color: #0f0e17;
+  border-color: var(--border-strong);
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -792,8 +1022,8 @@ h3 {
 }
 
 .badge--chaos {
-  background: var(--accent);
-  color: #0f0e17;
+  background: var(--bubblegum);
+  color: var(--text-on-deep);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -811,9 +1041,11 @@ h3 {
 }
 
 .hud__label {
-  font-size: 0.65rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-dim);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -839,7 +1071,7 @@ h3 {
 }
 
 .stat__value--combo {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .stat__value--danger {
@@ -871,9 +1103,22 @@ h3 {
   width: min(100%, calc(100dvh - 330px));
   margin: 0 auto;
   aspect-ratio: 1;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 6px;
+  /*
+    Papannya SENGAJA tetap berlatar dalam, di tengah halaman yang terang.
+
+    Bukan sisa tema gelap yang lupa diganti: enam warna pixel game ini ditala
+    untuk latar gelap, dan di latar terang kuning jatuh ke 1,25:1 dan emas ke
+    1,40:1 — pixelnya nyaris lenyap. Yang dilakukan di sini justru sebaliknya,
+    papannya dibingkai tebal putih dengan sudut besar supaya ia terbaca
+    sebagai LAYAR MAINAN yang ditempel di halaman, bukan sebagai lubang gelap
+    di tengahnya.
+  */
+  background: var(--board);
+  border: 5px solid var(--board-frame);
+  border-radius: var(--radius);
+  box-shadow:
+    0 0 0 3px var(--border-strong),
+    var(--lift-lg);
   overflow: hidden;
   /* Tap di papan tidak boleh memicu scroll atau zoom. */
   touch-action: none;
@@ -884,7 +1129,25 @@ h3 {
   display: block;
 }
 
+/*
+  Segala sesuatu yang duduk DI ATAS PAPAN mewarisi warna terang, bukan warna
+  halaman.
+
+  Ini jebakan terbesar dari tema campuran seperti ini: halamannya terang, tapi
+  papannya dalam, dan komponen yang sama bisa muncul di keduanya. Overlay
+  "tap untuk mulai", tutorial, dan layar hasil semuanya menempel di papan —
+  memakai `--text-dim` (#6a5f96) di atas nila #2b1b53 menghasilkan 1,7:1 dan
+  praktis tidak terbaca. Variabel di bawah ini menimpanya untuk seluruh isi
+  overlay sekaligus, jadi komponen baru yang ditaruh di papan ikut benar tanpa
+  perlu diingat.
+*/
 .overlay {
+  --text: #ffffff;
+  --text-dim: #cfc4f0;
+  --border: rgba(255, 255, 255, 0.3);
+  --surface: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.85);
+  color: var(--text);
   position: absolute;
   inset: 0;
   display: flex;
@@ -894,13 +1157,15 @@ h3 {
   gap: 14px;
   padding: 20px;
   text-align: center;
-  background: rgba(15, 14, 23, 0.9);
+  /* Warnanya mengikuti papan, supaya tidak ada lompatan warna saat muncul. */
+  background: rgba(43, 27, 83, 0.92);
   backdrop-filter: blur(2px);
 }
 
 .overlay__title {
-  font-size: clamp(1.3rem, 7vw, 2rem);
-  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 7.5vw, 2.1rem);
+  color: var(--lemon);
 }
 
 .overlay__hint {
@@ -921,17 +1186,19 @@ h3 {
    saat dibandingkan antar ronde — itu justru kegunaannya. */
 .overlay__time {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.05em;
-  color: var(--accent);
+  color: var(--lemon);
 }
 
 .overlay__record {
-  color: var(--success);
+  /* Hijau tema terang terlalu gelap di atas papan; ini versi cerahnya. */
+  color: #7ee6b0;
   font-size: 0.8rem;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -1002,7 +1269,7 @@ h3 {
 .lives {
   color: var(--success);
   font-size: 0.7rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   /* Lebar dikunci supaya baris skor tidak bergeser tiap nyawa berubah —
      leaderboard yang melompat-lompat saat match berjalan itu mengganggu. */
   min-width: 3.2em;
@@ -1056,7 +1323,7 @@ h3 {
 .account__score {
   color: var(--text-dim);
   font-size: 0.7rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -1101,7 +1368,7 @@ h3 {
 }
 
 .leaderboard__row--top1 .leaderboard__rank {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .leaderboard__name {
@@ -1179,7 +1446,7 @@ h3 {
 }
 
 .chat__row--me .chat__who {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* Pesan panjang tanpa spasi (tempelan URL) harus dipotong, bukan melebarkan
@@ -1208,9 +1475,14 @@ h3 {
 }
 
 .tutorial__badge {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  /* Tetap oranye cerah, BUKAN `--accent-ink`: kartu tutorial menempel di
+     papan yang berlatar dalam, dan di sana justru versi cerahnya yang
+     terbaca. */
   color: var(--accent);
 }
 
@@ -1255,7 +1527,7 @@ h3 {
    terbaca dalam sekejap sambil mata tetap di papan. */
 .hud__stroop {
   font-size: 1.35rem;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 /* Tanda "+" antara dua kata memakai warna teks biasa, bukan warna tinta salah
@@ -1287,16 +1559,19 @@ h3 {
 }
 
 .levelBar__track {
-  height: 8px;
+  height: 12px;
   border-radius: 999px;
-  background: var(--surface-raised);
+  /* Bingkai tipis supaya lintasannya tetap terlihat di halaman krem — tanpa
+     itu, bar kosong dan halaman kosong terlihat sama persis. */
+  border: 2px solid var(--border);
+  background: var(--surface);
   overflow: hidden;
 }
 
 .levelBar__fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--lemon), var(--accent));
   /* Transisi pendek supaya bar tidak tersendat di setiap klik, tapi tetap
      terbaca sebagai gerakan maju. Di multiplayer tick datang tiap 250 ms, jadi
      durasi ini menutup jeda antar-tick tanpa terasa lamban. */
@@ -1377,8 +1652,11 @@ h3 {
 }
 
 .about__link {
-  color: var(--accent);
+  color: var(--accent-ink);
   font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
   text-decoration: none;
   /* Sasaran sentuh tetap nyaman di HP walau teksnya pendek. */
   padding: 0.2rem 0;
@@ -1413,11 +1691,60 @@ h3 {
   gap: 0.2rem;
 }
 
+/*
+  Lintasannya digambar sendiri, tidak diserahkan ke browser.
+
+  `accent-color` saja hanya mewarnai bagian yang terisi; sisanya memakai abu
+  gelap bawaan browser, dan di halaman krem itu terbaca sebagai batang hitam
+  yang tidak berasal dari mana pun. Di sini lintasannya dibuat sewarna kartu
+  dengan bingkai tipis, dan tombol gesernya bulat besar supaya nyaman dijempol.
+*/
 .sound__volume input[type='range'] {
   width: 100%;
-  accent-color: var(--accent);
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
   /* Sasaran sentuh yang nyaman di HP; default browser terlalu tipis untuk jempol. */
   height: 1.75rem;
+  cursor: pointer;
+}
+
+.sound__volume input[type='range']::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+}
+
+.sound__volume input[type='range']::-moz-range-track {
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+}
+
+.sound__volume input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--border-strong);
+}
+
+.sound__volume input[type='range']::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--border-strong);
+}
+
+.sound__volume input[type='range']:focus-visible {
+  outline: 3px solid var(--grape);
+  outline-offset: 2px;
 }
 
 .sound__volume input[type='range']:disabled {
@@ -1442,7 +1769,7 @@ h3 {
   position: absolute;
   inset: 0;
   border: none;
-  background: rgba(15, 14, 23, 0.82);
+  background: rgba(53, 41, 107, 0.55);
   cursor: pointer;
 }
 
@@ -1453,8 +1780,9 @@ h3 {
   gap: 0.75rem;
   width: min(22rem, 100%);
   padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--lift-lg);
   background: var(--surface);
   text-align: center;
 }

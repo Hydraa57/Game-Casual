@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(HERE, '..', 'public');
 
-const BACKGROUND = [0x1c, 0x1b, 0x2a];
+const BACKGROUND = [0x2b, 0x1b, 0x53];
 const SQUARES = [
   [0xe4, 0x3b, 0x44],
   [0x4d, 0x9b, 0xe6],
