@@ -39,8 +39,13 @@ export function LandingMenu() {
           </Link>
         )}
 
-        {/* Paling bawah dan bergaya kecil: ini bukan tujuan utama siapa pun yang
-            membuka game, tapi harus ada dan mudah ditemukan. */}
+        {/* Dua tautan terakhir bergaya kecil: keduanya bukan tujuan utama siapa
+            pun yang membuka game, tapi harus ada dan mudah ditemukan.
+            Pengaturan naik satu tingkat sejak kontrol bunyi dikeluarkan dari
+            layar main — sekarang inilah jalan utamanya. */}
+        <Link className="btn btn--lemon btn--block" href="/settings">
+          {t('settings')}
+        </Link>
         <Link className="btn btn--small btn--block" href="/about">
           {t('about')}
         </Link>

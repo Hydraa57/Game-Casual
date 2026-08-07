@@ -25,10 +25,10 @@
     "playSolo": "Main Solo",
     "playMultiplayer": "Main Bareng Teman",
     "comingSoon": "segera",
-    "switchLanguage": "English",
     "leaderboard": "Papan Skor",
     "profile": "Profil",
-    "about": "Tentang & Versi"
+    "about": "Tentang & Versi",
+    "settings": "Pengaturan"
   },
   "solo": {
     "title": "Solo",
@@ -273,5 +273,33 @@
     "exitFullscreen": "Keluar layar penuh",
     "cancel": "Batal",
     "dismiss": "Tutup dialog"
+  },
+  "settings": {
+    "title": "Pengaturan",
+    "back": "Kembali",
+    "language": "Bahasa",
+    "sound": "Suara",
+    "soundHint": "Berlaku untuk solo maupun main bareng teman. Saat bermain, pengaturan ini ada di layar jeda."
+  },
+  "install": {
+    "title": "Pasang jadi aplikasi",
+    "why": "Setelah dipasang, gamenya terbuka layar penuh tanpa address bar — papannya jadi lebih besar dan tidak ada yang kepotong.",
+    "installNow": "Pasang sekarang",
+    "alreadyInstalled": "Sudah terpasang. Kamu sedang membukanya sebagai aplikasi.",
+    "android": {
+      "title": "Android (Chrome)",
+      "step1": "Ketuk tombol tiga titik di pojok kanan atas.",
+      "step2": "Pilih \"Instal aplikasi\" atau \"Tambahkan ke Layar utama\".",
+      "step3": "Ikonnya muncul di layar utama. Buka dari situ.",
+      "sheetLabel": "Instal aplikasi"
+    },
+    "ios": {
+      "title": "iPhone & iPad (Safari)",
+      "safariOnly": "Di iPhone hanya Safari yang bisa memasang. Kalau kamu membuka ini dari Chrome, buka ulang di Safari dulu.",
+      "step1": "Ketuk tombol Bagikan di bawah layar.",
+      "step2": "Gulir ke bawah, pilih \"Tambah ke Layar Utama\".",
+      "step3": "Ikonnya muncul di layar utama. Buka dari situ.",
+      "sheetLabel": "Tambah ke Layar Utama"
+    }
   }
 }

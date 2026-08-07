@@ -2018,3 +2018,326 @@ h3 {
   border-color: var(--danger);
   color: var(--text);
 }
+
+/* ------------------------------------------- pengaturan & panduan pasang */
+
+.settings__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings__locales {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/*
+  Panduan pasang: setiap langkah DIPERAGAKAN, bukan cuma ditulis.
+
+  Alasannya bukan hiasan. Di iPhone tidak ada API pemasangan sama sekali —
+  Safari tidak memancarkan `beforeinstallprompt`, jadi tombol "pasang" mustahil
+  dibuat. Satu-satunya yang bisa dibantu adalah petunjuknya, dan petunjuk
+  berupa kalimat ("ketuk tombol Bagikan") gampang salah diikuti oleh orang yang
+  belum tahu bentuk tombolnya. Gambar kecil yang menunjukkan LETAK dan BENTUK
+  tombolnya menutup celah itu.
+
+  Semuanya digambar dengan elemen biasa, tanpa satu berkas gambar pun: halaman
+  ini justru dibuka oleh pemain yang koneksinya pas-pasan.
+*/
+.install__platform {
+  margin-top: 16px;
+}
+
+.install__platformTitle {
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.install__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.install__step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Bingkai HP mini. */
+.install__phone {
+  position: relative;
+  flex-shrink: 0;
+  width: 86px;
+  height: 112px;
+  border: 3px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--board);
+  overflow: hidden;
+}
+
+.install__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.install__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--grape);
+  color: var(--text-on-deep);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* --- isi layar HP mini --- */
+
+.install__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  background: var(--surface);
+}
+
+.install__bar--top {
+  top: 0;
+}
+
+.install__bar--bottom {
+  bottom: 0;
+}
+
+.install__url {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.install__menu,
+.install__share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.install__share {
+  border: 1.5px solid var(--text);
+  border-radius: 3px;
+}
+
+.install__shareArrow {
+  font-size: 0.6rem;
+}
+
+/*
+  Denyut pada bagian yang harus ditekan. Ini inti dari "peragaan": tanpa
+  penanda yang bergerak, tiga gambar HP yang mirip satu sama lain justru
+  menambah kebingungan alih-alih menguranginya.
+*/
+.install__tapTarget {
+  animation: installPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes installPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 139, 61, 0.9);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 139, 61, 0);
+  }
+}
+
+/* Jari yang mengetuk. */
+.install__finger {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  border: 2px solid var(--surface);
+  animation: installTap 1.8s ease-in-out infinite;
+}
+
+.install__finger--topRight {
+  top: 16px;
+  right: 6px;
+}
+
+.install__finger--bottomLeft {
+  bottom: 16px;
+  left: 6px;
+}
+
+.install__finger--sheet {
+  top: 44px;
+  left: 26px;
+}
+
+@keyframes installTap {
+  0%,
+  55%,
+  100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  70% {
+    transform: scale(0.7);
+    opacity: 1;
+  }
+}
+
+/* Menu berbagi / menu browser yang menyembul dari bawah. */
+.install__sheet {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 8px;
+  background: var(--surface);
+  animation: installSlide 1.8s ease-out infinite;
+}
+
+@keyframes installSlide {
+  0% {
+    transform: translateY(60%);
+    opacity: 0;
+  }
+  25%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.install__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: var(--border);
+  font-size: 0.38rem;
+  color: transparent;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.install__row--highlight {
+  background: var(--lemon);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.install__plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--text);
+  border-radius: 2px;
+  font-size: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Layar utama dengan ikon yang baru muncul. */
+.install__home {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.install__homeLabel {
+  font-size: 0.42rem;
+  color: var(--text-on-deep);
+  font-family: var(--font-display);
+}
+
+.install__icon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 22px;
+  height: 22px;
+  padding: 2px;
+  border-radius: 5px;
+  background: var(--board);
+  border: 1.5px solid var(--surface);
+  flex-shrink: 0;
+}
+
+.install__icon i {
+  border-radius: 1px;
+}
+
+.install__icon--pop {
+  width: 30px;
+  height: 30px;
+  animation: installPop 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+@keyframes installPop {
+  0% {
+    transform: scale(0);
+  }
+  35%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+/*
+  Pemain yang meminta gerakan dikurangi tetap harus bisa MEMBACA panduannya.
+  Yang dimatikan hanya gerakannya; letak dan sorotan warnanya tetap ada, jadi
+  gambarnya tidak kehilangan gunanya sama sekali.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .install__tapTarget,
+  .install__finger,
+  .install__sheet,
+  .install__icon--pop {
+    animation: none;
+  }
+
+  .install__finger {
+    opacity: 0.8;
+  }
+}

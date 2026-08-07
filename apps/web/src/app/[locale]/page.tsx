@@ -2,18 +2,23 @@ import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { LandingMenu } from '@/components/LandingMenu';
 import { LoadingGate } from '@/components/LoadingGate';
-import { Link } from '@/i18n/navigation';
-import type { Locale } from '@/i18n/routing';
 
 export default async function LandingPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <Landing locale={locale as Locale} />;
+  return <Landing />;
 }
 
-function Landing({ locale }: { locale: Locale }) {
+/**
+ * Halaman awal.
+ *
+ * Tautan "ganti bahasa" yang dulu menempel di dasar halaman sudah dipindahkan
+ * ke menu Pengaturan: sejak kontrol bunyi dikeluarkan dari layar main, bahasa
+ * dan suara berada di satu tempat, dan tautan yang tersisa di sini cuma
+ * mengulanginya di tempat yang lebih sulit ditemukan.
+ */
+function Landing() {
   const t = useTranslations('landing');
-  const otherLocale: Locale = locale === 'id' ? 'en' : 'id';
 
   return (
     // Aset gamenya diunduh DULU, menunya dibuka setelahnya.
@@ -101,10 +106,6 @@ function Landing({ locale }: { locale: Locale }) {
         </section>
 
         <LandingMenu />
-
-        <Link className="btn btn--small" href="/" locale={otherLocale}>
-          {t('switchLanguage')}
-        </Link>
       </main>
     </LoadingGate>
   );

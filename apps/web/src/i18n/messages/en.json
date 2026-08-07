@@ -25,10 +25,10 @@
     "playSolo": "Play Solo",
     "playMultiplayer": "Play With Friends",
     "comingSoon": "soon",
-    "switchLanguage": "Bahasa Indonesia",
     "leaderboard": "Leaderboard",
     "profile": "Profile",
-    "about": "About & Version"
+    "about": "About & Version",
+    "settings": "Settings"
   },
   "solo": {
     "title": "Solo",
@@ -273,5 +273,33 @@
     "exitFullscreen": "Exit fullscreen",
     "cancel": "Cancel",
     "dismiss": "Dismiss dialog"
+  },
+  "settings": {
+    "title": "Settings",
+    "back": "Back",
+    "language": "Language",
+    "sound": "Sound",
+    "soundHint": "Applies to both solo and multiplayer. While playing, these controls live on the pause screen."
+  },
+  "install": {
+    "title": "Install as an app",
+    "why": "Once installed the game opens fullscreen with no address bar — the board gets bigger and nothing gets cut off.",
+    "installNow": "Install now",
+    "alreadyInstalled": "Already installed. You are running it as an app right now.",
+    "android": {
+      "title": "Android (Chrome)",
+      "step1": "Tap the three-dot menu in the top right.",
+      "step2": "Choose \"Install app\" or \"Add to Home screen\".",
+      "step3": "The icon appears on your home screen. Open it from there.",
+      "sheetLabel": "Install app"
+    },
+    "ios": {
+      "title": "iPhone & iPad (Safari)",
+      "safariOnly": "On iPhone only Safari can install. If you opened this in Chrome, reopen it in Safari first.",
+      "step1": "Tap the Share button at the bottom of the screen.",
+      "step2": "Scroll down and choose \"Add to Home Screen\".",
+      "step3": "The icon appears on your home screen. Open it from there.",
+      "sheetLabel": "Add to Home Screen"
+    }
   }
 }
