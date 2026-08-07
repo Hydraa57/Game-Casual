@@ -207,14 +207,6 @@ h3 {
   gap: 10px;
 }
 
-/* Tombol yang isinya cuma satu ikon: dibuat persegi supaya tidak melebar
-   mengikuti padding teks yang tidak ada. */
-.btn--icon {
-  min-width: 44px;
-  padding: 8px;
-  font-size: 1.1rem;
-}
-
 /*
   Halaman main dikunci setinggi layar.
   ------------------------------------------------------------------------
@@ -242,8 +234,26 @@ h3 {
   gap: 10px;
 }
 
-.shell--play > *:not(.boardArea) {
+.shell--play > *:not(.boardArea):not(.match) {
   flex-shrink: 0;
+}
+
+/*
+  Multiplayer membungkus seluruh isinya dalam `.match`, jadi papannya adalah
+  CUCU dari shell, bukan anak langsung seperti di solo.
+
+  Tanpa aturan ini rantai tingginya putus di situ: `.boardArea` tidak punya
+  tinggi yang pasti, `container-type: size` menghasilkan nol, dan papannya
+  runtuh jadi 10x10 — hanya setebal bingkainya. Solo tetap benar karena
+  papannya anak langsung, jadi kerusakannya cuma terjadi di satu mode dan
+  paling mudah lolos tanpa ketahuan.
+*/
+.shell--play .match {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .boardArea {
@@ -251,9 +261,15 @@ h3 {
   /* Tanpa ini, item flex menolak menyusut lebih kecil dari isinya dan seluruh
      perhitungan di atas tidak pernah berlaku. */
   min-height: 0;
+  /* Batas bawah supaya papan tidak pernah menyusut jadi tidak bisa dimainkan
+     di layar yang sangat pendek; di titik itu halamannya boleh di-scroll. */
+  min-height: 236px;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Menjadikan kotak ini acuan ukuran, supaya papan di dalamnya bisa memakai
+     LEBAR dan TINGGI-nya sekaligus dalam satu perhitungan. Lihat di bawah. */
+  container-type: size;
 }
 
 /* ------------------------------------------------------------------ button */
@@ -366,6 +382,102 @@ h3 {
   border-color: var(--border-strong);
   /* Dipatok, dengan alasan yang sama seperti `.btn--primary`. */
   color: #35296b;
+}
+
+/* Tombol yang isinya cuma satu ikon: dibuat persegi supaya tidak melebar
+   mengikuti padding teks yang tidak ada. */
+.btn--icon {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px;
+}
+
+/*
+  Tombol layar penuh dibuat MENYALA, bukan senada dengan tombol lain.
+
+  Keluhan pemain: ia tidak langsung terbaca sebagai tombol layar penuh.
+  Dua hal yang diperbaiki sekaligus — ikonnya diganti bentuk empat sudut yang
+  memang dipakai pemutar video di mana-mana (lihat FullscreenButton.tsx), dan
+  warnanya dibedakan supaya ia terbaca sebagai KONTROL, bukan sebagai hiasan
+  di pojok. Kuning dipilih karena ia satu-satunya warna terang di topbar yang
+  isinya putih semua.
+*/
+.btn--fs {
+  background: var(--lemon);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/*
+  Catatan urutan: blok ini WAJIB berada setelah `.btn`.
+
+  Versi pertama menaruhnya di bagian tata letak, jauh di atas `.btn` — dan
+  karena spesifisitas keduanya sama, `.btn` yang datang belakangan menimpa
+  latarnya. Tombolnya tetap putih seperti tombol lain, persis masalah yang
+  sedang diperbaiki, dan tidak ada error apa pun yang menandainya.
+*/
+
+.fs {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/*
+  Label yang muncul sendiri beberapa kali pertama, lalu pergi selamanya.
+
+  Ikon sebagus apa pun tetap harus dipelajari sekali; label permanen bukan
+  pilihan karena topbar di layar 360 px sudah penuh. Jadi labelnya menumpang
+  di atas isi halaman (`position: absolute`) alih-alih ikut mendorong tata
+  letak — kalau ia memakan ruang, ia akan menggeser papan setiap kali muncul.
+*/
+.fs__hint {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  padding: 6px 10px;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--lemon);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--lift);
+  animation: fsHint 260ms ease-out both;
+}
+
+/* Ekor kecil yang menunjuk ke tombolnya, supaya jelas label ini milik siapa. */
+.fs__hint::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  right: 16px;
+  width: 10px;
+  height: 10px;
+  background: var(--lemon);
+  border-left: 2px solid var(--border-strong);
+  border-top: 2px solid var(--border-strong);
+  transform: rotate(45deg);
+}
+
+@keyframes fsHint {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs__hint {
+    animation: none;
+  }
 }
 
 .btn--block {
@@ -1286,9 +1398,6 @@ h3 {
   width: min(100%, calc(100dvh - 330px));
   margin: 0 auto;
   aspect-ratio: 1;
-  /* Batas bawah supaya papan tidak pernah menyusut jadi tidak bisa dimainkan
-     di layar yang sangat pendek; di titik itu halamannya boleh di-scroll. */
-  min-height: 220px;
   /*
     Papannya SENGAJA tetap berlatar dalam, di tengah halaman yang terang.
 
@@ -1321,21 +1430,54 @@ h3 {
   100%/100% di sini aman untuk rasio aspeknya.
 */
 /*
-  Di dalam pembungkus yang lentur, papan diukur dari TINGGI yang tersedia dan
-  lebarnya mengikuti rasio 1:1 — kebalikan dari aturan di atas. `max-width`
-  yang menjaga agar di layar pendek-dan-lebar papannya tidak melebar keluar.
+  Papan harus PERSEGI, selalu.
+
+  Percobaan pertama memakai `height: 100%` + `aspect-ratio: 1` + `max-width:
+  100%`, dan itu menghasilkan papan yang ketarik di hampir semua ukuran HP —
+  di 390x844 kotaknya jadi 354x482. Sebabnya: `height` yang ditulis eksplisit
+  menang, `max-width` memotong lebarnya, dan `aspect-ratio` cuma bisa mengalah.
+  Ketiganya benar sendiri-sendiri tapi saling bertabrakan.
+
+  Yang benar adalah menghitung SATU angka — sisi terpendek dari ruang yang
+  tersedia — lalu membiarkan rasio 1:1 mengurus sisanya. Satuan container query
+  (`cqw`/`cqh`) yang membuatnya bisa ditulis dalam satu baris, karena keduanya
+  merujuk ke kotak pembungkus yang sama.
 */
 .boardArea .board {
-  width: auto;
-  height: 100%;
+  /* Cadangan untuk browser tanpa satuan container query. */
+  width: min(100%, calc(100dvh - 330px));
+  height: auto;
   max-width: 100%;
-  max-height: 100%;
+  max-height: none;
+  min-height: 0;
+}
+
+@supports (width: 1cqw) {
+  .boardArea .board {
+    width: min(100cqw, 100cqh);
+  }
+}
+
+/*
+  Kotak tempat Phaser menggambar: persis sebesar area isi papan, tanpa bingkai.
+
+  Phaser mengukur elemen induknya lewat kotak-LUAR, termasuk bingkai 5 px —
+  jadi kanvasnya dibuat selebar bingkai luar lalu dipusatkan dengan margin yang
+  dihitung dari ukuran itu. Hasilnya kanvas bergeser 5 px ke kanan: ada celah
+  kosong di kiri, dan kolom paling kanan papan tergunting `overflow: hidden`.
+
+  Percobaan sebelumnya memaksa ukurannya lewat `width/height: 100% !important`.
+  Itu membetulkan lebarnya tapi tidak posisinya — margin pemusatannya sudah
+  terlanjur salah. Memberi Phaser kotak yang sudah benar sejak awal jauh lebih
+  sederhana daripada mengoreksi hasil hitungannya.
+*/
+.board__canvas {
+  position: absolute;
+  inset: 0;
 }
 
 .board canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
 }
 
 /*

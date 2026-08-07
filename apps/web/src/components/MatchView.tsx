@@ -463,7 +463,18 @@ export function MatchView({
           bukan hasil pengurangan angka tetap. Lihat catatannya di
           globals.css. */}
       <div className="boardArea">
-        <div className="board" ref={boardRef}>
+        <div className="board">
+          {/*
+            Phaser diberi kotaknya SENDIRI, bukan `.board` yang berbingkai.
+
+            Phaser mengukur elemen induknya lewat kotak-luar, termasuk bingkai
+            5 px — jadi kanvasnya dibuat selebar bingkai luar lalu dipusatkan
+            dengan margin yang dihitung dari ukuran itu. Hasilnya kanvas
+            bergeser 5 px ke kanan: ada celah kosong di kiri dan kolom paling
+            kanan papan tergunting. Kotak dalam ini persis sebesar area isi,
+            jadi Phaser mengukur yang benar tanpa perlu dipaksa lewat CSS.
+          */}
+          <div className="board__canvas" ref={boardRef} />
           {countdown !== null && (
             <div className="overlay">
               <div className="overlay__score">{countdown}</div>
