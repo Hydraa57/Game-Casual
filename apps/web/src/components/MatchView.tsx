@@ -459,88 +459,98 @@ export function MatchView({
         />
       )}
 
-      <div className="board" ref={boardRef}>
-        {countdown !== null && (
-          <div className="overlay">
-            <div className="overlay__score">{countdown}</div>
-            <p className="overlay__hint">{t('getReady')}</p>
-          </div>
-        )}
+      {/* Pembungkus yang lentur: papan mengambil SISA tinggi layar,
+          bukan hasil pengurangan angka tetap. Lihat catatannya di
+          globals.css. */}
+      <div className="boardArea">
+        <div className="board" ref={boardRef}>
+          {countdown !== null && (
+            <div className="overlay">
+              <div className="overlay__score">{countdown}</div>
+              <p className="overlay__hint">{t('getReady')}</p>
+            </div>
+          )}
 
-        {/* Overlay beku menutupi papan dengan sengaja: selain memberi tahu,
-            ia juga mencegah pemain terus menggeprek sel yang tidak akan
-            direspons server. */}
-        {/* Tereliminasi: papannya tetap terlihat supaya masih seru ditonton,
-            tapi tidak ada hitungan mundur — dia tidak akan kembali. */}
-        {eliminated && result === null && (
-          <div className="overlay">
-            <h2 className="overlay__title">{t('eliminated')}</h2>
-            <p className="overlay__hint">{t('eliminatedHint')}</p>
-          </div>
-        )}
+          {/* Overlay beku menutupi papan dengan sengaja: selain memberi tahu,
+              ia juga mencegah pemain terus menggeprek sel yang tidak akan
+              direspons server. */}
+          {/* Tereliminasi: papannya tetap terlihat supaya masih seru ditonton,
+              tapi tidak ada hitungan mundur — dia tidak akan kembali. */}
+          {eliminated && result === null && (
+            <div className="overlay">
+              <h2 className="overlay__title">{t('eliminated')}</h2>
+              <p className="overlay__hint">{t('eliminatedHint')}</p>
+            </div>
+          )}
 
-        {frozenSeconds !== null && result === null && (
-          <div className="overlay overlay--flash">
-            <h2 className="overlay__title">{t('knockedOut')}</h2>
-            <div className="overlay__score">{frozenSeconds}</div>
-            <p className="overlay__hint">{t('knockedOutHint')}</p>
-          </div>
-        )}
+          {frozenSeconds !== null && result === null && (
+            <div className="overlay overlay--flash">
+              <h2 className="overlay__title">{t('knockedOut')}</h2>
+              <div className="overlay__score">{frozenSeconds}</div>
+              <p className="overlay__hint">{t('knockedOutHint')}</p>
+            </div>
+          )}
 
-        {suddenDeath && result === null && (
-          <div className="overlay overlay--flash">
-            <h2 className="overlay__title">{t('suddenDeath')}</h2>
-            <p className="overlay__hint">{t('suddenDeathHint')}</p>
-          </div>
-        )}
+          {suddenDeath && result === null && (
+            <div className="overlay overlay--flash">
+              <h2 className="overlay__title">{t('suddenDeath')}</h2>
+              <p className="overlay__hint">{t('suddenDeathHint')}</p>
+            </div>
+          )}
 
-        {result !== null && (
-          <div className="overlay">
-            <h2 className="overlay__title">
-              {result.ranking[0]?.playerId === playerId ? t('youWin') : t('matchOver')}
-            </h2>
-            {/* Catatan waktunya, yang membuat match terasa seperti balapan dan
-                bukan sekadar daftar angka. Disembunyikan saat match habis
-                waktu: di situ angkanya cuma mengulang batas waktu room. */}
-            {result.reason !== 'timeUp' && (
-              <p className="overlay__time">
-                {t('finishedIn', { time: formatDuration(result.durationMs) })}
-              </p>
-            )}
-            <ol className="results">
-              {result.ranking.map((entry) => (
-                <li
-                  key={entry.playerId}
-                  className={entry.playerId === playerId ? 'results__me' : undefined}
-                >
-                  <span>
-                    {entry.rank}.{' '}
-                    <span className="avatarMark" aria-hidden="true">
-                      {AVATAR_GLYPH[entry.avatar]}
-                    </span>{' '}
-                    {entry.nickname}
-                  </span>
-                  <span>{entry.score}</span>
-                  <span className="results__detail">
-                    {Math.round(entry.accuracy * 100)}% · ×{entry.bestCombo}
-                    {entry.eliminated ? ` · ${t('eliminatedShort')}` : ''}
-                  </span>
-                </li>
-              ))}
-            </ol>
-            <button className="btn btn--primary" type="button" onClick={closeResult}>
-              {t('backToLobby')}
-            </button>
-          </div>
-        )}
+          {result !== null && (
+            <div className="overlay">
+              <h2 className="overlay__title">
+                {result.ranking[0]?.playerId === playerId ? t('youWin') : t('matchOver')}
+              </h2>
+              {/* Catatan waktunya, yang membuat match terasa seperti balapan dan
+                  bukan sekadar daftar angka. Disembunyikan saat match habis
+                  waktu: di situ angkanya cuma mengulang batas waktu room. */}
+              {result.reason !== 'timeUp' && (
+                <p className="overlay__time">
+                  {t('finishedIn', { time: formatDuration(result.durationMs) })}
+                </p>
+              )}
+              <ol className="results">
+                {result.ranking.map((entry) => (
+                  <li
+                    key={entry.playerId}
+                    className={entry.playerId === playerId ? 'results__me' : undefined}
+                  >
+                    <span>
+                      {entry.rank}.{' '}
+                      <span className="avatarMark" aria-hidden="true">
+                        {AVATAR_GLYPH[entry.avatar]}
+                      </span>{' '}
+                      {entry.nickname}
+                    </span>
+                    <span>{entry.score}</span>
+                    <span className="results__detail">
+                      {Math.round(entry.accuracy * 100)}% · ×{entry.bestCombo}
+                      {entry.eliminated ? ` · ${t('eliminatedShort')}` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              {/*
+                Pengaturan bunyi hanya di layar hasil, tidak menetap di bawah
+                papan. Multiplayer tidak punya jeda, jadi inilah satu-satunya
+                titik di dalam match ketika pemain memang sedang berhenti —
+                selebihnya diatur sekali dari menu Pengaturan di halaman awal.
+              */}
+              <SoundControls
+                muted={muted}
+                volume={volume}
+                onToggleMute={toggleMute}
+                onVolumeChange={changeVolume}
+              />
+              <button className="btn btn--primary" type="button" onClick={closeResult}>
+                {t('backToLobby')}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-
-      <SoundControls
-        muted={muted}
-        volume={volume}
-        onToggleMute={toggleMute}
-        onVolumeChange={changeVolume}
-      />
 
       <div className="controls">
         {/* Keluar room SELALU dikonfirmasi, tidak seperti solo yang hanya

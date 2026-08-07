@@ -15,6 +15,7 @@ import { markTutorialSeen, readTutorialSeen } from '@/lib/tutorialSeen';
 import { readMuted, writeMuted } from '@/lib/mute';
 import { Hud } from './Hud';
 import { ConfirmDialog } from './ConfirmDialog';
+import { FullscreenButton } from './FullscreenButton';
 import { SoundControls } from './SoundControls';
 import { TutorialCard } from './TutorialCard';
 
@@ -205,7 +206,10 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
   const canPause = snapshot.status === 'running' || snapshot.status === 'paused';
 
   return (
-    <main className="shell">
+    // `shell--play` mengunci halaman ini setinggi layar. Lihat catatannya di
+    // globals.css: halaman main yang bisa di-scroll bukan sekadar tidak rapi,
+    // ia menyembunyikan tombol di bawah papan tepat saat dibutuhkan.
+    <main className="shell shell--play">
       <div className="topbar">
         {/* Konfirmasi HANYA saat ronde sedang berlangsung. Menanyakannya di
             layar idle atau game over cuma menambah satu ketukan untuk tindakan
@@ -220,9 +224,12 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
             ← {t('back')}
           </Link>
         )}
-        <div>
-          <span className="hud__label">{t('highScore')}</span>
-          <div className="stat__value">{highScore}</div>
+        <div className="topbar__right">
+          <div>
+            <span className="hud__label">{t('highScore')}</span>
+            <div className="stat__value">{highScore}</div>
+          </div>
+          <FullscreenButton />
         </div>
       </div>
 
@@ -241,66 +248,86 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
         </div>
       )}
 
-      <div className="board" ref={boardRef}>
-        {snapshot.status === 'idle' && (
-          <div className="overlay">
-            <h2 className="overlay__title">{t('tapToStart')}</h2>
-            <p className="overlay__hint">{t('tapToStartHint')}</p>
-            <button className="btn btn--primary" type="button" onClick={start}>
-              {t('tapToStart')}
-            </button>
-          </div>
-        )}
-
-        {tutorial !== null && (
-          <TutorialCard topic={tutorial} level={snapshot.level} onDismiss={dismissTutorial} />
-        )}
-
-        {/* Overlay pause biasa disembunyikan saat kartu tutorial tampil: papan
-            memang sedang dibekukan, tapi yang harus dibaca pemain adalah
-            penjelasannya, bukan tombol "lanjut". */}
-        {tutorial === null && snapshot.status === 'paused' && (
-          <div className="overlay">
-            <h2 className="overlay__title">{t('paused')}</h2>
-            <button className="btn btn--primary" type="button" onClick={togglePause}>
-              {t('resume')}
-            </button>
-          </div>
-        )}
-
-        {snapshot.status === 'gameOver' && (
-          <div className="overlay">
-            <h2 className="overlay__title">{t('gameOver')}</h2>
-            <span className="hud__label">{t('finalScore')}</span>
-            <div className="overlay__score">{snapshot.score}</div>
-            {isNewRecord && <div className="overlay__record">★ {t('newRecord')}</div>}
-            <div className="overlay__detail">
-              <span>
-                {t('bestCombo')}: {snapshot.bestCombo}
-              </span>
-              <span>
-                {t('accuracy')}: {Math.round(snapshot.accuracy * 100)}%
-              </span>
-            </div>
-            {snapshot.canContinue && snapshot.checkpointLevel !== null ? (
-              <>
-                <button className="btn btn--primary" type="button" onClick={continueRound}>
-                  {t('continueFrom', { level: snapshot.checkpointLevel })}
-                  <span className="badge">
-                    {t('continuesLeft', { count: snapshot.continuesLeft })}
-                  </span>
-                </button>
-                <button className="btn btn--small" type="button" onClick={start}>
-                  {t('startOver')}
-                </button>
-              </>
-            ) : (
+      {/* Pembungkus yang lentur: papan mengambil SISA tinggi layar,
+          bukan hasil pengurangan angka tetap. Lihat catatannya di
+          globals.css. */}
+      <div className="boardArea">
+        <div className="board" ref={boardRef}>
+          {snapshot.status === 'idle' && (
+            <div className="overlay">
+              <h2 className="overlay__title">{t('tapToStart')}</h2>
+              <p className="overlay__hint">{t('tapToStartHint')}</p>
               <button className="btn btn--primary" type="button" onClick={start}>
-                {t('playAgain')}
+                {t('tapToStart')}
               </button>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+
+          {tutorial !== null && (
+            <TutorialCard topic={tutorial} level={snapshot.level} onDismiss={dismissTutorial} />
+          )}
+
+          {/* Overlay pause biasa disembunyikan saat kartu tutorial tampil: papan
+              memang sedang dibekukan, tapi yang harus dibaca pemain adalah
+              penjelasannya, bukan tombol "lanjut". */}
+          {tutorial === null && snapshot.status === 'paused' && (
+            <div className="overlay">
+              <h2 className="overlay__title">{t('paused')}</h2>
+              <button className="btn btn--primary" type="button" onClick={togglePause}>
+                {t('resume')}
+              </button>
+              {/*
+                Pengaturan bunyi tinggal DI SINI, tidak lagi menetap di bawah
+                papan. Dua alasan, dan yang kedua yang menentukan:
+
+                1. Ia memakan 65 px permanen dari layar yang sudah tidak cukup.
+                2. Ia tidak pernah dipakai saat sedang bermain. Yang menggeser
+                   volume adalah pemain yang sedang berhenti sejenak — dan di
+                   situlah sekarang ia berada.
+              */}
+              <SoundControls
+                muted={muted}
+                volume={volume}
+                onToggleMute={toggleMute}
+                onVolumeChange={changeVolume}
+              />
+            </div>
+          )}
+
+          {snapshot.status === 'gameOver' && (
+            <div className="overlay">
+              <h2 className="overlay__title">{t('gameOver')}</h2>
+              <span className="hud__label">{t('finalScore')}</span>
+              <div className="overlay__score">{snapshot.score}</div>
+              {isNewRecord && <div className="overlay__record">★ {t('newRecord')}</div>}
+              <div className="overlay__detail">
+                <span>
+                  {t('bestCombo')}: {snapshot.bestCombo}
+                </span>
+                <span>
+                  {t('accuracy')}: {Math.round(snapshot.accuracy * 100)}%
+                </span>
+              </div>
+              {snapshot.canContinue && snapshot.checkpointLevel !== null ? (
+                <>
+                  <button className="btn btn--primary" type="button" onClick={continueRound}>
+                    {t('continueFrom', { level: snapshot.checkpointLevel })}
+                    <span className="badge">
+                      {t('continuesLeft', { count: snapshot.continuesLeft })}
+                    </span>
+                  </button>
+                  <button className="btn btn--small" type="button" onClick={start}>
+                    {t('startOver')}
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn--primary" type="button" onClick={start}>
+                  {t('playAgain')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="controls">
@@ -308,13 +335,6 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
           {snapshot.status === 'paused' ? t('resume') : t('pause')}
         </button>
       </div>
-
-      <SoundControls
-        muted={muted}
-        volume={volume}
-        onToggleMute={toggleMute}
-        onVolumeChange={changeVolume}
-      />
 
       {confirmLeave && (
         <ConfirmDialog

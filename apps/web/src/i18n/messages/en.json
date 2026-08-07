@@ -269,6 +269,8 @@
     "rolePortfolio": "Portfolio"
   },
   "common": {
+    "enterFullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
     "cancel": "Cancel",
     "dismiss": "Dismiss dialog"
   }

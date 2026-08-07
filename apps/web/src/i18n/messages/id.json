@@ -269,6 +269,8 @@
     "rolePortfolio": "Portofolio"
   },
   "common": {
+    "enterFullscreen": "Layar penuh",
+    "exitFullscreen": "Keluar layar penuh",
     "cancel": "Batal",
     "dismiss": "Tutup dialog"
   }

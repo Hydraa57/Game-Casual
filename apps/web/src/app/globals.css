@@ -99,6 +99,14 @@
   */
   --font-display: var(--font-display-src), 'Trebuchet MS', 'Segoe UI', sans-serif;
   --font-body: var(--font-body-src), 'Segoe UI', system-ui, sans-serif;
+
+  /* --- jarak tepi --------------------------------------------------------- */
+  /* Dijadikan variabel supaya halaman main bisa MENGURANGINYA dari tinggi
+     layar. Versi pertama memakai `height: 100dvh` begitu saja dan halamannya
+     tetap 32 px lebih tinggi dari layar — persis sebesar padding atas+bawah
+     badan halaman, yang mudah terlewat karena tidak terlihat di mana pun. */
+  --pad-top: calc(14px + env(safe-area-inset-top));
+  --pad-bottom: calc(18px + env(safe-area-inset-bottom));
 }
 
 * {
@@ -132,8 +140,8 @@ body {
   /* Keempat sisi memakai safe-area karena viewport-nya `cover`: saat dipasang
      sebagai PWA, halaman membentang sampai ke belakang notch dan indikator
      home. Tanpa ini tombol paling atas/bawah bisa tidak bisa ditekan. */
-  padding: calc(14px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right))
-    calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
+  padding: var(--pad-top) calc(18px + env(safe-area-inset-right)) var(--pad-bottom)
+    calc(18px + env(safe-area-inset-left));
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -190,6 +198,62 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-shrink: 0;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Tombol yang isinya cuma satu ikon: dibuat persegi supaya tidak melebar
+   mengikuti padding teks yang tidak ada. */
+.btn--icon {
+  min-width: 44px;
+  padding: 8px;
+  font-size: 1.1rem;
+}
+
+/*
+  Halaman main dikunci setinggi layar.
+  ------------------------------------------------------------------------
+  Keluhan pemain: di HP, halaman mainnya bisa di-scroll, dan tombol di bawah
+  papan hilang dari pandangan justru saat dibutuhkan.
+
+  Diukur di 360x640 (HP dengan address bar browser masih tampil): halamannya
+  763 px, layarnya 640 px — kelebihan 123 px. Penyebabnya bukan satu elemen
+  besar, melainkan hasil penjumlahan: topbar 47 + HUD 205 + papan 310 +
+  tombol 48 + kontrol bunyi 49, plus jarak antar-blok.
+
+  Perbaikannya BUKAN mengecilkan papan lewat angka tetap. Versi lama memakai
+  `calc(100dvh - 330px)`, dan 330 px itu tebakan yang salah begitu isi
+  halamannya berubah sedikit saja. Sekarang papannya mengambil SISA tinggi
+  yang benar-benar ada, lewat flexbox — jadi ia otomatis benar di layar mana
+  pun tanpa ada angka yang harus dijaga tetap cocok.
+
+  `overflow: auto` dan bukan `hidden`: di layar yang sangat pendek papannya
+  akan menyentuh batas minimumnya, dan saat itu bisa di-scroll tetap jauh
+  lebih baik daripada tombol yang tidak bisa dijangkau sama sekali.
+*/
+.shell--play {
+  height: calc(100dvh - var(--pad-top) - var(--pad-bottom));
+  overflow: auto;
+  gap: 10px;
+}
+
+.shell--play > *:not(.boardArea) {
+  flex-shrink: 0;
+}
+
+.boardArea {
+  flex: 1 1 auto;
+  /* Tanpa ini, item flex menolak menyusut lebih kecil dari isinya dan seluruh
+     perhitungan di atas tidak pernah berlaku. */
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ------------------------------------------------------------------ button */
@@ -1222,6 +1286,9 @@ h3 {
   width: min(100%, calc(100dvh - 330px));
   margin: 0 auto;
   aspect-ratio: 1;
+  /* Batas bawah supaya papan tidak pernah menyusut jadi tidak bisa dimainkan
+     di layar yang sangat pendek; di titik itu halamannya boleh di-scroll. */
+  min-height: 220px;
   /*
     Papannya SENGAJA tetap berlatar dalam, di tengah halaman yang terang.
 
@@ -1253,6 +1320,18 @@ h3 {
   Papannya persegi dan bingkainya sama tebal di keempat sisi, jadi memaksanya
   100%/100% di sini aman untuk rasio aspeknya.
 */
+/*
+  Di dalam pembungkus yang lentur, papan diukur dari TINGGI yang tersedia dan
+  lebarnya mengikuti rasio 1:1 — kebalikan dari aturan di atas. `max-width`
+  yang menjaga agar di layar pendek-dan-lebar papannya tidak melebar keluar.
+*/
+.boardArea .board {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+
 .board canvas {
   display: block;
   width: 100% !important;
