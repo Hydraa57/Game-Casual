@@ -208,6 +208,22 @@ h3 {
 }
 
 /*
+  Semua tombol di topbar setinggi sama.
+
+  `.btn--small` berhenti di 40 px sementara tombol ikon 48 px, dan berdampingan
+  keduanya terlihat seperti dua ukuran yang tidak disengaja. 44 px dipilih
+  bukan sekadar jalan tengah: itu ukuran minimum sasaran sentuh yang nyaman
+  di HP, dan yang 40 px sebenarnya sudah di bawahnya.
+*/
+.topbar .btn {
+  min-height: 44px;
+}
+
+.topbar .btn--icon {
+  min-width: 44px;
+}
+
+/*
   Halaman main dikunci setinggi layar.
   ------------------------------------------------------------------------
   Keluhan pemain: di HP, halaman mainnya bisa di-scroll, dan tombol di bawah
@@ -228,10 +244,17 @@ h3 {
   akan menyentuh batas minimumnya, dan saat itu bisa di-scroll tetap jauh
   lebih baik daripada tombol yang tidak bisa dijangkau sama sekali.
 */
+/*
+  Jarak antar-blok dirapatkan dari 10 px ke 8 px.
+
+  Terdengar sepele, tapi di layar main setiap piksel yang tidak dipakai jarak
+  langsung menjadi papan yang lebih besar — dan papan adalah satu-satunya
+  bagian layar ini yang benar-benar dimainkan.
+*/
 .shell--play {
   height: calc(100dvh - var(--pad-top) - var(--pad-bottom));
   overflow: auto;
-  gap: 10px;
+  gap: 8px;
 }
 
 .shell--play > *:not(.boardArea):not(.match) {
@@ -267,10 +290,57 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
+  /*
+    Ruang untuk BAYANGAN papan, bukan hiasan.
+
+    Papan punya cincin gelap 3 px di luar bingkainya (`box-shadow` menyebar)
+    dan bayangan tebal 6 px di bawahnya. Keduanya jatuh DI LUAR kotak papan,
+    dan karena papannya selebar shell sementara `.shell--play` memakai
+    `overflow: auto`, cincin kiri-kanannya terpotong persis 3 px — terlihat
+    seperti bingkai yang tidak selesai digambar.
+
+    Padding di sini yang memberinya ruang. Karena kotak ini juga acuan ukuran
+    (`container-type: size`), satuan `cqw`/`cqh` di bawah menghitung dari
+    kotak ISI-nya — jadi papannya otomatis menyusut sebanyak padding ini dan
+    tidak ada angka yang perlu dicocokkan dua kali.
+  */
+  padding: 4px 4px 9px;
   /* Menjadikan kotak ini acuan ukuran, supaya papan di dalamnya bisa memakai
      LEBAR dan TINGGI-nya sekaligus dalam satu perhitungan. Lihat di bawah. */
   container-type: size;
 }
+
+/*
+  Papan menempel ke ATAS ruangnya, tidak melayang di tengah.
+
+  Papannya persegi dan hampir selalu dibatasi LEBAR layar, jadi sisa tinggi
+  yang tidak terpakai bisa mencapai 140 px. Dengan pemusatan, sisa itu terbelah
+  dua dan muncul sebagai rongga di atas DAN di bawah papan — tata letaknya
+  terbaca renggang tanpa ada yang mengisinya.
+
+  Ditempel ke atas, sisanya berkumpul jadi satu di bawah papan, tepat di
+  tempat tombol jeda berada. Itu susunan yang lumrah di HP: yang dilihat rapat
+  di atas, yang ditekan jempol di bawah.
+
+  Kenapa bukan dibuat setinggi isinya saja (`flex: 0 1 auto`): kotak ini juga
+  acuan `container-type: size`, dan tinggi yang mengikuti isi membuat
+  perhitungan `cqh` melingkar — papannya akan runtuh jadi nol.
+*/
+.boardArea {
+  align-items: flex-start;
+}
+
+/*
+  Sempat dicoba dan DIBATALKAN: melebarkan papan melewati jarak tepi halaman
+  lewat `margin-inline: -8px`. Papannya memang bertambah 16 px, tapi
+  `.shell--play` memakai `overflow: auto` dan memotong apa pun yang keluar dari
+  kotaknya — cincin gelap papan langsung terpotong 7 px lagi, persis keluhan
+  yang sedang diperbaiki. Papan yang lebih besar tidak sepadan dengan bingkai
+  yang tidak selesai.
+
+  Kalau papannya memang perlu lebih besar, tuas yang benar adalah jarak tepi
+  halaman (`--pad-*`), bukan menerobos keluar dari kotaknya.
+*/
 
 /* ------------------------------------------------------------------ button */
 
@@ -1282,7 +1352,7 @@ h3 {
 .hud {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .hud__target {
@@ -1324,9 +1394,9 @@ h3 {
 }
 
 .hud__swatch {
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
   border: 2px solid rgba(255, 255, 255, 0.35);
   display: grid;
   place-items: center;
@@ -1890,11 +1960,16 @@ h3 {
 
 /* ------------------------------------------------------------- bar level */
 
+/*
+  Marginnya dibuang. Bar ini duduk di dalam `.hud` yang sudah punya `gap`,
+  jadi margin 8 px atas-bawah itu jarak KEDUA di tempat yang sama — 16 px
+  terbuang tanpa satu pun alasan tata letak.
+*/
 .levelBar {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  margin: 0.5rem 0;
+  margin: 0;
 }
 
 .levelBar__head {
