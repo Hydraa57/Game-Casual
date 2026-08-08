@@ -93,10 +93,73 @@ export class Sfx {
     navigator.vibrate?.(25);
   }
 
+  /**
+   * Pixel emas: berkilau, dan jelas BUKAN sekadar klik benar yang lebih keras.
+   *
+   * Sebelumnya emas tidak punya bunyinya sendiri sama sekali — ia hanya
+   * memainkan `correct()` seperti pixel biasa, padahal nilainya lima kali
+   * lipat. Momen paling menguntungkan di seluruh permainan terdengar persis
+   * seperti momen yang paling biasa.
+   */
+  gold(): void {
+    this.tone(1046, 0.09, 'triangle', 0.1, 0);
+    this.tone(1318, 0.09, 'triangle', 0.1, 0.05);
+    this.tone(1568, 0.1, 'triangle', 0.11, 0.1);
+    this.tone(2093, 0.26, 'sine', 0.09, 0.15);
+  }
+
   gameOver(): void {
     this.tone(420, 0.14, 'square', 0.09, 0);
     this.tone(320, 0.14, 'square', 0.09, 0.14);
     this.tone(200, 0.3, 'square', 0.09, 0.28);
+  }
+
+  /**
+   * Nyawa habis di multiplayer — dibekukan, tapi belum keluar.
+   *
+   * Dibedakan dari `gameOver()`: yang ini turun lalu BERHENTI menggantung
+   * alih-alih jatuh sampai dasar, karena pemain memang akan kembali beberapa
+   * detik lagi. Bunyi yang terdengar final untuk keadaan yang tidak final
+   * membuat orang mengira rondenya sudah habis.
+   */
+  knockedOut(): void {
+    this.tone(392, 0.16, 'square', 0.1, 0);
+    this.tone(294, 0.3, 'square', 0.1, 0.14);
+    navigator.vibrate?.([60, 50, 60]);
+  }
+
+  /** Tereliminasi: jatuh sampai dasar, dan tidak ada yang menyusul. */
+  eliminated(): void {
+    this.tone(392, 0.14, 'sawtooth', 0.1, 0);
+    this.tone(294, 0.14, 'sawtooth', 0.1, 0.14);
+    this.tone(196, 0.16, 'sawtooth', 0.1, 0.28);
+    this.tone(131, 0.5, 'triangle', 0.11, 0.42);
+    navigator.vibrate?.([90, 60, 140]);
+  }
+
+  /**
+   * Match selesai. `won` menentukan arahnya, dan itu satu-satunya hal yang
+   * benar-benar ingin diketahui pemain di milidetik pertama layar hasil.
+   */
+  matchEnd(won: boolean): void {
+    if (won) {
+      // Fanfare naik, akor mayor — sama keluarga bunyinya dengan naik level,
+      // tapi lebih panjang dan lebih penuh supaya tidak tertukar.
+      this.tone(523, 0.12, 'square', 0.11, 0);
+      this.tone(659, 0.12, 'square', 0.11, 0.1);
+      this.tone(784, 0.12, 'square', 0.12, 0.2);
+      this.tone(1046, 0.5, 'square', 0.13, 0.3);
+      this.tone(659, 0.5, 'triangle', 0.08, 0.3);
+      this.tone(392, 0.55, 'triangle', 0.09, 0.3);
+      navigator.vibrate?.([40, 60, 40, 60, 90]);
+      return;
+    }
+    // Kalah: turun, tapi tetap hangat (segitiga, bukan gergaji). Ini game
+    // santai yang dimainkan bareng teman — kekalahan tidak perlu terdengar
+    // seperti hukuman.
+    this.tone(587, 0.16, 'triangle', 0.1, 0);
+    this.tone(494, 0.16, 'triangle', 0.1, 0.15);
+    this.tone(392, 0.45, 'triangle', 0.1, 0.3);
   }
 
   dispose(): void {

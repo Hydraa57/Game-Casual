@@ -22,6 +22,7 @@ import type {
   PixelSpawnedPayload,
   ScoreboardEntry,
   TargetChangedPayload,
+  TeamId,
   TeamScoreEntry,
   TickPayload,
 } from '@pixelmatrix/shared';
@@ -159,6 +160,23 @@ export function MatchView({
    */
   const lastLevelRef = useRef(0);
 
+  /**
+   * Keadaan beku/tereliminasi pada tick sebelumnya.
+   *
+   * Ref dan bukan state: nilainya hanya dipakai untuk membandingkan di dalam
+   * handler event, dan tidak ada satu pun bagian tampilan yang perlu digambar
+   * ulang karenanya — tampilannya sudah datang dari scoreboard.
+   */
+  const frozenRef = useRef(false);
+  const eliminatedRef = useRef(false);
+
+  /**
+   * Regu pemain ini, disimpan di ref supaya handler `game:ended` bisa
+   * membacanya tanpa ikut jadi dependency yang memasang ulang seluruh listener
+   * di tengah match.
+   */
+  const reguSayaRef = useRef<TeamId | null>(null);
+
   const avatarsRef = useRef(avatars);
   useEffect(() => {
     avatarsRef.current = avatars;
@@ -282,7 +300,26 @@ export function MatchView({
       scene()?.setTargets(payload.targetColors);
       scene()?.setChaos(payload.chaos);
       const mine = payload.scoreboard.find((entry) => entry.playerId === playerId);
-      scene()?.setFrozen(mine?.eliminated === true || (mine?.frozenMs ?? 0) > 0);
+      const beku = (mine?.frozenMs ?? 0) > 0;
+      const keluar = mine?.eliminated === true;
+      scene()?.setFrozen(keluar || beku);
+
+      /*
+        Bunyi KO dan eliminasi dipicu dari PERUBAHAN keadaan di tick, bukan dari
+        event `game:eliminated`.
+
+        Dua alasan, dan yang kedua yang menentukan: event itu hanya dikirim
+        untuk eliminasi (KO biasa tidak punya event sama sekali), dan sejak mode
+        beregu ada, yang membeku adalah SATU REGU — anggota yang tidak
+        menghabiskan nyawa terakhir tetap berhenti bisa mengetuk, dan papan yang
+        mendadak tidak merespons tanpa bunyi apa pun terbaca sebagai gamenya
+        rusak. Tick membawa keadaan yang sudah benar untuk keduanya.
+      */
+      if (beku && !frozenRef.current && !keluar) scene()?.knockedOut();
+      if (keluar && !eliminatedRef.current) scene()?.eliminated();
+      frozenRef.current = beku;
+      eliminatedRef.current = keluar;
+      reguSayaRef.current = mine?.team ?? null;
     };
 
     const onSpawned = ({ pixel }: PixelSpawnedPayload) => scene()?.spawn(pixel);
@@ -296,6 +333,7 @@ export function MatchView({
         payload.byPlayerId === playerId,
         payload.combo,
         avatarsRef.current.get(payload.byPlayerId) ?? null,
+        payload.kind,
       );
 
     const onRejected = ({ reason }: ClickRejectedPayload) => scene()?.rejected(reason);
@@ -320,6 +358,22 @@ export function MatchView({
     const onEnded = (payload: MatchEndedPayload) => {
       setResult(payload);
       scene()?.endMatch();
+      /*
+        Match berakhir tanpa satu pun bunyi sebelum ini — layar hasil muncul
+        begitu saja. Padahal inilah satu-satunya momen yang benar-benar
+        menyimpulkan seluruh ronde.
+
+        Menang ditentukan dari REGU kalau match-nya beregu: menilainya dari
+        peringkat pribadi akan memainkan fanfare kemenangan untuk pemain
+        terbaik di regu yang kalah.
+      */
+      const menang =
+        payload.teams.length > 0
+          ? reguSayaRef.current !== null && payload.teams[0]?.team === reguSayaRef.current
+          : payload.ranking[0]?.playerId === playerId;
+      scene()?.matchEnd(menang);
+      frozenRef.current = false;
+      eliminatedRef.current = false;
     };
 
     socket.on('game:countdown', onCountdown);

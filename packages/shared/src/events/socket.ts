@@ -6,6 +6,7 @@ import type {
   Color,
   MatchResultEntry,
   Pixel,
+  PixelKind,
   RoomSettings,
   RoomState,
   TeamId,
@@ -230,6 +231,16 @@ export interface PixelClaimedPayload {
   readonly points: number;
   readonly combo: number;
   readonly score: number;
+  /**
+   * Jenis pixel yang direbut.
+   *
+   * ADA karena ketiadaannya adalah bug yang bisa didengar: tanpa ini client
+   * multiplayer tidak punya cara membedakan pixel biasa dari ♥ atau ★, jadi
+   * mengambil nyawa di multiplayer sama sekali tidak berbunyi — padahal di solo
+   * ia punya bunyinya sendiri. Pemain yang bermain di kedua mode akan mengira
+   * nyawanya tidak bertambah.
+   */
+  readonly kind: PixelKind;
 }
 
 export interface ClickRejectedPayload {

@@ -18,21 +18,56 @@
  * tegang — bukan komposisi.
  */
 
-/** Nada dasar tangga nada minor pentatonik (A minor), dalam Hz. */
-const SCALE = [220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33];
+/**
+ * Tangga nada: C MAYOR pentatonik.
+ *
+ * Diganti dari A minor pentatonik, dan inilah perubahan yang paling menentukan.
+ * Pemain melaporkan musiknya terdengar menegangkan alih-alih ceria, dan
+ * penyebabnya bukan tempo atau timbre — melainkan kuncinya. Minor terdengar
+ * murung menurut definisinya; riset musik game kasual sepakat pada satu hal
+ * yang sama: mayor untuk ceria.
+ *
+ * Pentatonik mayor dipilih di antara tangga nada mayar lainnya karena ia tidak
+ * punya jarak setengah nada sama sekali — tidak ada dua nada di dalamnya yang
+ * bisa berbunyi bersamaan dan terdengar bertabrakan. Itu sifat yang membuatnya
+ * jadi tangga nada baku musik anak di mana-mana, dan yang membuat arpeggio acak
+ * pun tetap enak didengar.
+ *
+ * Rentangnya C5–E6, wilayah marimba dan kalimba — cerah tanpa melengking.
+ */
+const SCALE = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51];
 
-/** Bass mengikuti akar yang sama, satu oktaf di bawah. */
-const BASS = [110.0, 130.81, 146.83, 164.81];
+/**
+ * Bass: progresi I–V–vi–IV (C–G–Am–F).
+ *
+ * Empat akor yang menopang kira-kira separuh lagu pop yang pernah ada, dan
+ * alasannya bukan kebetulan: ia bergerak pulang ke akarnya di setiap putaran,
+ * jadi ia terdengar "menyelesaikan diri" berulang-ulang. Itu yang membuat loop
+ * pendek tidak terasa memutar hal yang sama, melainkan bernapas.
+ */
+const BASS = [130.81, 98.0, 110.0, 87.31];
 
-const BPM_CALM = 96;
-const BPM_TENSE = 152;
+/**
+ * 116 BPM saat ceria — di dalam rentang 110–130 yang dipakai musik game kasual,
+ * dan tepat di sekitar 110–114 yang lazim untuk musik anak yang riang.
+ */
+const BPM_CALM = 116;
+const BPM_TENSE = 148;
 
-/** Cutoff lowpass: tertutup terdengar jauh dan lembut, terbuka terdengar mendesak. */
-const CUTOFF_CALM = 900;
-const CUTOFF_TENSE = 5200;
+/**
+ * Cutoff lowpass.
+ *
+ * Yang tenang dulu 900 Hz — dan itu bukan "lembut", itu TERTUTUP. Nada yang
+ * dipotong di 900 Hz kehilangan hampir seluruh kilaunya dan terdengar redup,
+ * jauh, dan murung. Keadaan ceria harus terdengar TERBUKA; yang membedakannya
+ * dari keadaan tegang adalah tempo, lapisan, dan warna nada — bukan seberapa
+ * banyak suaranya diredam.
+ */
+const CUTOFF_CALM = 3200;
+const CUTOFF_TENSE = 6400;
 
-/** Perkusi baru ikut masuk setelah ambang ini — supaya ada yang tersisa untuk naik. */
-const PERCUSSION_FROM = 0.45;
+/** Lapisan mendesak baru masuk setelah ambang ini. */
+const TENSE_FROM = 0.45;
 
 /**
  * Gain saat volume disetel penuh.
@@ -181,34 +216,78 @@ export class Music {
     }
   }
 
+  /**
+   * Pola melodi 16 langkah.
+   *
+   * Ditulis sebagai INDEKS ke tangga nada, bukan diambil berurutan (`step %
+   * 8`). Menyusuri tangga nada dari bawah ke atas berulang-ulang terdengar
+   * seperti latihan jari, bukan lagu — naik, naik, naik, ulang. Pola ini
+   * naik-turun dengan lompatan kecil, bentuk yang membuat telinga mengenalinya
+   * sebagai melodi meski nadanya sedikit.
+   *
+   * `-1` berarti diam. Jeda itu yang memberi melodinya bentuk; deretan nada
+   * tanpa satu pun jeda terdengar sebagai arus, bukan frasa.
+   */
+  private static readonly MELODY = [0, 2, 4, 2, 3, -1, 2, 0, 1, 3, 5, 3, 2, -1, 1, 0];
+
   private playStep(at: number): void {
     const step = this.step;
+    const tense = Math.max(0, (this.intensity - TENSE_FROM) / (1 - TENSE_FROM));
 
     // Bass di ketukan kuat — fondasi yang membuat sisanya terasa punya tempo.
     if (step % 4 === 0) {
-      this.tone(BASS[(step / 4) % BASS.length]!, at, 0.26, 'triangle', 0.5);
+      this.tone(BASS[(step / 4) % BASS.length]!, at, 0.3, 'triangle', 0.5);
     }
 
-    /**
-     * Arpeggio berbunyi di SETIAP langkah, termasuk saat tenang.
-     *
-     * Percobaan pertama melewati separuh langkah di ketegangan rendah, dengan
-     * niat menyisakan ruang untuk dipadatkan nanti. Hasilnya justru melawan
-     * alasan musik ini ada: keadaan tenang jadi terdengar kosong, dan "kosong"
-     * persis keluhan yang mau diobati.
-     *
-     * Yang membedakan tenang dari tegang sekarang bukan jumlah nada melainkan
-     * VOLUME dan cutoff filter — nada yang sama terdengar jauh dan lembut saat
-     * filter tertutup, lalu maju dan mendesak saat ia terbuka. Kepadatan tetap
-     * punya perannya, tapi lewat lapisan perkusi di bawah.
-     */
-    const index = step % SCALE.length;
-    this.tone(SCALE[index]!, at, 0.12, 'square', 0.13 + this.intensity * 0.17);
+    /*
+      Melodi bertimbre MARIMBA, bukan gelombang kotak.
 
-    // Perkusi hanya muncul setelah ambang: kalau ia ada sejak awal, tidak ada
-    // lagi lapisan baru yang bisa ditambahkan saat keadaan memanas.
-    if (this.intensity >= PERCUSSION_FROM && step % 2 === 1) {
-      this.noise(at, 0.045, 0.05 + (this.intensity - PERCUSSION_FROM) * 0.12);
+      Gelombang kotak itu bunyi chiptune, dan chiptune terdengar tajam dan
+      elektronik — nada yang sama akan terdengar mendesak berapa pun kuncinya.
+      Riset musik game kasual menyebut satu keluarga instrumen yang sama
+      berulang-ulang: marimba, xylophone, pizzicato, ukulele. Semuanya
+      DIPUKUL ATAU DIPETIK: serangan sangat cepat lalu peluruhan pendek, tanpa
+      nada yang ditahan.
+
+      Itu yang ditiru di sini — gelombang segitiga (lembut, sedikit harmonik)
+      dengan peluruhan pendek. Nada kedua satu oktaf di atas dengan volume
+      seperlima menirukan "denting" kayu yang dipukul; tanpanya segitiga polos
+      terdengar seperti seruling, bukan marimba.
+    */
+    const nada = Music.MELODY[step % Music.MELODY.length]!;
+    if (nada >= 0) {
+      const freq = SCALE[nada % SCALE.length]!;
+      this.tone(freq, at, 0.34, 'triangle', 0.22);
+      this.tone(freq * 2, at, 0.1, 'sine', 0.045);
+    }
+
+    /*
+      Iringan berdenting di sela-sela melodi, hanya saat CERIA.
+
+      Ia yang mengisi ruang supaya keadaan ceria tidak terdengar kosong — dan
+      ia menghilang justru saat keadaan menegang, menyisakan tempat untuk
+      lapisan mendesak di bawah. Jadi bedanya tenang dan tegang bukan sekadar
+      "lebih keras", melainkan bunyi yang berbeda isinya.
+    */
+    if (this.intensity < TENSE_FROM && step % 4 === 2) {
+      this.tone(SCALE[(step / 2) % SCALE.length]! * 2, at, 0.14, 'sine', 0.05);
+    }
+
+    /*
+      Lapisan babak akhir: denyut rendah di setiap ketukan.
+
+      Bukan sekadar musik yang sama dimainkan lebih cepat — ada bunyi BARU yang
+      masuk, dan itu yang membuat pemain menoleh. Nada rendah berulang di
+      tempo ketukan terbaca sebagai detak: tubuh mengenalinya sebagai hitungan
+      mundur tanpa perlu ada yang menjelaskan.
+    */
+    if (tense > 0 && step % 2 === 0) {
+      this.tone(BASS[0]! / 2, at, 0.12, 'square', 0.05 + tense * 0.1);
+    }
+
+    // Perkusi menyusul di ketegangan penuh.
+    if (tense > 0.35 && step % 2 === 1) {
+      this.noise(at, 0.045, 0.04 + tense * 0.1);
     }
   }
 

@@ -1,32 +1,41 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_CURVE_LEVEL, SOLO_STARTING_LIVES } from '../constants/index';
+import {
+  MP_SCORE_WARNING_RATIO,
+  MP_TIME_WARNING_MS,
+  SOLO_STARTING_LIVES,
+} from '../constants/index';
 import { matchIntensity, soloIntensity } from './intensity';
 
 const inRange = (value: number) => value >= 0 && value <= 1;
 
+/**
+ * Aturan yang dijaga seluruh berkas ini: KETEGANGAN ADALAH PENGECUALIAN.
+ *
+ * Versi pertama menaikkannya terus-menerus — mengikuti skor di multiplayer dan
+ * mengikuti level di solo — sehingga musik sudah setengah tegang di menit
+ * pertama dan tidak pernah kembali ceria. Pemain melaporkannya sebagai
+ * "backsound-nya menegangkan terus". Test di bawah menahan supaya perilaku itu
+ * tidak diam-diam kembali lewat penyesuaian angka.
+ */
+
 describe('ketegangan solo', () => {
-  it('tenang di awal ronde', () => {
+  it('tenang selama nyawanya masih aman', () => {
     expect(soloIntensity(1, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES)).toBe(0);
   });
 
-  it('naik seiring level', () => {
-    const early = soloIntensity(3, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES);
-    const late = soloIntensity(15, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES);
-    expect(late).toBeGreaterThan(early);
-  });
-
-  it('mentok di 1 pada level maksimal dan tidak melewatinya di atas itu', () => {
-    expect(soloIntensity(MAX_CURVE_LEVEL, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES)).toBe(1);
-    expect(soloIntensity(MAX_CURVE_LEVEL + 20, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES)).toBe(1);
-  });
-
   /**
-   * Ini yang membuat musiknya terasa benar, bukan sekadar naik-turun.
+   * Yang paling penting di blok ini.
    *
-   * Kalau ketegangan hanya mengikuti level, nyawa tinggal satu di level 3 akan
-   * terdengar setenang jalan-jalan sore — padahal itu momen paling genting yang
-   * bisa dialami pemain di level rendah.
+   * Level yang naik memang membuat papan lebih sulit — tapi "lebih sulit" bukan
+   * "hampir kalah", dan cuma yang kedua yang layak mengubah musiknya. Kalau ini
+   * gagal, musik solo akan kembali tegang permanen mulai pertengahan ronde.
    */
+  it('level tinggi TIDAK membuatnya tegang selama nyawanya penuh', () => {
+    for (const level of [1, 5, 12, 19, 25, 40]) {
+      expect(soloIntensity(level, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES)).toBe(0);
+    }
+  });
+
   it('nyawa tinggal satu terdengar genting walau levelnya masih rendah', () => {
     const tenang = soloIntensity(3, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES);
     const genting = soloIntensity(3, 1, SOLO_STARTING_LIVES);
@@ -34,12 +43,17 @@ describe('ketegangan solo', () => {
     expect(genting).toBeGreaterThanOrEqual(0.75);
   });
 
-  it('level tinggi tetap tegang walau nyawa penuh', () => {
-    expect(soloIntensity(19, SOLO_STARTING_LIVES, SOLO_STARTING_LIVES)).toBeGreaterThan(0.9);
+  it('dua nyawa terasa, tapi belum segenting satu nyawa', () => {
+    const dua = soloIntensity(5, 2, SOLO_STARTING_LIVES);
+    const satu = soloIntensity(5, 1, SOLO_STARTING_LIVES);
+    expect(dua).toBeGreaterThan(0);
+    expect(dua).toBeLessThan(satu);
   });
 
-  it('mode tanpa nyawa jatuh ke kurva level saja', () => {
-    expect(soloIntensity(11, null, 0)).toBeCloseTo(soloIntensity(11, 3, 3), 5);
+  it('mode tanpa nyawa selalu tenang', () => {
+    // Multiplayer memakai jalur `matchIntensity`; solo tanpa nyawa tidak punya
+    // apa pun yang bisa membuatnya genting.
+    expect(soloIntensity(11, null, 0)).toBe(0);
   });
 
   it('tidak pernah keluar dari 0..1', () => {
@@ -58,43 +72,60 @@ describe('ketegangan multiplayer', () => {
     expect(matchIntensity(0, 1000, LIMIT, LIMIT)).toBe(0);
   });
 
-  it('naik seiring skor mendekati target', () => {
-    expect(matchIntensity(500, 1000, LIMIT, LIMIT)).toBeCloseTo(0.5, 5);
-    expect(matchIntensity(900, 1000, LIMIT, LIMIT)).toBeCloseTo(0.9, 5);
+  /**
+   * Inti permintaan pemain: "backsound menegangkan cuma kalau waktunya sudah
+   * mau habis". Setengah match berlalu dengan skor separuh target harus tetap
+   * terdengar ceria.
+   */
+  it('tetap ceria di tengah match walau skornya sudah separuh target', () => {
+    expect(matchIntensity(500, 1000, LIMIT * 0.5, LIMIT)).toBe(0);
+    expect(matchIntensity(800, 1000, LIMIT * 0.4, LIMIT)).toBe(0);
   });
 
-  it('mentok di 1 saat target tercapai atau terlampaui', () => {
+  it('tegang saat ada yang hampir menyentuh target', () => {
+    const ambang = MP_SCORE_WARNING_RATIO * 1000;
+    expect(matchIntensity(ambang, 1000, LIMIT, LIMIT)).toBe(0);
+    expect(matchIntensity(ambang + 50, 1000, LIMIT, LIMIT)).toBeGreaterThan(0);
     expect(matchIntensity(1000, 1000, LIMIT, LIMIT)).toBe(1);
-    expect(matchIntensity(1500, 1000, LIMIT, LIMIT)).toBe(1);
   });
 
   /**
-   * Yang dipakai skor TERTINGGI siapa pun, bukan skor pemain ini — dan test ini
-   * merekam alasannya. Ketegangan terbesar justru saat lawan hampir menang.
-   * Musik yang mengikuti skor sendiri akan terdengar paling tenang tepat di
-   * momen paling genting.
+   * Yang dipakai skor TERTINGGI siapa pun, bukan skor pemain ini. Ketegangan
+   * terbesar justru saat LAWAN hampir menang, dan musik yang mengikuti skor
+   * sendiri akan terdengar paling tenang tepat di momen paling genting.
    */
   it('lawan yang hampir menang terdengar sama tegangnya', () => {
-    expect(matchIntensity(950, 1000, LIMIT, LIMIT)).toBeGreaterThan(0.9);
+    expect(matchIntensity(990, 1000, LIMIT, LIMIT)).toBeGreaterThan(0.8);
   });
 
-  it('tekanan waktu diam sampai seperempat terakhir', () => {
-    // Setengah waktu habis, skor masih nol: belum ada alasan untuk tegang.
-    expect(matchIntensity(0, 1000, LIMIT * 0.5, LIMIT)).toBe(0);
-    expect(matchIntensity(0, 1000, LIMIT * 0.3, LIMIT)).toBe(0);
-  });
-
-  it('tekanan waktu naik di detik-detik terakhir', () => {
-    const seperempat = matchIntensity(0, 1000, LIMIT * 0.25, LIMIT);
-    const sedikit = matchIntensity(0, 1000, LIMIT * 0.1, LIMIT);
-    expect(seperempat).toBe(0);
-    expect(sedikit).toBeGreaterThan(0.5);
+  it('tekanan waktu diam sampai babak akhir, lalu naik', () => {
+    expect(matchIntensity(0, 1000, MP_TIME_WARNING_MS + 1000, LIMIT)).toBe(0);
+    expect(matchIntensity(0, 1000, MP_TIME_WARNING_MS / 2, LIMIT)).toBeCloseTo(0.5, 5);
     expect(matchIntensity(0, 1000, 0, LIMIT)).toBe(1);
+  });
+
+  /**
+   * Ambangnya dibagi dengan tampilan (angka waktu berdenyut, spanduk babak
+   * akhir). Kalau musik memakai angkanya sendiri, layar dan suara akan berubah
+   * di detik yang berbeda dan keduanya berhenti terasa sebagai satu kejadian.
+   */
+  it('mulai tegang tepat di ambang yang dipakai tampilan', () => {
+    expect(matchIntensity(0, 1000, MP_TIME_WARNING_MS, LIMIT)).toBe(0);
+    expect(matchIntensity(0, 1000, MP_TIME_WARNING_MS - 1, LIMIT)).toBeGreaterThan(0);
   });
 
   it('yang tertinggi antara balapan skor dan tekanan waktu yang dipakai', () => {
     // Skor jauh dari target tapi waktu nyaris habis: tetap harus tegang.
-    expect(matchIntensity(100, 1000, LIMIT * 0.02, LIMIT)).toBeGreaterThan(0.9);
+    expect(matchIntensity(100, 1000, 500, LIMIT)).toBeGreaterThan(0.9);
+  });
+
+  it('batas waktu match tidak lagi mempengaruhi hasilnya', () => {
+    // Ambangnya absolut (15 detik terakhir), bukan proporsi dari lama match.
+    // Match 90 detik dan match 300 detik sama-sama menegang di 15 detik
+    // terakhir — bukan di 22 detik versus 75 detik terakhir.
+    const a = matchIntensity(0, 1000, 5000, 90_000);
+    const b = matchIntensity(0, 1000, 5000, 300_000);
+    expect(a).toBe(b);
   });
 
   it('tidak pernah keluar dari 0..1', () => {

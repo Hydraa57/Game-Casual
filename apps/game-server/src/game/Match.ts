@@ -740,6 +740,7 @@ export class Match {
             points: event.points,
             combo: event.combo,
             score: event.score,
+            kind: event.kind,
           });
           break;
 

@@ -71,6 +71,9 @@ describe('klik benar', () => {
       combo: 1,
       multiplier: 1,
       score: BASE_POINTS + MAX_SPEED_BONUS,
+      // Jenis pixelnya ikut supaya multiplayer bisa memilih bunyinya: tanpa
+      // ini, mengambil ♥ atau ★ di MP tidak terdengar berbeda dari pixel biasa.
+      kind: 'normal',
     });
   });
 

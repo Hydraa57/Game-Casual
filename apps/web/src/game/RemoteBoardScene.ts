@@ -6,7 +6,7 @@ import {
   isComboMilestone,
   MP_WRONG_CLICK_COOLDOWN_MS,
 } from '@pixelmatrix/shared';
-import type { AvatarId, ChaosModifier, Cell, Color, Pixel } from '@pixelmatrix/shared';
+import type { AvatarId, ChaosModifier, Cell, Color, Pixel, PixelKind } from '@pixelmatrix/shared';
 import { BoardRenderer } from './BoardRenderer';
 import { BOARD_BACKGROUND } from './palette';
 import type { Sfx } from './sfx';
@@ -168,6 +168,7 @@ export class RemoteBoardScene extends Phaser.Scene {
     byMe: boolean,
     combo: number,
     avatar: AvatarId | null,
+    kind: PixelKind = 'normal',
   ): void {
     this.pixels.delete(pixelId);
     // Semburan dipanggil SEBELUM remove: warnanya dibaca dari view yang masih
@@ -182,10 +183,38 @@ export class RemoteBoardScene extends Phaser.Scene {
     if (avatar !== null) this.boardView.claimMark(cell, AVATAR_GLYPH[avatar], byMe);
     if (!byMe) return;
 
-    this.options.sfx.correct(combo);
+    /*
+      Pixel spesial punya bunyinya sendiri, sama seperti di solo.
+
+      Sebelumnya ketiganya memainkan `correct()` yang sama: mengambil ♥ di
+      multiplayer tidak terdengar berbeda dari mengetuk pixel biasa, padahal
+      di solo ia punya arpeggio sendiri. Pemain yang bermain di kedua mode akan
+      mengira nyawanya tidak bertambah — dan sejak nyawa jadi milik REGU, itu
+      justru informasi yang paling perlu didengar.
+    */
+    if (kind === 'life') this.options.sfx.life();
+    else if (kind === 'gold') this.options.sfx.gold();
+    else this.options.sfx.correct(combo);
+
     // Popup combo HANYA untuk combo sendiri. Combo lawan tidak boleh menutupi
     // papanmu — itu hukuman untuk pemain yang sedang tertinggal.
     if (isComboMilestone(combo)) this.boardView.comboPopup(combo);
+  }
+
+  /** Nyawa habis — dibekukan, tapi akan kembali. */
+  knockedOut(): void {
+    this.options.sfx.knockedOut();
+    this.cameras.main.flash(200, 228, 59, 68);
+  }
+
+  /** Keluar dari permainan untuk selamanya. */
+  eliminated(): void {
+    this.options.sfx.eliminated();
+  }
+
+  /** Match usai. Bunyinya berbeda antara menang dan kalah. */
+  matchEnd(won: boolean): void {
+    this.options.sfx.matchEnd(won);
   }
 
   rejected(reason: 'wrongColor' | 'tooLate' | 'notFound' | 'rateLimited' | 'notRunning'): void {

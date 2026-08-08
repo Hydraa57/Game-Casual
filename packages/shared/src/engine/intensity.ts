@@ -1,4 +1,4 @@
-import { MAX_CURVE_LEVEL } from '../constants/index';
+import { MP_SCORE_WARNING_RATIO, MP_TIME_WARNING_MS } from '../constants/index';
 
 /**
  * Seberapa tegang musik harus terdengar, 0 (tenang) sampai 1 (paling menegangkan).
@@ -8,59 +8,72 @@ import { MAX_CURVE_LEVEL } from '../constants/index';
  * tersisa di sisi audio hanyalah "terjemahkan angka ini jadi tempo dan filter".
  */
 
-/** Sisa waktu di bawah rasio ini mulai dianggap mendesak. */
-const TIME_PRESSURE_FROM = 0.25;
+/**
+ * Ketegangan adalah PENGECUALIAN, bukan keadaan biasa.
+ *
+ * Versi pertama menaikkannya terus-menerus: di multiplayer ia mengikuti skor
+ * sejak poin pertama, dan di solo ia mengikuti level. Akibatnya musik sudah
+ * setengah tegang di menit pertama dan tidak pernah kembali ceria — persis
+ * keluhan pemain. Yang benar adalah sebaliknya: gamenya ceria hampir
+ * sepanjang waktu, dan ketegangan disimpan untuk saat ia benar-benar berarti.
+ *
+ * Angka 0 di sini berarti "mainkan lagu cerianya", bukan "mainkan versi paling
+ * lembut dari lagu tegang".
+ */
 
-/** Nyawa tinggal satu terasa jauh lebih genting daripada dua. */
-const LAST_LIFE_INTENSITY = 0.75;
+/** Nyawa tinggal satu: satu kesalahan lagi dan rondenya habis. */
+const LAST_LIFE_INTENSITY = 0.8;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 /**
  * Ketegangan mode solo.
  *
- * Solo tidak punya "kemenangan" untuk didekati, jadi yang dipakai dua hal yang
- * benar-benar ada: seberapa jauh kurva kesulitan sudah berjalan, dan seberapa
- * dekat pemain dengan kehabisan nyawa. Yang tertinggi menang — nyawa tinggal
- * satu di level 3 harus terdengar genting, dan level 19 dengan nyawa penuh juga.
+ * Hanya dari NYAWA, tidak lagi dari level. Kurva level dulu ikut dihitung, dan
+ * karena level terus naik sepanjang ronde, musiknya jadi permanen tegang mulai
+ * pertengahan permainan tanpa ada satu pun kejadian yang membenarkannya.
+ * Level yang naik memang membuat papan lebih sulit — tapi "lebih sulit" bukan
+ * "hampir kalah", dan cuma yang kedua yang layak mengubah musiknya.
  */
-export function soloIntensity(level: number, lives: number | null, startingLives: number): number {
-  const curve = clamp01((level - 1) / Math.max(1, MAX_CURVE_LEVEL - 1));
-
-  if (lives === null || startingLives <= 0) return curve;
-
-  // Nyawa penuh = 0, nyawa habis = 1.
-  const lost = clamp01(1 - lives / startingLives);
-  const danger = lives <= 1 ? Math.max(lost, LAST_LIFE_INTENSITY) : lost;
-
-  return Math.max(curve, danger);
+export function soloIntensity(_level: number, lives: number | null, startingLives: number): number {
+  if (lives === null || startingLives <= 0) return 0;
+  if (lives <= 1) return LAST_LIFE_INTENSITY;
+  // Dua nyawa tersisa sudah terasa, tapi belum genting.
+  if (lives === 2) return 0.35;
+  return 0;
 }
 
 /**
- * Ketegangan match multiplayer.
+ * Ketegangan match multiplayer — hanya di babak akhir.
  *
- * Di sinilah "makin dekat kemenangan makin menegangkan" punya arti harfiah:
- * skor tertinggi di papan dibandingkan target. Yang dipakai skor TERTINGGI
- * siapa pun, bukan skor pemain ini — ketegangan terbesar justru saat LAWAN
- * hampir menang, dan musik yang cuma mengikuti skor sendiri akan terdengar
- * paling tenang tepat di momen paling genting.
+ * Dua pemicu, dan yang tertinggi menang:
  *
- * Waktu yang menipis dihitung terpisah lalu diambil yang tertinggi: match bisa
- * berakhir karena salah satu dari keduanya, jadi keduanya layak terdengar.
+ * 1. **Waktu hampir habis** (MP_TIME_WARNING_MS terakhir).
+ * 2. **Ada yang hampir menyentuh target** (di atas MP_SCORE_WARNING_RATIO).
+ *
+ * Yang dipakai skor TERTINGGI siapa pun, bukan skor pemain ini: momen paling
+ * genting justru saat LAWAN hampir menang, dan musik yang mengikuti skor
+ * sendiri akan terdengar paling tenang tepat di situ.
+ *
+ * Ambangnya dibagi dengan tampilan (angka waktu yang berdenyut merah, spanduk
+ * babak akhir). Kalau masing-masing punya ambangnya sendiri, layar dan musik
+ * berubah di detik yang berbeda dan keduanya berhenti terasa sebagai satu
+ * kejadian.
  */
 export function matchIntensity(
   topScore: number,
   targetScore: number,
   remainingMs: number,
-  timeLimitMs: number,
+  _timeLimitMs: number,
 ): number {
-  const race = targetScore > 0 ? clamp01(topScore / targetScore) : 0;
+  const rasio = targetScore > 0 ? clamp01(topScore / targetScore) : 0;
+  const race =
+    rasio <= MP_SCORE_WARNING_RATIO
+      ? 0
+      : clamp01((rasio - MP_SCORE_WARNING_RATIO) / (1 - MP_SCORE_WARNING_RATIO));
 
-  // Tekanan waktu baru terasa di seperempat terakhir. Kalau ia naik sejak
-  // detik pertama, seluruh match terdengar mendesak dan tidak ada lagi yang
-  // tersisa untuk membedakan akhir yang benar-benar genting.
-  const left = timeLimitMs > 0 ? clamp01(remainingMs / timeLimitMs) : 1;
-  const pressure = left >= TIME_PRESSURE_FROM ? 0 : clamp01(1 - left / TIME_PRESSURE_FROM);
+  const pressure =
+    remainingMs >= MP_TIME_WARNING_MS ? 0 : clamp01(1 - remainingMs / MP_TIME_WARNING_MS);
 
   return Math.max(race, pressure);
 }

@@ -40,6 +40,14 @@ export type GameEvent =
       readonly combo: number;
       readonly multiplier: number;
       readonly score: number;
+      /**
+       * Jenis pixel yang direbut — dipakai untuk memilih bunyinya.
+       *
+       * Solo membacanya dari papannya sendiri, tapi multiplayer tidak punya
+       * papan lokal: ia cuma menerima event dari server. Tanpa field ini,
+       * mengambil ♥ atau ★ di multiplayer tidak berbunyi apa pun.
+       */
+      readonly kind: Pixel['kind'];
     }
   | {
       readonly type: 'clickRejected';
