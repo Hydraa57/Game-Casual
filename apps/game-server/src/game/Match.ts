@@ -1,4 +1,5 @@
 import {
+  ALL_COLORS,
   applyClick,
   chaosModifierFor,
   COUNTDOWN_SECONDS,
@@ -16,6 +17,8 @@ import {
   SERVER_TICK_MS,
   spawnCrowdFactor,
   step,
+  TEAM_IDS,
+  teamTargetScore,
   stroopInkFor,
   SUDDEN_DEATH_LIFETIME_MS,
 } from '@pixelmatrix/shared';
@@ -32,6 +35,9 @@ import type {
   ResyncPayload,
   ScoreboardEntry,
   ScoreState,
+  TeamId,
+  TeamResultEntry,
+  TeamScoreEntry,
 } from '@pixelmatrix/shared';
 import type { Room } from '../rooms/Room';
 import { BotDriver } from './BotDriver';
@@ -65,6 +71,29 @@ interface PlayerStats {
   eliminated: boolean;
   /** Tingkat kesulitan kalau ini bot; `null` untuk manusia. */
   bot: BotDifficulty | null;
+  /** Regu pemain ini; `null` di match ffa. */
+  team: TeamId | null;
+}
+
+/**
+ * Keadaan satu regu selama match beregu.
+ *
+ * Nyawa, beku, KO, dan eliminasi pindah KE SINI dari pemain — di mode beregu
+ * keempatnya memang milik regu. Skor tetap dicatat per pemain dan dijumlahkan
+ * saat dibutuhkan, bukan diakumulasi di sini: statistik pribadi (akurasi, combo
+ * terbaik, siapa penyumbang terbesar) tetap harus bisa ditampilkan di layar
+ * hasil, dan angka yang sudah terlanjur dijumlahkan tidak bisa dipecah lagi.
+ */
+interface TeamStats {
+  /** Kolam nyawa BERSAMA. Salah tap siapa pun mengurangi angka yang sama ini. */
+  lives: number;
+  /** Isi penuh kolamnya — MP_STARTING_LIVES × jumlah anggota. */
+  maxLives: number;
+  /** Kapan seluruh anggota boleh mengetuk lagi; 0 berarti tidak beku. */
+  frozenUntil: number;
+  knockouts: number;
+  eliminated: boolean;
+  readonly members: string[];
 }
 
 /**
@@ -90,6 +119,9 @@ export class Match {
   private countdownLeft = COUNTDOWN_SECONDS;
   private suddenDeathSeq = 0;
   private startedAt: Date | null = null;
+  /** Match ini beregu. Dibekukan saat match dibuat, tidak dibaca ulang dari room. */
+  private readonly beregu: boolean;
+  private readonly teams = new Map<TeamId, TeamStats>();
 
   constructor(
     private readonly room: Room,
@@ -100,7 +132,14 @@ export class Match {
       seed: Date.now(),
       config: boardConfig(room.playerCount),
     });
+    // Susunan regu DIBEKUKAN di sini, saat match dibuat. Sesudah ini daftar
+    // pemain masih bisa berubah (ada yang putus, ada yang keluar), tapi regunya
+    // tidak — kalau kolam nyawa ikut menyusut saat ada yang pergi, regu yang
+    // ditinggal anggotanya akan langsung KO tanpa satu pun kesalahan.
+    this.beregu = room.currentSettings.teamMode === 'teams';
+
     for (const player of room.allPlayers()) {
+      const team = this.beregu ? player.team : null;
       this.players.set(player.id, {
         nickname: player.nickname,
         avatar: player.avatar,
@@ -110,9 +149,38 @@ export class Match {
         knockouts: 0,
         eliminated: false,
         bot: player.bot,
+        team,
       });
+      if (team !== null) this.teamOf(team).members.push(player.id);
       if (player.bot !== null) this.bots.push(new BotDriver(player.id, player.bot));
     }
+
+    for (const team of TEAM_IDS) {
+      const stats = this.teams.get(team);
+      if (!stats) continue;
+      // Jatah per pemain PERSIS sama dengan mode ffa: 3 nyawa masing-masing,
+      // 3 KO sebelum keluar. Yang berbeda hanya bahwa jatahnya dikumpulkan jadi
+      // satu — pemain ceroboh menghabiskan jatah temannya, dan itulah seluruh
+      // isi dari "satu regu".
+      stats.maxLives = MP_STARTING_LIVES * Math.max(1, stats.members.length);
+      stats.lives = stats.maxLives;
+    }
+  }
+
+  /** Ambil (atau buat) catatan regu. */
+  private teamOf(team: TeamId): TeamStats {
+    const ada = this.teams.get(team);
+    if (ada) return ada;
+    const baru: TeamStats = {
+      lives: MP_STARTING_LIVES,
+      maxLives: MP_STARTING_LIVES,
+      frozenUntil: 0,
+      knockouts: 0,
+      eliminated: false,
+      members: [],
+    };
+    this.teams.set(team, baru);
+    return baru;
   }
 
   get targetScore(): number {
@@ -173,7 +241,11 @@ export class Match {
     // Pemain yang beku atau tereliminasi: ketukannya diabaikan sepenuhnya,
     // bahkan sebelum rate limiter, supaya menggeprek layar tidak menghabiskan
     // jatah klik untuk saat dia hidup lagi.
-    if (player.eliminated || isFrozen(player.frozenUntil, Date.now())) return;
+    //
+    // Di mode beregu yang beku dan tereliminasi adalah REGUNYA, jadi keduanya
+    // diperiksa lewat `frozenOf`/`eliminatedOf` — pemain yang sehat pun ikut
+    // berhenti kalau kolam nyawa regunya habis, dan itu memang inti aturannya.
+    if (this.eliminatedOf(player) || isFrozen(this.frozenUntilOf(player), Date.now())) return;
 
     if (!this.limiter.allow(playerId, Date.now())) {
       this.io.to(playerId).emit('game:clickRejected', {
@@ -192,20 +264,52 @@ export class Match {
     const result = applyClick(carrier, pixelId);
 
     this.board = { ...this.board, board: result.state.board };
-    player.score = result.state.score;
+
+    /*
+      Nyawa yang TERPAKAI dihitung sebagai selisih, lalu dibebankan ke kolam
+      regu — bukan dihitung ulang di sini dari jenis kliknya.
+
+      Alasannya: engine sudah tahu semua aturannya (salah warna −1, bom −2,
+      pixel ♥ +1, batas MAX_LIVES) dan aturan itu masih akan berubah. Menyalin
+      tabelnya ke sini berarti dua sumber kebenaran, dan yang kedua pasti akan
+      tertinggal begitu ada pixel spesial baru. Dengan selisih, mekanik apa pun
+      yang menyentuh nyawa otomatis ikut bekerja di mode beregu.
+
+      Nyawa pribadi lalu DIISI ULANG penuh. Di mode beregu ia bukan lagi angka
+      yang berarti — ia cuma alat hitung supaya engine bisa mengeluarkan selisih
+      tadi. Yang ditampilkan ke pemain adalah kolam regunya.
+    */
+    const team = this.teamStatsOf(player);
+    if (team) {
+      const sebelum = player.score.lives ?? MP_STARTING_LIVES;
+      const sesudah = result.state.score.lives ?? MP_STARTING_LIVES;
+      const terpakai = sebelum - sesudah;
+      player.score = { ...result.state.score, lives: MP_STARTING_LIVES };
+      team.lives = Math.max(0, Math.min(team.maxLives, team.lives - terpakai));
+    } else {
+      player.score = result.state.score;
+    }
 
     this.forwardClickEvents(playerId, result.events);
 
-    if (shouldFreeze(player.score.lives, player.frozenUntil)) {
-      player.knockouts += 1;
+    const sisaNyawa = team ? team.lives : player.score.lives;
+    const bekuSampai = team ? team.frozenUntil : player.frozenUntil;
 
-      if (isEliminatedAfter(player.knockouts, MP_MAX_KNOCKOUTS)) {
-        player.eliminated = true;
-        this.io.to(playerId).emit('game:eliminated');
+    if (shouldFreeze(sisaNyawa, bekuSampai)) {
+      const korban = team ?? player;
+      korban.knockouts += 1;
+
+      if (isEliminatedAfter(korban.knockouts, MP_MAX_KNOCKOUTS)) {
+        korban.eliminated = true;
+        // Diberi tahu ke SETIAP anggota, bukan cuma ke yang menghabiskan nyawa
+        // terakhir. Tiga orang lain juga berhenti bermain saat itu juga, dan
+        // papan yang mendadak tidak merespons tanpa penjelasan akan terbaca
+        // sebagai gamenya rusak.
+        for (const id of this.membersOf(player)) this.io.to(id).emit('game:eliminated');
       } else {
-        // KO yang belum terakhir hanya membekukan — pemain kembali dengan
-        // nyawa penuh, jadi match tetap ramai sampai batas KO tercapai.
-        player.frozenUntil = Date.now() + MP_FREEZE_MS;
+        // KO yang belum terakhir hanya membekukan — regunya kembali dengan
+        // kolam nyawa penuh, jadi match tetap ramai sampai batas KO tercapai.
+        korban.frozenUntil = Date.now() + MP_FREEZE_MS;
       }
 
       // Disiarkan langsung, tidak menunggu tick terjadwal: pemain harus tahu
@@ -214,8 +318,8 @@ export class Match {
 
       // "Main berdua, tereliminasi = langsung kalah" tidak butuh kasus khusus:
       // dari berapa pun pemain, match berhenti begitu yang masih bermain
-      // tinggal satu.
-      if (shouldEndByElimination(this.activePlayerCount())) {
+      // tinggal satu — dan di mode beregu, begitu tinggal satu REGU.
+      if (shouldEndByElimination(this.activeSideCount())) {
         this.finish('elimination');
         return;
       }
@@ -225,9 +329,142 @@ export class Match {
       this.finish('suddenDeath');
       return;
     }
-    if (this.status === 'running' && player.score.score >= this.targetScore) {
-      this.finish('targetScore');
+    // Yang dibandingkan dengan target adalah SKOR REGU di mode beregu, dan
+    // targetnya ikut dikali jumlah anggota — kalau tidak, match 4v4 selesai
+    // kira-kira empat kali lebih cepat daripada 2v2 padahal host memilih angka
+    // yang sama.
+    if (this.status === 'running') {
+      const capai = team
+        ? this.teamScore(player.team!) >= this.teamTargetOf(player.team!)
+        : player.score.score >= this.targetScore;
+      if (capai) this.finish('targetScore');
     }
+  }
+
+  // ----------------------------------------------------------- kait pengujian
+  //
+  // Membaca keadaan dalam, bukan mengubahnya — kecuali `debugThaw`, yang
+  // memajukan waktu beku supaya rangkaian KO bisa diuji tanpa menunggu 5 detik
+  // sungguhan tiga kali. Semuanya hanya dipakai `*.test.ts`; tidak ada satu pun
+  // jalur produksi yang memanggilnya, dan tidak ada yang memberi jalan pintas
+  // ke aturan permainan.
+
+  debugBoard(): GameState {
+    return this.board;
+  }
+
+  debugTeams(): readonly TeamScoreEntry[] {
+    return this.teamBoard();
+  }
+
+  debugScoreboard(): readonly ScoreboardEntry[] {
+    return this.scoreboard();
+  }
+
+  /**
+   * Taruh satu pixel berwarna BUKAN-target di papan, lalu kembalikan id-nya.
+   *
+   * Menyediakan INPUT, bukan melewati aturan: kliknya tetap masuk lewat
+   * `handleClick` dan melewati rate limiter, pemeriksaan beku, `applyClick`,
+   * dan seluruh perhitungan nyawa persis seperti ketukan sungguhan. Yang
+   * dilewati hanyalah menunggu penjadwal spawn — papan hanya menahan ~2,4 pixel
+   * sekaligus, jadi rangkaian 18 salah tap yang dibutuhkan untuk menguji tiga
+   * KO tidak mungkin dijalankan tanpa ini.
+   */
+  debugPlaceWrongPixel(): string {
+    const { board } = this.board;
+    const salah = ALL_COLORS.find((color) => !board.targetColors.includes(color));
+    const pixel: Pixel = {
+      id: `dbg${board.nextPixelSeq}`,
+      cell: { row: 0, col: 0 },
+      color: salah ?? board.targetColors[0]!,
+      kind: 'normal',
+      spawnedAtMs: this.board.elapsedMs,
+      lifetimeMs: 60_000,
+    };
+    this.board = {
+      ...this.board,
+      board: {
+        ...board,
+        pixels: [...board.pixels, pixel],
+        nextPixelSeq: board.nextPixelSeq + 1,
+      },
+    };
+    return pixel.id;
+  }
+
+  /** Akhiri masa beku sekarang juga, lewat jalur pencairan yang sesungguhnya. */
+  debugThaw(): void {
+    for (const stats of this.teams.values()) {
+      if (stats.frozenUntil !== 0) stats.frozenUntil = 1;
+    }
+    for (const player of this.players.values()) {
+      if (player.frozenUntil !== 0) player.frozenUntil = 1;
+    }
+    this.reviveThawedPlayers(Date.now());
+  }
+
+  // -------------------------------------------------------------------- regu
+
+  /** Catatan regu pemain ini; `null` di match ffa. */
+  private teamStatsOf(player: PlayerStats): TeamStats | null {
+    return player.team === null ? null : (this.teams.get(player.team) ?? null);
+  }
+
+  /**
+   * Siapa saja yang ikut terkena nasib pemain ini.
+   *
+   * Di ffa hanya dirinya; di mode beregu seluruh anggota regunya. Dipakai untuk
+   * mengirim `game:eliminated` — pesan yang hanya sampai ke satu orang membuat
+   * tiga orang lain melihat papan yang mendadak tidak merespons.
+   */
+  private membersOf(player: PlayerStats): readonly string[] {
+    const team = this.teamStatsOf(player);
+    if (team) return team.members;
+    for (const [id, p] of this.players) if (p === player) return [id];
+    return [];
+  }
+
+  private eliminatedOf(player: PlayerStats): boolean {
+    return this.teamStatsOf(player)?.eliminated ?? player.eliminated;
+  }
+
+  private frozenUntilOf(player: PlayerStats): number {
+    return this.teamStatsOf(player)?.frozenUntil ?? player.frozenUntil;
+  }
+
+  /** Jumlah poin seluruh anggota regu. */
+  private teamScore(team: TeamId): number {
+    let total = 0;
+    for (const player of this.players.values()) {
+      if (player.team === team) total += player.score.score;
+    }
+    return total;
+  }
+
+  private teamTargetOf(team: TeamId): number {
+    const anggota = this.teams.get(team)?.members.length ?? 1;
+    return teamTargetScore(this.targetScore, Math.max(1, anggota));
+  }
+
+  /**
+   * Berapa "pihak" yang masih bermain — regu di mode beregu, pemain di ffa.
+   *
+   * Satu fungsi untuk keduanya supaya aturan akhir match tidak ditulis dua
+   * kali. `shouldEndByElimination` tidak perlu tahu bedanya: yang penting
+   * berapa pihak yang masih bisa mengetuk.
+   */
+  private activeSideCount(): number {
+    if (!this.beregu) return this.activePlayerCount();
+    let count = 0;
+    for (const stats of this.teams.values()) {
+      if (stats.eliminated) continue;
+      // Regu yang seluruh anggotanya sudah pergi dari room tidak lagi "bermain"
+      // walau belum pernah tereliminasi — tanpa ini, satu regu yang menutup tab
+      // bersama-sama akan menahan match berjalan sampai waktunya habis.
+      if (stats.members.some((id) => this.room.has(id))) count += 1;
+    }
+    return count;
   }
 
   // ------------------------------------------------------------------ internal
@@ -330,12 +567,31 @@ export class Match {
    */
   private reviveThawedPlayers(now: number): void {
     let revived = false;
+
+    // Regu dicairkan sebagai satu kesatuan: kolam nyawanya diisi penuh sekali,
+    // lalu combo setiap anggotanya diputus. Combo memang milik pribadi, tapi
+    // yang membekukan mereka adalah kejadian bersama.
+    for (const stats of this.teams.values()) {
+      if (stats.eliminated || !hasThawed(stats.frozenUntil, now)) continue;
+      stats.frozenUntil = 0;
+      stats.lives = stats.maxLives;
+      revived = true;
+      for (const id of stats.members) {
+        const anggota = this.players.get(id);
+        if (anggota) anggota.score = { ...anggota.score, lives: MP_STARTING_LIVES, combo: 0 };
+      }
+    }
+
     for (const player of this.players.values()) {
+      // Di mode beregu nyawa pribadi tidak pernah habis (selalu diisi ulang di
+      // `handleClick`), jadi cabang ini hanya berjalan di ffa.
+      if (player.team !== null) continue;
       if (player.eliminated || !hasThawed(player.frozenUntil, now)) continue;
       player.frozenUntil = 0;
       player.score = { ...player.score, lives: MP_STARTING_LIVES, combo: 0 };
       revived = true;
     }
+
     if (revived) this.broadcastTick();
   }
 
@@ -369,11 +625,24 @@ export class Match {
   }
 
   private onTimeUp(): void {
-    // Hanya pemain yang masih bermain yang boleh memicu sudden death. Pemain
+    // Hanya pihak yang masih bermain yang boleh memicu sudden death. Yang
     // tereliminasi tidak bisa mengetuk apa pun, jadi seri dengannya akan
     // membuat match menggantung selamanya.
-    const active = [...this.players.values()].filter((player) => !player.eliminated);
-    const activeScores = active.map((player) => player.score.score).sort((a, b) => b - a);
+    //
+    // Di mode beregu yang dibandingkan adalah skor REGU: dua pemain dengan
+    // skor pribadi yang kebetulan sama bukan seri, dan memakai skor pribadi di
+    // sini akan memicu sudden death untuk match yang sebenarnya sudah ada
+    // pemenangnya.
+    const activeScores = this.beregu
+      ? [...this.teams.entries()]
+          .filter(([, stats]) => !stats.eliminated)
+          .map(([team]) => this.teamScore(team))
+          .sort((a, b) => b - a)
+      : [...this.players.values()]
+          .filter((player) => !player.eliminated)
+          .map((player) => player.score.score)
+          .sort((a, b) => b - a);
+
     if (!tiedAtTop(activeScores)) {
       this.finish('timeUp');
       return;
@@ -506,13 +775,24 @@ export class Match {
       avatar: player.avatar,
       score: player.score.score,
       combo: player.score.combo,
-      lives: player.score.lives,
-      knockouts: player.knockouts,
-      eliminated: player.eliminated,
+      // Di mode beregu nyawa milik regu, dan angka pribadi di sini tidak
+      // berarti apa-apa. Dikirim `null` supaya UI tidak punya pilihan selain
+      // membaca kolam regunya — nilai palsu yang kelihatan masuk akal jauh
+      // lebih berbahaya daripada tidak ada nilai sama sekali.
+      lives: player.team === null ? player.score.lives : null,
+      knockouts: this.teamStatsOf(player)?.knockouts ?? player.knockouts,
+      eliminated: this.eliminatedOf(player),
+      team: player.team,
       // Sisa beku dikirim sebagai durasi, bukan timestamp: jam client dan
       // server tidak pernah sama, dan selisihnya akan terlihat sebagai
       // hitungan mundur yang salah.
-      frozenMs: Math.max(0, player.frozenUntil - Date.now()),
+      //
+      // Dibaca lewat `frozenUntilOf`, BUKAN dari `player.frozenUntil`. Di mode
+      // beregu yang membeku adalah regunya dan angka pribadi ini selamanya 0 —
+      // versi pertama memakainya langsung, dan akibatnya seluruh regu berhenti
+      // bisa mengetuk sementara scoreboard menampilkan semua orang baik-baik
+      // saja. Ditemukan test, bukan mata.
+      frozenMs: Math.max(0, this.frozenUntilOf(player) - Date.now()),
       // Kursi yang masih ada TIDAK berarti koneksinya hidup. Selama masa
       // tenggang reconnect, pemain tetap ada di room justru karena socket-nya
       // putus — memakai `room.has(id)` di sini akan menampilkan semua orang
@@ -522,6 +802,55 @@ export class Match {
       latencyMs: this.room.get(id)?.latencyMs ?? null,
       bot: player.bot,
     }));
+  }
+
+  /**
+   * Keadaan kedua regu untuk disiarkan; kosong di match ffa.
+   *
+   * Urutannya mengikuti TEAM_IDS dan bukan skor, sengaja: kolom regu di layar
+   * pemain tidak boleh bertukar tempat setiap kali salah satu menyalip. Yang
+   * diurutkan menurut skor hanya layar hasil, ketika match sudah selesai.
+   */
+  private teamBoard(): TeamScoreEntry[] {
+    if (!this.beregu) return [];
+    const now = Date.now();
+    const out: TeamScoreEntry[] = [];
+    for (const team of TEAM_IDS) {
+      const stats = this.teams.get(team);
+      if (!stats) continue;
+      out.push({
+        team,
+        score: this.teamScore(team),
+        lives: stats.lives,
+        maxLives: stats.maxLives,
+        targetScore: this.teamTargetOf(team),
+        // Durasi, bukan timestamp — alasannya sama dengan `frozenMs` pemain.
+        frozenMs: Math.max(0, stats.frozenUntil - now),
+        knockouts: stats.knockouts,
+        eliminated: stats.eliminated,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Peringkat regu untuk layar hasil.
+   *
+   * Aturan urutannya sama dengan peringkat pemain: yang tereliminasi SELALU di
+   * bawah yang bertahan, berapa pun skornya. Tanpa itu, menghabiskan nyawa
+   * sendiri sambil unggul angka menjadi strategi yang sah.
+   */
+  private teamRanking(): TeamResultEntry[] {
+    if (!this.beregu) return [];
+    return [...this.teams.keys()]
+      .map((team) => ({
+        team,
+        score: this.teamScore(team),
+        eliminated: this.teams.get(team)?.eliminated === true,
+        rank: 0,
+      }))
+      .sort((a, b) => Number(a.eliminated) - Number(b.eliminated) || b.score - a.score)
+      .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
   /**
@@ -560,6 +889,7 @@ export class Match {
       remainingMs: this.remainingMs(),
       suddenDeath: this.status === 'suddenDeath',
       scoreboard: this.scoreboard(),
+      teams: this.teamBoard(),
     };
   }
 
@@ -576,6 +906,7 @@ export class Match {
       // dimatikan supaya tidak berkedip sia-sia di momen paling menegangkan.
       targetImminent: this.status === 'running' && isTargetChangeImminent(this.board),
       scoreboard: this.scoreboard(),
+      teams: this.teamBoard(),
     });
   }
 
@@ -596,8 +927,8 @@ export class Match {
             rank: 0,
             accuracy: total === 0 ? 1 : player.score.correctClicks / total,
             bestCombo: player.score.bestCombo,
-            knockouts: player.knockouts,
-            eliminated: player.eliminated,
+            knockouts: this.teamStatsOf(player)?.knockouts ?? player.knockouts,
+            eliminated: this.eliminatedOf(player),
             // Ikut ke sini semata-mata supaya `saveMatch` bisa menautkan baris
             // riwayat ke akun. Tidak pernah dikirim ke client mana pun.
             userId: player.userId,
@@ -626,7 +957,12 @@ export class Match {
     // menentukan kapan target tercapai, jadi hanya angka ini yang benar-benar
     // cocok dengan apa yang dilihat pemain di layar.
     const durationMs = this.board.elapsedMs;
-    this.io.to(this.room.code).emit('game:ended', { ranking: publicRanking, reason, durationMs });
+    this.io.to(this.room.code).emit('game:ended', {
+      ranking: publicRanking,
+      teams: this.teamRanking(),
+      reason,
+      durationMs,
+    });
 
     // Sengaja tidak di-await: pemain sudah melihat hasilnya, dan menunggu
     // round-trip database di sini hanya akan menunda layar hasil. Kegagalannya

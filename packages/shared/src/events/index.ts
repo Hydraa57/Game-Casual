@@ -19,8 +19,10 @@ export type {
   RoomErrorCode,
   ScoreboardEntry,
   ServerToClientEvents,
+  SetTeamPayload,
   SocketError,
   TargetChangedPayload,
+  TeamScoreEntry,
   TickPayload,
   UpdateSettingsPayload,
 } from './socket';

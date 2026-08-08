@@ -84,6 +84,15 @@ export interface RoomState {
   readonly status: RoomStatus;
 }
 
+/** Satu baris regu di layar hasil match beregu. */
+export interface TeamResultEntry {
+  readonly team: TeamId;
+  readonly rank: number;
+  /** Jumlah poin seluruh anggota — inilah yang menentukan menang atau kalah. */
+  readonly score: number;
+  readonly eliminated: boolean;
+}
+
 /** Satu baris di layar hasil match (GDD §5). */
 export interface MatchResultEntry {
   readonly playerId: string;

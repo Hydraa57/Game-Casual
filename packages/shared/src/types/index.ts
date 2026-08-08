@@ -7,5 +7,6 @@ export type {
   RoomState,
   RoomStatus,
   TeamId,
+  TeamResultEntry,
   TeamMode,
 } from './room';

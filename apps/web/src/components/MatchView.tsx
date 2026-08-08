@@ -16,6 +16,7 @@ import type {
   PixelSpawnedPayload,
   ScoreboardEntry,
   TargetChangedPayload,
+  TeamScoreEntry,
   TickPayload,
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
@@ -84,6 +85,8 @@ export function MatchView({
 
   const [countdown, setCountdown] = useState<number | null>(null);
   const [scoreboard, setScoreboard] = useState<readonly ScoreboardEntry[]>([]);
+  /** Keadaan kedua regu; kosong di match ffa. */
+  const [teams, setTeams] = useState<readonly TeamScoreEntry[]>([]);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [level, setLevel] = useState(1);
   const [chaos, setChaos] = useState<ChaosModifier | null>(null);
@@ -203,6 +206,7 @@ export function MatchView({
         setRemainingMs(snapshot.remainingMs);
         setSuddenDeath(snapshot.suddenDeath);
         setScoreboard(snapshot.scoreboard);
+        setTeams(snapshot.teams);
         // Tanpa baris ini, pemain yang kembali di tengah match pada level 9
         // akan mendapat spanduk "Level 9" di tick berikutnya — seolah ia baru
         // saja naik, padahal ia cuma menyusul keadaan yang sudah berjalan.
@@ -261,6 +265,7 @@ export function MatchView({
       setLevel(payload.level);
       setChaos(payload.chaos);
       setScoreboard(payload.scoreboard);
+      setTeams(payload.teams);
       // Tick membawa warna target juga, jadi HUD tetap benar walau satu event
       // `targetChanged` hilang di jaringan.
       setTargetColors(payload.targetColors);
@@ -365,7 +370,24 @@ export function MatchView({
   }, [onBackToLobby]);
 
   const seconds = remainingMs === null ? null : Math.ceil(remainingMs / 1000);
-  const sorted = [...scoreboard].sort((a, b) => b.score - a.score);
+  const beregu = teams.length > 0;
+  /*
+    Di mode beregu daftar diurutkan menurut REGU dulu, baru skor.
+
+    Bukan murni menurut skor: yang ingin dibaca sekilas adalah "regu kami
+    sedang berapa", dan daftar yang anggotanya berselang-seling membuat mata
+    harus menjumlahkan sendiri. Regu sendiri selalu di atas — di layar HP,
+    baris pertama yang terbaca harus milikmu.
+  */
+  const reguSaya = scoreboard.find((entry) => entry.playerId === playerId)?.team ?? null;
+  const sorted = [...scoreboard].sort((a, b) => {
+    if (beregu && a.team !== b.team) {
+      if (a.team === reguSaya) return -1;
+      if (b.team === reguSaya) return 1;
+      return (a.team ?? '').localeCompare(b.team ?? '');
+    }
+    return b.score - a.score;
+  });
   const me = scoreboard.find((entry) => entry.playerId === playerId) ?? null;
   const eliminated = me?.eliminated === true;
   // Overlay beku tidak ditampilkan untuk pemain yang sudah tereliminasi:
@@ -375,6 +397,43 @@ export function MatchView({
 
   return (
     <div className="match">
+      {/*
+        Skor regu ditaruh DI ATAS daftar pemain, bukan di bawahnya.
+
+        Di mode beregu inilah satu-satunya angka yang menentukan menang atau
+        kalah; skor pribadi turun jadi rincian. Urutan di layar harus mengikuti
+        urutan kepentingan itu, terutama di HP di mana yang di bawah lipatan
+        praktis tidak terbaca saat sedang mengetuk.
+      */}
+      {beregu && (
+        <div className="teamBar">
+          {teams.map((entry) => (
+            <div
+              className={`teamBar__side teamBar__side--${entry.team}${
+                entry.team === reguSaya ? ' teamBar__side--me' : ''
+              }${entry.eliminated ? ' teamBar__side--out' : ''}`}
+              key={entry.team}
+            >
+              <span className="teamBar__name">{t(`teamName.${entry.team}`)}</span>
+              <span className="teamBar__score">{entry.score}</span>
+              <span className="teamBar__meta">
+                <span className="hud__label">/{entry.targetScore}</span>
+                {/* Nyawa BERSAMA. Ditampilkan sekali di sini, bukan diulang di
+                    tiap baris pemain — angka yang sama di empat tempat terbaca
+                    sebagai empat kolam yang kebetulan sama besar. */}
+                {entry.eliminated ? (
+                  <span className="lives lives--out">{t('eliminatedShort')}</span>
+                ) : (
+                  <span className={`lives${entry.frozenMs > 0 ? ' lives--out' : ''}`}>
+                    {entry.frozenMs > 0 ? t('down') : '▮'.repeat(entry.lives)}
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/*
         Berempat, satu baris per pemain mendorong papan sampai 460 px dari atas
         layar dan membuat halaman lebih tinggi dari viewport — kontrol bawah
@@ -388,9 +447,13 @@ export function MatchView({
         {sorted.map((entry) => (
           <li
             key={entry.playerId}
+            // Garis warna regu di tepi kiri baris. Di daftar yang sudah
+            // dikelompokkan, ia yang membuat batas antar regu terlihat tanpa
+            // menambah satu baris judul pun — dan tinggi layar adalah hal yang
+            // paling langka di halaman ini.
             className={`scoreboard__row${entry.playerId === playerId ? ' scoreboard__row--me' : ''}${
               entry.connected ? '' : ' scoreboard__row--gone'
-            }`}
+            }${entry.team === null ? '' : ` scoreboard__row--team-${entry.team}`}`}
           >
             <span className="scoreboard__top">
               <span className="avatarMark" aria-hidden="true">
@@ -434,9 +497,15 @@ export function MatchView({
           <span className="hud__label">{t('timeLeft')}</span>{' '}
           <strong>{seconds === null ? '—' : `${seconds}s`}</strong>
         </span>
-        <span>
-          <span className="hud__label">{t('target')}</span> <strong>{targetScore}</strong>
-        </span>
+        {/* Di mode beregu target sudah tertulis di bar regu, dan ANGKANYA
+            BERBEDA — di sana target regu (per pemain × anggota), di sini target
+            per pemain. Dua angka berbeda untuk hal yang sama di satu layar
+            bukan sekadar berlebihan; pemain akan mengejar yang salah. */}
+        {!beregu && (
+          <span>
+            <span className="hud__label">{t('target')}</span> <strong>{targetScore}</strong>
+          </span>
+        )}
         {/* Level TIDAK ditampilkan di sini: bar di bawah sudah menampilkannya
             beserta progresnya. Dua tempat untuk satu angka hanya menyempitkan
             baris ini tanpa menambah informasi apa pun. */}
@@ -525,8 +594,17 @@ export function MatchView({
           */}
           {result !== null && (
             <BoardModal>
+              {/* Di mode beregu yang menang adalah REGU. Menilai kemenangan
+                  dari peringkat pribadi akan memberi tahu pemain terbaik di
+                  regu yang kalah bahwa dia menang. */}
               <h2 className="overlay__title">
-                {result.ranking[0]?.playerId === playerId ? t('youWin') : t('matchOver')}
+                {(
+                  result.teams.length > 0
+                    ? result.teams[0]?.team === reguSaya
+                    : result.ranking[0]?.playerId === playerId
+                )
+                  ? t('youWin')
+                  : t('matchOver')}
               </h2>
               {/* Catatan waktunya, yang membuat match terasa seperti balapan dan
                   bukan sekadar daftar angka. Disembunyikan saat match habis
@@ -535,6 +613,30 @@ export function MatchView({
                 <p className="overlay__time">
                   {t('finishedIn', { time: formatDuration(result.durationMs) })}
                 </p>
+              )}
+              {/* Hasil regu DULU, lalu rincian per pemain di bawahnya.
+                  Statistik pribadi tidak berhenti berarti karena menangnya
+                  bersama — orang tetap ingin tahu siapa penyumbang terbesar —
+                  tapi ia bukan lagi jawaban atas "kami menang atau tidak". */}
+              {result.teams.length > 0 && (
+                <ol className="results results--teams">
+                  {result.teams.map((entry) => (
+                    <li
+                      key={entry.team}
+                      className={`results__team results__team--${entry.team}${
+                        entry.team === reguSaya ? ' results__me' : ''
+                      }`}
+                    >
+                      <span>
+                        {entry.rank}. {t(`teamName.${entry.team}`)}
+                      </span>
+                      <span>{entry.score}</span>
+                      {entry.eliminated && (
+                        <span className="results__detail">{t('eliminatedShort')}</span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
               )}
               <ol className="results">
                 {result.ranking.map((entry) => (

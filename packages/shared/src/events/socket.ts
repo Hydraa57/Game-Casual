@@ -9,6 +9,7 @@ import type {
   RoomSettings,
   RoomState,
   TeamId,
+  TeamResultEntry,
 } from '../types/index';
 
 /**
@@ -193,6 +194,8 @@ export interface ResyncPayload {
   readonly remainingMs: number | null;
   readonly suddenDeath: boolean;
   readonly scoreboard: readonly ScoreboardEntry[];
+  /** Keadaan kedua regu; array kosong di match ffa. */
+  readonly teams: readonly TeamScoreEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +276,32 @@ export interface ScoreboardEntry {
   readonly latencyMs: number | null;
   /** Lihat `Player.bot` — ditampilkan juga di scoreboard saat match berjalan. */
   readonly bot: BotDifficulty | null;
+  /** Regu pemain ini; `null` di match ffa. */
+  readonly team: TeamId | null;
+}
+
+/**
+ * Keadaan satu regu selama match beregu.
+ *
+ * Dikirim TERPISAH dari daftar pemain, bukan diulang di tiap baris pemain.
+ * Nyawa dan KO di mode beregu memang milik regu, bukan milik orang: menempelkan
+ * angka yang sama ke empat baris membuatnya terbaca sebagai empat kolam yang
+ * kebetulan sama besar, dan pemain akan mengira ia punya cadangan sendiri.
+ */
+export interface TeamScoreEntry {
+  readonly team: TeamId;
+  /** Jumlah poin seluruh anggota. Ini yang menentukan siapa menang. */
+  readonly score: number;
+  /** Sisa nyawa BERSAMA. Salah tap siapa pun mengurangi angka yang sama ini. */
+  readonly lives: number;
+  /** Isi penuh kolamnya — MP_STARTING_LIVES × jumlah anggota. */
+  readonly maxLives: number;
+  /** Target poin regu ini: target per pemain × jumlah anggotanya. */
+  readonly targetScore: number;
+  /** Sisa waktu beku SEREGU dalam ms; 0 = sedang bermain. */
+  readonly frozenMs: number;
+  readonly knockouts: number;
+  readonly eliminated: boolean;
 }
 
 export interface TickPayload {
@@ -291,6 +320,8 @@ export interface TickPayload {
   readonly levelRemainingMs: number;
   readonly chaos: ChaosModifier | null;
   readonly scoreboard: readonly ScoreboardEntry[];
+  /** Keadaan kedua regu; array kosong di match ffa. */
+  readonly teams: readonly TeamScoreEntry[];
   /**
    * Warna target ikut di setiap tick, tidak hanya di `targetChanged`.
    *
@@ -313,6 +344,15 @@ export interface TickPayload {
 
 export interface MatchEndedPayload {
   readonly ranking: readonly MatchResultEntry[];
+  /**
+   * Hasil per regu, terurut dari yang menang; kosong di match ffa.
+   *
+   * `ranking` tetap berisi seluruh pemain apa adanya — statistik pribadi
+   * (akurasi, combo terbaik) tidak berhenti berarti hanya karena menangnya
+   * bersama-sama, dan orang tetap ingin tahu siapa penyumbang terbesar di
+   * timnya.
+   */
+  readonly teams: readonly TeamResultEntry[];
   /** `elimination`: pemain tersisa tinggal satu karena yang lain tereliminasi. */
   readonly reason: 'targetScore' | 'timeUp' | 'suddenDeath' | 'elimination';
   /**

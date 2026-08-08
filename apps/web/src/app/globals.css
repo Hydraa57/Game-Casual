@@ -1208,6 +1208,106 @@ h3 {
   margin-left: 0;
 }
 
+/* ------------------------------------------------- skor regu saat match jalan */
+
+/*
+  Dua sisi berhadapan, di ATAS daftar pemain.
+
+  Di mode beregu inilah satu-satunya angka yang menentukan menang atau kalah,
+  jadi ia mendapat tempat paling atas dan ukuran paling besar. Skor pribadi
+  turun jadi rincian di bawahnya — masih ada, tapi tidak lagi menjawab
+  pertanyaan "kami menang atau tidak".
+*/
+.teamBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.teamBar__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.teamBar__side--a {
+  border-color: var(--sky);
+}
+
+.teamBar__side--b {
+  border-color: var(--bubblegum-ink);
+}
+
+/* Regu sendiri diberi latar, bukan bingkai yang lebih tebal: tebal bingkai
+   menggeser tata letak saat regu berganti giliran unggul, dan papan yang
+   bergoyang di tengah permainan tap adalah gangguan. */
+.teamBar__side--me {
+  background: var(--surface-raised);
+}
+
+.teamBar__side--out {
+  opacity: 0.55;
+}
+
+.teamBar__name {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.teamBar__side--a .teamBar__name {
+  color: var(--sky);
+}
+
+.teamBar__side--b .teamBar__name {
+  color: var(--bubblegum-ink);
+}
+
+.teamBar__score {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.teamBar__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+}
+
+.results--teams {
+  margin-bottom: 4px;
+}
+
+.results__team {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.results__team--a {
+  border-left: 4px solid var(--sky);
+}
+
+.results__team--b {
+  border-left: 4px solid var(--bubblegum);
+}
+
 /* Ping dan status siap dikelompokkan supaya keduanya tetap rapat di kanan;
    tanpa ini `space-between` di baris induk akan melemparkannya ke dua ujung
    yang berbeda. */
@@ -1374,6 +1474,26 @@ h3 {
   border: 2px solid var(--border);
   border-radius: 4px;
   font-size: 0.85rem;
+}
+
+/*
+  Garis warna regu di tepi kiri baris. Batas antar regu jadi terlihat tanpa
+  menambah satu baris judul pun — dan tinggi layar adalah hal paling langka di
+  halaman main.
+
+  Catatan urutan: kedua blok ini WAJIB setelah `.scoreboard__row`. Spesifisitas
+  keduanya sama (satu kelas), jadi yang menang adalah yang belakangan. Versi
+  pertama menaruhnya di blok regu jauh di atas, dan `border` milik
+  `.scoreboard__row` menimpanya — garisnya benar-benar tidak pernah tergambar,
+  tanpa satu pun error. Persis kegagalan yang sama pernah terjadi pada
+  `.btn--fs`.
+*/
+.scoreboard__row--team-a {
+  border-left: 4px solid var(--sky);
+}
+
+.scoreboard__row--team-b {
+  border-left: 4px solid var(--bubblegum-ink);
 }
 
 /* Satu kolom: nama & skor dan metanya berdampingan, seperti sebelumnya. */
