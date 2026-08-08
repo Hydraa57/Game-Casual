@@ -62,6 +62,16 @@
   --accent-ink: #b54d0a;
   --sky: #2a72b8;
   --mint: #1f9e6b;
+  /*
+    Ukuran papan terkecil yang masih layak dimainkan di layar sentuh.
+
+    223 px dibagi 8 sel = 28 px per sel — di bawah sasaran sentuh 44 px, tapi
+    ini bukan tombol: pemain mengetuk pixel yang terlihat jelas dan tidak ada
+    kontrol lain di sekitarnya yang bisa tertekan keliru. Di bawah angka ini
+    papannya berhenti bisa dimainkan dengan jempol, dan lebih baik halamannya
+    di-scroll daripada papannya menyusut lagi.
+  */
+  --board-min: 223px;
   --bubblegum: #d12e72;
   /*
     Merah muda untuk MENULIS — pasangan ketiga setelah `--accent-ink` dan
@@ -309,8 +319,10 @@ h3 {
      perhitungan di atas tidak pernah berlaku. */
   min-height: 0;
   /* Batas bawah supaya papan tidak pernah menyusut jadi tidak bisa dimainkan
-     di layar yang sangat pendek; di titik itu halamannya boleh di-scroll. */
-  min-height: 236px;
+     di layar yang sangat pendek; di titik itu halamannya boleh di-scroll.
+     Ditulis dari `--board-min` supaya lantai kotaknya dan lantai papan di
+     dalamnya tidak bisa lagi menyimpang satu sama lain. */
+  min-height: calc(var(--board-min) + 13px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1227,13 +1239,85 @@ h3 {
 .teamBar__side {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 8px;
+  gap: 3px;
+  padding: 5px 7px 6px;
   border: 3px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
   min-width: 0;
+}
+
+.teamBar__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Daftar anggota tinggal DI DALAM kartu regunya, bukan sebagai blok terpisah
+   di bawahnya. Itu yang mengembalikan ~100 px ke papan — lihat catatan di
+   MatchView. */
+.teamBar__members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.teamBar__member {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.teamBar__member--me {
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+.teamBar__member--gone {
+  opacity: 0.5;
+}
+
+.teamBar__memberName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teamBar__memberScore {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/*
+  Penanda pemain yang koneksinya putus.
+
+  Dulu satu-satunya tanda adalah baris yang meredup, dan itu terbaca sebagai
+  "sedang kalah" — bukan "orangnya tidak ada". Skor yang berhenti bergerak tanpa
+  penjelasan membuat pemain lain mengira lawannya menyerah, padahal kursinya
+  masih ditahan selama masa tenggang dan ia bisa kembali kapan saja.
+*/
+.tagGone {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--text-on-deep);
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.7;
 }
 
 .teamBar__side--a {
@@ -1257,14 +1341,14 @@ h3 {
 
 .teamBar__name {
   font-family: var(--font-display);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  min-width: 0;
 }
 
 .teamBar__side--a .teamBar__name {
@@ -1276,18 +1360,14 @@ h3 {
 }
 
 .teamBar__score {
-  font-family: var(--font-display);
-  font-size: 1.4rem;
-  font-weight: 700;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.teamBar__meta {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.7rem;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .results--teams {
@@ -1474,26 +1554,6 @@ h3 {
   border: 2px solid var(--border);
   border-radius: 4px;
   font-size: 0.85rem;
-}
-
-/*
-  Garis warna regu di tepi kiri baris. Batas antar regu jadi terlihat tanpa
-  menambah satu baris judul pun — dan tinggi layar adalah hal paling langka di
-  halaman main.
-
-  Catatan urutan: kedua blok ini WAJIB setelah `.scoreboard__row`. Spesifisitas
-  keduanya sama (satu kelas), jadi yang menang adalah yang belakangan. Versi
-  pertama menaruhnya di blok regu jauh di atas, dan `border` milik
-  `.scoreboard__row` menimpanya — garisnya benar-benar tidak pernah tergambar,
-  tanpa satu pun error. Persis kegagalan yang sama pernah terjadi pada
-  `.btn--fs`.
-*/
-.scoreboard__row--team-a {
-  border-left: 4px solid var(--sky);
-}
-
-.scoreboard__row--team-b {
-  border-left: 4px solid var(--bubblegum-ink);
 }
 
 /* Satu kolom: nama & skor dan metanya berdampingan, seperti sebelumnya. */
@@ -1775,8 +1835,30 @@ h3 {
 }
 
 @supports (width: 1cqw) {
+  /*
+    Papan mengambil sisi terpendek dari kotaknya — TAPI tidak pernah lebih kecil
+    dari `--board-min`.
+
+    Lantai itu bukan kehati-hatian berlebihan; ia menambal kegagalan yang nyata.
+    `container-type: size` menuntut tinggi yang PASTI, dan ketika tinggi
+    `.boardArea` datang dari `min-height` di dalam flex yang sedang tertekan,
+    browser memperlakukan tinggi itu sebagai tidak pasti — `cqh` jatuh ke nol
+    dan papannya runtuh jadi 10 px. Diukur langsung: di multiplayer 390×664,
+    `.boardArea` benar setinggi 236 px sementara papan di dalamnya 10×10.
+
+    Solo tidak pernah kena karena tingginya datang dari `flex: 1 1 auto` yang
+    TUMBUH mengisi sisa ruang, dan itu pasti. Yang membuatnya sering muncul di
+    multiplayer adalah tinggi chrome-nya: begitu papan skor + bar regu melebihi
+    ruang yang ada, `.boardArea` berhenti tumbuh dan mulai bergantung pada
+    `min-height`.
+
+    `max()` di sini berarti: pakai perhitungan cq kalau ia masuk akal, dan
+    jatuh ke lebar-yang-tersedia kalau tidak. Halamannya boleh di-scroll di
+    layar sependek itu — papan yang tidak bisa dimainkan jauh lebih buruk
+    daripada halaman yang harus di-scroll sedikit.
+  */
   .boardArea .board {
-    width: min(100cqw, 100cqh);
+    width: max(min(100cqw, 100cqh), min(100cqw, var(--board-min)));
   }
 }
 
@@ -2292,6 +2374,120 @@ h3 {
 .levelBar__remaining {
   font-size: 0.8rem;
   color: var(--text-dim);
+  /* Boleh menyusut sampai hilang. Baris ini menampung level, sisa menuju level
+     berikutnya, lencana chaos, dan sisa waktu match; kalau semuanya menolak
+     mengalah, yang terjadi adalah baris yang melebar melewati layar. Yang
+     paling boleh dikorbankan adalah "11 dtk lagi" — ia hanya keterangan dari
+     bar yang tepat di bawahnya. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sisa waktu match, menumpang di baris judul bar level. */
+.levelBar__trail {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.levelBar__time {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  Sisa waktu berubah merah dan berdenyut di babak akhir.
+
+  Angka yang cuma mengecil terbaca sebagai keterangan; angka yang berdenyut
+  terbaca sebagai peringatan. Bedanya penting di game yang matanya terkunci di
+  papan — perubahan warna di pinggir layar masih tertangkap penglihatan tepi,
+  sementara angka yang berubah pelan tidak.
+*/
+.levelBar__time--warn {
+  color: var(--danger);
+  animation: timeWarn 900ms ease-in-out infinite;
+}
+
+/*
+  Spanduk babak akhir: lewat di atas papan, tidak menutupinya.
+
+  Ditaruh di tepi ATAS papan dan bukan di tengah dengan sengaja — di tengah ia
+  akan menutupi sel-sel yang justru sedang paling diperebutkan. Latar pekat
+  supaya tetap terbaca di atas warna apa pun, tapi ia pergi sendiri setelah 2,2
+  detik: peringatan yang menetap berhenti dibaca, dan detik-detik ini yang
+  paling berharga di seluruh match.
+*/
+.finalCall {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--text-on-deep);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  box-shadow: var(--lift);
+  animation: finalCall 2200ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes finalCall {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-14px) scale(0.85);
+  }
+  12%,
+  80% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finalCall {
+    animation: finalCallFade 2200ms linear both;
+  }
+
+  @keyframes finalCallFade {
+    0%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+@keyframes timeWarn {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levelBar__time--warn {
+    animation: none;
+  }
 }
 
 .levelBar__track {

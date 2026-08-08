@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AVATAR_GLYPH, isMaxCurveLevel, matchIntensity } from '@pixelmatrix/shared';
+import {
+  AVATAR_GLYPH,
+  isMaxCurveLevel,
+  matchIntensity,
+  MP_SCORE_WARNING_RATIO,
+  MP_TIME_WARNING_MS,
+} from '@pixelmatrix/shared';
 import type {
   AvatarId,
   BombHitPayload,
@@ -100,6 +106,8 @@ export function MatchView({
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.6);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  /** Spanduk "babak akhir" sedang tampil. Muncul sekali, lalu pergi sendiri. */
+  const [showFinalCall, setShowFinalCall] = useState(false);
 
   const musicRef = useRef<Music | null>(null);
   if (musicRef.current === null && typeof window !== 'undefined') {
@@ -371,6 +379,42 @@ export function MatchView({
 
   const seconds = remainingMs === null ? null : Math.ceil(remainingMs / 1000);
   const beregu = teams.length > 0;
+  const babakAkhirRef = useRef(false);
+
+  /*
+    "Babak akhir": waktu hampir habis, ATAU ada yang hampir menyentuh target.
+
+    Dua-duanya, bukan waktu saja. Match bisa selesai lewat target jauh sebelum
+    waktunya habis, dan pemain yang cuma diberi peringatan waktu akan terkejut
+    oleh layar hasil yang muncul tiba-tiba. Yang dipakai adalah pihak TERDEPAN
+    siapa pun dia — yang sedang tertinggal justru paling perlu tahu.
+  */
+  const timeWarning = remainingMs !== null && remainingMs <= MP_TIME_WARNING_MS;
+  const puncak = beregu
+    ? Math.max(0, ...teams.map((entry) => entry.score / Math.max(1, entry.targetScore)))
+    : Math.max(0, ...scoreboard.map((entry) => entry.score / Math.max(1, targetScore)));
+  const scoreWarning = puncak >= MP_SCORE_WARNING_RATIO;
+  const babakAkhir = (timeWarning || scoreWarning) && result === null && countdown === null;
+
+  /*
+    Spanduknya muncul SEKALI, saat babak akhir dimulai — bukan menetap.
+
+    Baris permanen di layar main sudah terbukti mahal: setiap 39 px yang
+    ditempati chrome diambil langsung dari papan. Peringatan yang tinggal
+    selamanya juga berhenti dibaca setelah beberapa detik pertama. Yang menetap
+    cukup angka waktunya yang berdenyut merah.
+  */
+  useEffect(() => {
+    if (!babakAkhir) {
+      babakAkhirRef.current = false;
+      return;
+    }
+    if (babakAkhirRef.current) return;
+    babakAkhirRef.current = true;
+    setShowFinalCall(true);
+    const timer = window.setTimeout(() => setShowFinalCall(false), 2200);
+    return () => window.clearTimeout(timer);
+  }, [babakAkhir]);
   /*
     Di mode beregu daftar diurutkan menurut REGU dulu, baru skor.
 
@@ -397,15 +441,17 @@ export function MatchView({
 
   return (
     <div className="match">
-      {/*
-        Skor regu ditaruh DI ATAS daftar pemain, bukan di bawahnya.
+      {beregu ? (
+        /*
+          Skor regu dan anggotanya jadi SATU blok, bukan dua.
 
-        Di mode beregu inilah satu-satunya angka yang menentukan menang atau
-        kalah; skor pribadi turun jadi rincian. Urutan di layar harus mengikuti
-        urutan kepentingan itu, terutama di HP di mana yang di bawah lipatan
-        praktis tidak terbaca saat sedang mengetuk.
-      */}
-      {beregu && (
+          Versi pertama menaruh bar regu di atas daftar pemain yang sudah ada.
+          Diukur setelahnya: chrome-nya jadi 426 px di layar 760 px, dan papan
+          runtuh ke batas bawahnya — pemain melihat nama-nama lebih besar
+          daripada papan yang dimainkannya. Dua blok yang isinya bersaudara
+          memang tidak perlu dua kartu: nama regu, skornya, dan siapa saja
+          anggotanya adalah satu hal.
+        */
         <div className="teamBar">
           {teams.map((entry) => (
             <div
@@ -414,13 +460,11 @@ export function MatchView({
               }${entry.eliminated ? ' teamBar__side--out' : ''}`}
               key={entry.team}
             >
-              <span className="teamBar__name">{t(`teamName.${entry.team}`)}</span>
-              <span className="teamBar__score">{entry.score}</span>
-              <span className="teamBar__meta">
-                <span className="hud__label">/{entry.targetScore}</span>
-                {/* Nyawa BERSAMA. Ditampilkan sekali di sini, bukan diulang di
-                    tiap baris pemain — angka yang sama di empat tempat terbaca
-                    sebagai empat kolam yang kebetulan sama besar. */}
+              <span className="teamBar__head">
+                <span className="teamBar__name">{t(`teamName.${entry.team}`)}</span>
+                {/* Nyawa BERSAMA. Sekali di sini, tidak diulang di tiap anggota
+                    — angka yang sama di empat tempat terbaca sebagai empat
+                    kolam yang kebetulan sama besar. */}
                 {entry.eliminated ? (
                   <span className="lives lives--out">{t('eliminatedShort')}</span>
                 ) : (
@@ -429,88 +473,101 @@ export function MatchView({
                   </span>
                 )}
               </span>
+              <span className="teamBar__score">
+                {entry.score}
+                <span className="hud__label">/{entry.targetScore}</span>
+              </span>
+              <ul className="teamBar__members">
+                {sorted
+                  .filter((player) => player.team === entry.team)
+                  .map((player) => (
+                    <li
+                      key={player.playerId}
+                      className={`teamBar__member${
+                        player.playerId === playerId ? ' teamBar__member--me' : ''
+                      }${player.connected ? '' : ' teamBar__member--gone'}`}
+                    >
+                      <span className="avatarMark" aria-hidden="true">
+                        {AVATAR_GLYPH[player.avatar]}
+                      </span>
+                      <span className="teamBar__memberName">{player.nickname}</span>
+                      {!player.connected && <span className="tagGone">{t('afkShort')}</span>}
+                      <span className="teamBar__memberScore">{player.score}</span>
+                    </li>
+                  ))}
+              </ul>
             </div>
           ))}
         </div>
+      ) : (
+        /*
+          Berempat, satu baris per pemain mendorong papan sampai 460 px dari atas
+          layar dan membuat halaman lebih tinggi dari viewport — kontrol bawah
+          kepotong, dan di HP yang lebih pendek papannya sendiri ikut kepotong.
+          Mulai tiga pemain, daftarnya dipecah dua kolom.
+
+          Ambangnya di TIGA, bukan empat: dua pemain masih lega satu baris penuh,
+          dan memaksanya jadi dua kolom hanya membuang ruang.
+        */
+        <ol className={`scoreboard${sorted.length > 2 ? ' scoreboard--grid' : ''}`}>
+          {sorted.map((entry) => (
+            <li
+              key={entry.playerId}
+              className={`scoreboard__row${entry.playerId === playerId ? ' scoreboard__row--me' : ''}${
+                entry.connected ? '' : ' scoreboard__row--gone'
+              }`}
+            >
+              <span className="scoreboard__top">
+                <span className="avatarMark" aria-hidden="true">
+                  {AVATAR_GLYPH[entry.avatar]}
+                </span>
+                <span className="scoreboard__name">{entry.nickname}</span>
+                <span className="scoreboard__score">{entry.score}</span>
+              </span>
+              <span className="scoreboard__meta">
+                {/* Tingkatnya, bukan sekadar "BOT": nama botnya netral ("Bot 2"),
+                    jadi lencana inilah satu-satunya tempat lawan bisa tahu ia
+                    sedang berhadapan dengan yang mana. */}
+                {entry.bot !== null && (
+                  <span className="badge badge--bot">{t(`botLevel.${entry.bot}`)}</span>
+                )}
+                {/* Pemain yang koneksinya putus tetap menempati kursinya selama
+                    masa tenggang. Tanpa penanda ini, yang lain cuma melihat skor
+                    yang berhenti bergerak dan tidak tahu kenapa. */}
+                {!entry.connected && <span className="tagGone">{t('afkShort')}</span>}
+                {/* Bot tidak punya jaringan untuk diukur, jadi ia tidak pernah
+                    membawa lencana ini. */}
+                {entry.bot === null && entry.connected && (
+                  <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} />
+                )}
+                {entry.lives !== null && (
+                  <span
+                    className={`lives${entry.frozenMs > 0 || entry.eliminated ? ' lives--out' : ''}`}
+                    aria-label={`${entry.lives}`}
+                  >
+                    {entry.eliminated
+                      ? t('eliminatedShort')
+                      : entry.frozenMs > 0
+                        ? t('down')
+                        : '▮'.repeat(entry.lives)}
+                  </span>
+                )}
+                {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}
+              </span>
+            </li>
+          ))}
+        </ol>
       )}
 
       {/*
-        Berempat, satu baris per pemain mendorong papan sampai 460 px dari atas
-        layar dan membuat halaman lebih tinggi dari viewport — kontrol bawah
-        kepotong, dan di HP yang lebih pendek papannya sendiri ikut kepotong.
-        Mulai tiga pemain, daftarnya dipecah dua kolom.
+        Kartu "SISA WAKTU" selebar layar SUDAH DIBUANG.
 
-        Ambangnya di TIGA, bukan empat: dua pemain masih lega satu baris penuh,
-        dan memaksanya jadi dua kolom hanya membuang ruang.
+        Isinya cuma satu angka, dan ia memakan 39 px permanen dari ruang yang
+        seluruhnya diperebutkan papan — di HP pendek itu bedanya antara papan
+        yang bisa dimainkan dan papan yang runtuh ke batas bawahnya. Sisa waktu,
+        target, dan lencana chaos sekarang menumpang di baris judul bar level
+        yang memang sudah ada di sana.
       */}
-      <ol className={`scoreboard${sorted.length > 2 ? ' scoreboard--grid' : ''}`}>
-        {sorted.map((entry) => (
-          <li
-            key={entry.playerId}
-            // Garis warna regu di tepi kiri baris. Di daftar yang sudah
-            // dikelompokkan, ia yang membuat batas antar regu terlihat tanpa
-            // menambah satu baris judul pun — dan tinggi layar adalah hal yang
-            // paling langka di halaman ini.
-            className={`scoreboard__row${entry.playerId === playerId ? ' scoreboard__row--me' : ''}${
-              entry.connected ? '' : ' scoreboard__row--gone'
-            }${entry.team === null ? '' : ` scoreboard__row--team-${entry.team}`}`}
-          >
-            <span className="scoreboard__top">
-              <span className="avatarMark" aria-hidden="true">
-                {AVATAR_GLYPH[entry.avatar]}
-              </span>
-              <span className="scoreboard__name">{entry.nickname}</span>
-              <span className="scoreboard__score">{entry.score}</span>
-            </span>
-            <span className="scoreboard__meta">
-              {/* Tingkatnya, bukan sekadar "BOT": nama botnya netral ("Bot 2"),
-                  jadi lencana inilah satu-satunya tempat lawan bisa tahu ia
-                  sedang berhadapan dengan yang mana. */}
-              {entry.bot !== null && (
-                <span className="badge badge--bot">{t(`botLevel.${entry.bot}`)}</span>
-              )}
-              {/* Bot tidak punya jaringan untuk diukur, jadi ia tidak pernah
-                  membawa lencana ini. */}
-              {entry.bot === null && (
-                <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} />
-              )}
-              {entry.lives !== null && (
-                <span
-                  className={`lives${entry.frozenMs > 0 || entry.eliminated ? ' lives--out' : ''}`}
-                  aria-label={`${entry.lives}`}
-                >
-                  {entry.eliminated
-                    ? t('eliminatedShort')
-                    : entry.frozenMs > 0
-                      ? t('down')
-                      : '▮'.repeat(entry.lives)}
-                </span>
-              )}
-              {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}
-            </span>
-          </li>
-        ))}
-      </ol>
-
-      <div className="matchbar">
-        <span>
-          <span className="hud__label">{t('timeLeft')}</span>{' '}
-          <strong>{seconds === null ? '—' : `${seconds}s`}</strong>
-        </span>
-        {/* Di mode beregu target sudah tertulis di bar regu, dan ANGKANYA
-            BERBEDA — di sana target regu (per pemain × anggota), di sini target
-            per pemain. Dua angka berbeda untuk hal yang sama di satu layar
-            bukan sekadar berlebihan; pemain akan mengejar yang salah. */}
-        {!beregu && (
-          <span>
-            <span className="hud__label">{t('target')}</span> <strong>{targetScore}</strong>
-          </span>
-        )}
-        {/* Level TIDAK ditampilkan di sini: bar di bawah sudah menampilkannya
-            beserta progresnya. Dua tempat untuk satu angka hanya menyempitkan
-            baris ini tanpa menambah informasi apa pun. */}
-        {chaos !== null && <span className="badge badge--chaos">{t(CHAOS_LABEL[chaos])}</span>}
-      </div>
 
       {/* Warna yang harus diketuk. Tanpa baris ini permainannya tidak bisa
           dimainkan sama sekali — pemain hanya bisa menebak. Ditaruh menempel di
@@ -533,6 +590,21 @@ export function MatchView({
           // teoretis: level terus naik tapi kesulitannya tidak lagi bertambah,
           // dan pemain berhak tahu bedanya.
           atMax={isMaxCurveLevel(level)}
+          trailing={
+            <span className="levelBar__trail">
+              {/* Target hanya di mode ffa: di beregu ia sudah tertulis di kartu
+                  regu, dan ANGKANYA BERBEDA (target regu vs target per pemain).
+                  Dua angka berbeda untuk hal yang sama membuat pemain mengejar
+                  yang salah. */}
+              {!beregu && <span className="hud__label">/{targetScore}</span>}
+              {chaos !== null && (
+                <span className="badge badge--chaos">{t(CHAOS_LABEL[chaos])}</span>
+              )}
+              <strong className={`levelBar__time${timeWarning ? ' levelBar__time--warn' : ''}`}>
+                {seconds === null ? '—' : `${seconds}s`}
+              </strong>
+            </span>
+          }
         />
       )}
 
@@ -583,6 +655,15 @@ export function MatchView({
             <div className="overlay overlay--flash">
               <h2 className="overlay__title">{t('suddenDeath')}</h2>
               <p className="overlay__hint">{t('suddenDeathHint')}</p>
+            </div>
+          )}
+
+          {/* Spanduk babak akhir: lewat begitu saja tanpa menutupi papan.
+              Menghentikan permainan untuk mengumumkan bahwa permainan hampir
+              selesai akan merampas detik-detik yang justru paling berharga. */}
+          {showFinalCall && !suddenDeath && frozenSeconds === null && (
+            <div className="finalCall" aria-live="polite">
+              {timeWarning ? t('finalCallTime') : t('finalCallScore')}
             </div>
           )}
 

@@ -5,10 +5,11 @@ import { useTranslations } from 'next-intl';
 import { DEFAULT_AVATAR } from '@pixelmatrix/shared';
 import type { AvatarId, RoomErrorCode } from '@pixelmatrix/shared';
 import { useRoom } from '@/hooks/useRoom';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { readAvatar, writeAvatar } from '@/lib/avatar';
 import { readNickname, writeNickname } from '@/lib/nickname';
 import { gameServerUrl } from '@/lib/socket';
+import { ConfirmDialog } from './ConfirmDialog';
 import { MatchView } from './MatchView';
 import { RoomEntry } from './RoomEntry';
 import { FullscreenButton } from './FullscreenButton';
@@ -33,7 +34,10 @@ const ERROR_LABEL: Record<RoomErrorCode, string> = {
 export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) {
   const t = useTranslations('room');
   const room = useRoom();
+  const router = useRouter();
   const [nickname, setNickname] = useState('');
+  /** Dialog "yakin keluar?" dari tombol kembali di topbar. */
+  const [confirmExit, setConfirmExit] = useState(false);
   // Dibaca di effect, bukan saat inisialisasi state: localStorage tidak ada
   // saat render di server.
   const [avatar, setAvatar] = useState<AvatarId>(DEFAULT_AVATAR);
@@ -84,9 +88,24 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
   return (
     <main className={`shell${sedangMain ? ' shell--play' : ''}`}>
       <div className="topbar">
-        <Link className="btn btn--small" href="/">
-          ← {t('back')}
-        </Link>
+        {/*
+          Di DALAM room, tombol ini bertanya dulu.
+
+          Menekan "kembali" saat match berjalan bukan sekadar berpindah halaman:
+          kursinya dilepas, dan match-nya ikut berakhir untuk lawan. Tombol
+          "Keluar room" di bawah sudah bertanya sejak awal — yang ini tidak,
+          jadi jalan keluar yang paling mudah dijangkau jempol justru satu-
+          satunya yang tidak bisa dibatalkan.
+        */}
+        {room.room !== null ? (
+          <button className="btn btn--small" type="button" onClick={() => setConfirmExit(true)}>
+            ← {t('back')}
+          </button>
+        ) : (
+          <Link className="btn btn--small" href="/">
+            ← {t('back')}
+          </Link>
+        )}
         <div className="topbar__right">
           <span className={`status status--${room.status}`}>{t(`status.${room.status}`)}</span>
           {sedangMain && <FullscreenButton />}
@@ -164,6 +183,23 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
           onBackToLobby={room.backToLobby}
         />
       ) : null}
+
+      {confirmExit && (
+        <ConfirmDialog
+          title={t('leaveRoomTitle')}
+          body={t('leaveRoomBody')}
+          confirmLabel={t('leaveRoom')}
+          onConfirm={() => {
+            // Kursinya dilepas DULU, baru halamannya berpindah. Kalau urutannya
+            // dibalik, komponen ini keburu dilepas bersama socketnya dan server
+            // baru tahu setelah masa tenggang reconnect habis — lawan menunggu
+            // 45 detik untuk orang yang sudah pasti tidak kembali.
+            room.leaveRoom();
+            router.push('/');
+          }}
+          onCancel={() => setConfirmExit(false)}
+        />
+      )}
     </main>
   );
 }

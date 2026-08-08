@@ -121,11 +121,35 @@ export class BoardRenderer {
     this.gridGraphics?.destroy();
     const graphics = this.scene.add.graphics();
     this.gridGraphics = graphics;
-    graphics.lineStyle(1, GRID_LINE, 1);
+
+    /*
+      Digambar sebagai KOTAK ISI, bukan garis — dan tebalnya bukan 1 px.
+
+      Versi sebelumnya memakai `lineBetween` dengan `lineStyle(1, ...)`, dan
+      sebagian garisnya benar-benar hilang di layar: papan 640 px internal
+      menyusut ke ~370 px (skala 0,58), Phaser berjalan dengan
+      `antialias: false` + `pixelArt: true`, dan garis setebal 1 px yang jatuh
+      di antara dua piksel perangkat dibulatkan sampai lenyap. Yang muncul
+      adalah kisi berlubang-lubang — sebagian garis ada, sebagian tidak, tanpa
+      pola yang masuk akal.
+
+      Dua hal yang memperbaikinya:
+
+      1. `fillRect` alih-alih `lineBetween`. Garis ber-`lineStyle` dipusatkan
+         PADA koordinatnya, jadi garis 1 px menempati x−0,5 sampai x+0,5 —
+         setengah piksel di kedua sisi, persis bentuk yang paling mudah hilang
+         saat dibulatkan. Kotak isi menempati piksel yang utuh.
+      2. Tebalnya dihitung dari skala TERBURUK yang mungkin. Papan tidak pernah
+         lebih kecil dari `--board-min` (223 px), jadi skala terburuknya
+         640/223 ≈ 2,87 — dan tebal 3 px internal menjamin sedikitnya 1 px di
+         layar di setiap ukuran papan yang bisa terjadi.
+    */
+    const tebal = 3;
+    graphics.fillStyle(GRID_LINE, 1);
     for (let index = 1; index < this.gridSize; index += 1) {
-      const offset = index * this.cell;
-      graphics.lineBetween(offset, 0, offset, BOARD_SIZE);
-      graphics.lineBetween(0, offset, BOARD_SIZE, offset);
+      const offset = Math.round(index * this.cell - tebal / 2);
+      graphics.fillRect(offset, 0, tebal, BOARD_SIZE);
+      graphics.fillRect(0, offset, BOARD_SIZE, tebal);
     }
   }
 

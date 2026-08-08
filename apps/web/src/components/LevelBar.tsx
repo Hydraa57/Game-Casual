@@ -11,6 +11,16 @@ export interface LevelBarProps {
   readonly remainingLabel: string;
   /** Kurva sudah mentok; level masih naik tapi kesulitannya tidak lagi bertambah. */
   readonly atMax: boolean;
+  /**
+   * Isi tambahan di ujung kanan baris judul — dipakai multiplayer untuk sisa
+   * waktu dan lencana chaos.
+   *
+   * Ditumpangkan ke baris yang SUDAH ADA alih-alih diberi barisnya sendiri.
+   * Di HP, satu kartu "SISA WAKTU" selebar layar memakan 39 px permanen dari
+   * ruang yang seluruhnya diperebutkan papan — dan isinya cuma satu angka yang
+   * muat di ujung baris ini.
+   */
+  readonly trailing?: React.ReactNode;
 }
 
 /**
@@ -25,7 +35,7 @@ export interface LevelBarProps {
  * vs waktu). Pelajaran dari indikator warna target: tampilan yang digandakan
  * akan menyimpang, dan salah satunya akan diam-diam berhenti benar.
  */
-export function LevelBar({ level, fraction, remainingLabel, atMax }: LevelBarProps) {
+export function LevelBar({ level, fraction, remainingLabel, atMax, trailing }: LevelBarProps) {
   const t = useTranslations('solo');
   const [celebrating, setCelebrating] = useState(false);
   const previousLevel = useRef(level);
@@ -57,6 +67,7 @@ export function LevelBar({ level, fraction, remainingLabel, atMax }: LevelBarPro
           {atMax && <span className="badge"> {t('maxLevel')}</span>}
         </span>
         <span className="levelBar__remaining">{remainingLabel}</span>
+        {trailing}
       </div>
       <div
         className="levelBar__track"

@@ -384,6 +384,31 @@ export const PING_INTERVAL_MS = 3000;
  */
 export const PING_TIMEOUT_MS = 8000;
 
+// ---------------------------------------------------------------------------
+// Peringatan akhir match (multiplayer)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sisa waktu yang membuat match masuk "babak akhir".
+ *
+ * Satu angka untuk DUA hal — tampilan dan musik — dengan sengaja. Kalau
+ * masing-masing punya ambangnya sendiri, angka di layar akan berkedip merah di
+ * detik yang berbeda dari saat musiknya berubah, dan keduanya berhenti terasa
+ * sebagai satu kejadian.
+ *
+ * 15 detik: cukup lama untuk mengubah cara main (berhenti mengincar combo,
+ * mulai menyerobot apa saja), cukup pendek untuk tidak melelahkan.
+ */
+export const MP_TIME_WARNING_MS = 15_000;
+
+/**
+ * Seberapa dekat ke target sebelum match dianggap hampir usai.
+ *
+ * Dipakai untuk pihak MANA PUN yang paling depan, bukan hanya pemain sendiri:
+ * yang sedang tertinggal justru paling perlu tahu bahwa waktunya hampir habis.
+ */
+export const MP_SCORE_WARNING_RATIO = 0.85;
+
 /** Sudden death: papan dikosongkan, satu pixel target, siapa cepat dia menang. */
 export const SUDDEN_DEATH_LIFETIME_MS = 4000;
 
