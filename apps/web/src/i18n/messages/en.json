@@ -44,6 +44,7 @@
     "pause": "Pause",
     "resume": "Resume",
     "paused": "Paused",
+    "backToMenu": "Main menu",
     "muteOn": "Sound: on",
     "muteOff": "Sound: off",
     "gameOver": "Game over!",

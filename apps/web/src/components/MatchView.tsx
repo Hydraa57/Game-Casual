@@ -20,6 +20,7 @@ import type {
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
 import { Music } from '@/game/music';
+import { BoardModal } from './BoardModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { LevelBar } from './LevelBar';
 import { PingBadge } from './PingBadge';
@@ -509,8 +510,14 @@ export function MatchView({
             </div>
           )}
 
+          {/*
+            Layar hasil dipindahkan KELUAR dari papan lewat portal. Isinya
+            (peringkat + kontrol bunyi + tombol) lebih tinggi daripada papan,
+            dan `overflow: hidden` papan memotong judul di atas serta tombolnya
+            di bawah — lihat catatan di BoardModal.
+          */}
           {result !== null && (
-            <div className="overlay">
+            <BoardModal>
               <h2 className="overlay__title">
                 {result.ranking[0]?.playerId === playerId ? t('youWin') : t('matchOver')}
               </h2>
@@ -558,7 +565,7 @@ export function MatchView({
               <button className="btn btn--primary" type="button" onClick={closeResult}>
                 {t('backToLobby')}
               </button>
-            </div>
+            </BoardModal>
           )}
         </div>
       </div>

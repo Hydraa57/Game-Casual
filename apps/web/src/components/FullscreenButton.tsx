@@ -60,7 +60,18 @@ function Icon({ active }: { readonly active: boolean }) {
  * jalannya lewat memasang gamenya ke home screen, dan itu yang dijelaskan
  * panduan pasang di halaman Pengaturan.
  */
-export function FullscreenButton() {
+export function FullscreenButton({
+  /**
+   * Tampilkan tulisannya di samping ikon.
+   *
+   * Di topbar ruangnya tidak ada, jadi di sana ikon saja. Di layar jeda ruangnya
+   * lega — dan di situ justru tidak ada gunanya menahan diri: tombol berlabel
+   * langsung dimengerti tanpa perlu petunjuk yang muncul sendiri.
+   */
+  withLabel = false,
+}: {
+  readonly withLabel?: boolean;
+} = {}) {
   const t = useTranslations('common');
   const { supported, active, toggle } = useFullscreen();
   const [showHint, setShowHint] = useState(false);
@@ -75,7 +86,8 @@ export function FullscreenButton() {
    * ruang setiap ronde selamanya.
    */
   useEffect(() => {
-    if (!supported) return;
+    // Versi berlabel tidak butuh petunjuk — tulisannya sudah ada di tombolnya.
+    if (!supported || withLabel) return;
     let count = 0;
     try {
       count = Number(window.localStorage.getItem(HINT_KEY) ?? '0');
@@ -94,7 +106,7 @@ export function FullscreenButton() {
     }
     const timer = window.setTimeout(() => setShowHint(false), HINT_MS);
     return () => window.clearTimeout(timer);
-  }, [supported]);
+  }, [supported, withLabel]);
 
   if (!supported) return null;
 
@@ -103,7 +115,7 @@ export function FullscreenButton() {
   return (
     <span className="fs">
       <button
-        className="btn btn--icon btn--fs"
+        className={`btn btn--fs${withLabel ? '' : ' btn--icon'}`}
         type="button"
         onClick={() => {
           setShowHint(false);
@@ -111,11 +123,15 @@ export function FullscreenButton() {
         }}
         aria-pressed={active}
         // Ikonnya tidak menjelaskan apa pun ke pembaca layar, jadi labelnya
-        // ditulis lengkap di sini.
-        aria-label={label}
+        // ditulis lengkap di sini. Pada versi berlabel tulisannya sudah dibaca
+        // dari isi tombolnya, jadi `aria-label` justru tidak dipasang — ia akan
+        // MENGGANTI teks yang terlihat, dan nama yang diucapkan bisa berbeda
+        // dari nama yang dibaca mata.
+        aria-label={withLabel ? undefined : label}
         title={label}
       >
         <Icon active={active} />
+        {withLabel && <span>{label}</span>}
       </button>
       {showHint && !active && (
         <span className="fs__hint" aria-hidden="true">

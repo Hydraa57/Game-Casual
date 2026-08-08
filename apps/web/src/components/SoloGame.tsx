@@ -14,6 +14,7 @@ import { readMusicVolume, writeMusicVolume } from '@/lib/musicVolume';
 import { markTutorialSeen, readTutorialSeen } from '@/lib/tutorialSeen';
 import { readMuted, writeMuted } from '@/lib/mute';
 import { Hud } from './Hud';
+import { BoardModal } from './BoardModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { FullscreenButton } from './FullscreenButton';
 import { SoundControls } from './SoundControls';
@@ -281,12 +282,26 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
           {/* Overlay pause biasa disembunyikan saat kartu tutorial tampil: papan
               memang sedang dibekukan, tapi yang harus dibaca pemain adalah
               penjelasannya, bukan tombol "lanjut". */}
+          {/* Modal (portal), bukan overlay di dalam papan: isinya memuat kontrol
+              bunyi, dan di papan yang pendek judul serta slidernya terpotong. */}
           {tutorial === null && snapshot.status === 'paused' && (
-            <div className="overlay">
+            <BoardModal>
               <h2 className="overlay__title">{t('paused')}</h2>
               <button className="btn btn--primary" type="button" onClick={togglePause}>
                 {t('resume')}
               </button>
+              {/*
+                Layar penuh dan "kembali" HARUS ada di sini.
+
+                Modal ini menutupi seluruh layar, termasuk topbar — jadi kedua
+                tombol yang biasanya di sana tidak bisa ditekan selama jeda.
+                Kalau tidak dipindahkan ke dalam, satu-satunya jalan keluar dari
+                ronde yang sedang berjalan adalah tombol back browser. Dan
+                sebetulnya di sinilah tempatnya yang lebih pas: jeda memang momen
+                orang mengubah layar penuh atau memutuskan berhenti, bukan saat
+                tangannya sedang mengetuk pixel.
+              */}
+              <FullscreenButton withLabel />
               {/*
                 Pengaturan bunyi tinggal DI SINI, tidak lagi menetap di bawah
                 papan. Dua alasan, dan yang kedua yang menentukan:
@@ -302,11 +317,22 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
                 onToggleMute={toggleMute}
                 onVolumeChange={changeVolume}
               />
-            </div>
+              {/* Paling bawah, sejauh mungkin dari "Lanjut": ini satu-satunya
+                  tombol di modal ini yang membuang skor yang sedang berjalan. */}
+              <button
+                className="btn btn--small"
+                type="button"
+                onClick={() => setConfirmLeave(true)}
+              >
+                ← {t('backToMenu')}
+              </button>
+            </BoardModal>
           )}
 
+          {/* Sama seperti jeda: skor, rekor, rincian, dan dua tombol tidak
+              pernah muat di dalam papan. */}
           {snapshot.status === 'gameOver' && (
-            <div className="overlay">
+            <BoardModal>
               <h2 className="overlay__title">{t('gameOver')}</h2>
               <span className="hud__label">{t('finalScore')}</span>
               <div className="overlay__score">{snapshot.score}</div>
@@ -336,7 +362,13 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
                   {t('playAgain')}
                 </button>
               )}
-            </div>
+              {/* Sama seperti modal jeda: topbar tertutup, jadi jalan pulangnya
+                  harus ada di dalam. Tanpa konfirmasi — di layar ini rondenya
+                  sudah habis, tidak ada apa pun yang bisa hilang. */}
+              <Link className="btn btn--small" href="/">
+                ← {t('backToMenu')}
+              </Link>
+            </BoardModal>
           )}
         </div>
       </div>

@@ -67,6 +67,16 @@
   --grape: #7238dd;
   --danger: #cc2a34;
   --success: #1f9e6b;
+  /*
+    Hijau untuk TEKS KECIL, sama seperti pasangan `--accent`/`--accent-ink`.
+
+    `--success` (#1f9e6b) lulus 3,41:1 — cukup untuk objek besar, kurang untuk
+    teks 10-11 px seperti lencana ping dan indikator nyawa di scoreboard.
+    Ditemukan setelah audit kontras diperluas ke layar match dan layar hasil;
+    sebelumnya kedua layar itu tidak pernah disapu, dan angkanya bertahan
+    berhari-hari tanpa ada yang menandainya.
+  */
+  --success-ink: #147a51;
 
   /* --- papan ------------------------------------------------------------ */
   /* Lihat catatan besar di atas: nilai ini menjaga keenam warna pixel tetap
@@ -475,7 +485,14 @@ h3 {
 .btn--fs {
   background: var(--lemon);
   border-color: var(--border-strong);
-  color: var(--text);
+  /*
+    Dipatok, sama alasannya dengan `.btn--primary` — dan di sini bukan cuma soal
+    tulisan: ikonnya digambar dengan `currentColor`, jadi warna yang salah
+    membuat GAMBARNYA ikut hilang. Tombol ini kini juga muncul di dalam modal
+    jeda, dan di sana `--text` bernilai putih; putih di atas kuning tidak
+    terbaca sama sekali.
+  */
+  color: #35296b;
 }
 
 /*
@@ -902,11 +919,10 @@ h3 {
   color: var(--text-dim);
 }
 
-/* Hijau `--success` (#1f9e6b) cuma 3,18:1 di krem pada ukuran 11,5 px —
-   cukup untuk objek besar, kurang untuk teks kecil. Ini versi yang lebih
-   gelap khusus untuk label mungil ini. */
 .status--online {
-  color: #147a51;
+  /* Lihat `--success-ink`: angkanya dulu ditulis langsung di sini, lalu ternyata
+     dibutuhkan di tiga tempat lain juga. */
+  color: var(--success-ink);
 }
 
 .status--offline {
@@ -1116,7 +1132,8 @@ h3 {
 }
 
 .ping--good {
-  color: var(--success);
+  /* Teks 10 px: lihat `--success-ink`. */
+  color: var(--success-ink);
 }
 
 .ping--fair {
@@ -1567,7 +1584,25 @@ h3 {
   --text-dim: #cfc4f0;
   --border: rgba(255, 255, 255, 0.3);
   --surface: rgba(255, 255, 255, 0.12);
+  /*
+    `--surface-raised` WAJIB ikut ditimpa, dan ini pelajaran mahal.
+
+    Versi pertama menimpa lima variabel dan melewatkan yang satu ini. Akibatnya
+    baris peringkat di layar hasil match memakai latar terang (#fdf3ff) sementara
+    teksnya sudah menjadi putih — kontras 1,08:1, praktis tidak terbaca sama
+    sekali. Bug itu sudah ada berhari-hari dan tidak tertangkap audit kontras
+    karena auditnya tidak pernah mengunjungi layar hasil match; sekarang
+    dikunjungi.
+
+    Aturannya: setiap variabel PERMUKAAN harus ditimpa di sini, bukan sebagian.
+    Menimpa warna teks tanpa menimpa latarnya selalu menghasilkan pasangan yang
+    tidak mungkin terbaca.
+  */
+  --surface-raised: rgba(255, 255, 255, 0.16);
   --border-strong: rgba(255, 255, 255, 0.85);
+  /* Hijau gelap yang dipakai di halaman terang justru tenggelam di latar dalam;
+     di sini dipakai versi cerahnya. */
+  --success-ink: #7ee6b0;
   color: var(--text);
   position: absolute;
   inset: 0;
@@ -1581,6 +1616,45 @@ h3 {
   /* Warnanya mengikuti papan, supaya tidak ada lompatan warna saat muncul. */
   background: rgba(43, 27, 83, 0.92);
   backdrop-filter: blur(2px);
+}
+
+/*
+  Overlay yang menutupi SELURUH layar, bukan cuma papan.
+
+  Dipakai untuk momen yang isinya bisa lebih tinggi daripada papan: jeda, game
+  over, layar hasil match, dan kartu tutorial. Dirender lewat portal ke
+  `document.body` — lihat BoardModal.tsx untuk alasan kenapa `position: fixed`
+  saja tidak cukup.
+
+  `overflow-y: auto` bukan hiasan: di layar yang sangat pendek (HP kecil dalam
+  mode lanskap) daftar peringkat empat pemain plus tombol tetap bisa melebihi
+  tinggi layar, dan saat itu bisa di-scroll jauh lebih baik daripada tombolnya
+  tidak bisa dijangkau.
+*/
+.overlay--modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  /* Jarak tepi sendiri, karena ia tidak lagi berada di dalam papan. Safe-area
+     dihormati supaya tombolnya tidak jatuh di belakang notch atau indikator
+     home saat dipasang sebagai PWA. */
+  padding: calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom));
+  /* Isinya boleh lebih tinggi dari layar; `justify-content: center` pada flex
+     yang bisa di-scroll akan memotong bagian atasnya, jadi dipakai `auto`
+     margin lewat `justify-content: safe center`-nya versi sederhana: mulai dari
+     atas begitu isinya tidak muat. */
+  justify-content: safe center;
+}
+
+/*
+  Overlay di dalam papan tetap ada untuk momen singkat (hitung mungkin, KO,
+  sudden death). Ia juga diberi `overflow-y: auto` sebagai jaring pengaman:
+  kalau suatu saat isinya bertambah, yang terjadi adalah bisa di-scroll, bukan
+  hilang terpotong tanpa jejak.
+*/
+.overlay {
+  overflow-y: auto;
 }
 
 .overlay__title {
@@ -1688,7 +1762,8 @@ h3 {
 /* ---------------------------------------------------------------- nyawa MP */
 
 .lives {
-  color: var(--success);
+  /* Teks 11 px: butuh versi yang lebih gelap. Lihat `--success-ink`. */
+  color: var(--success-ink);
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   /* Lebar dikunci supaya baris skor tidak bergeser tiap nyawa berubah —
@@ -2182,7 +2257,15 @@ h3 {
 .confirm {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /*
+    DI ATAS `.overlay--modal` (60), bukan di bawahnya.
+
+    Konfirmasi ini bisa dipanggil DARI dalam modal — tombol "kembali ke menu" di
+    layar jeda memunculkannya. Saat angkanya masih 50, dialognya benar-benar
+    dirender tapi tertutup rapat oleh modal jeda: pemain menekan tombol, tidak
+    ada yang terlihat berubah, dan halamannya seolah membeku.
+  */
+  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2213,6 +2296,19 @@ h3 {
   text-align: center;
 }
 
+/*
+  Judulnya memakai `.overlay__title`, dan kelas itu berwarna kuning — dibuat
+  untuk latar nila di dalam papan. Di panel PUTIH ini kuning #ffc531 cuma
+  1,58:1: tulisannya benar-benar ada di sana tapi praktis tidak terbaca. Ungu
+  memberi 6,31:1 dan tetap seceria kuningnya.
+
+  Ketahuan setelah dialog ini bisa dipanggil dari dalam modal jeda; sebelumnya
+  ia hanya muncul dari topbar dan audit kontras tidak pernah membukanya.
+*/
+.confirm__panel .overlay__title {
+  color: var(--grape);
+}
+
 .confirm__body {
   margin: 0;
   color: var(--text-dim);
@@ -2228,12 +2324,19 @@ h3 {
   flex: 1;
 }
 
-/* Tindakan yang merusak diberi warna bahaya — bukan hiasan, ini yang membedakan
-   tombol "keluar" dari tombol "batal" dalam sekali lihat. */
+/*
+  Tindakan yang merusak diberi warna bahaya — bukan hiasan, ini yang membedakan
+  tombol "keluar" dari tombol "batal" dalam sekali lihat.
+
+  Teksnya PUTIH, tidak mewarisi `--text`. Nila gelap di atas merah #cc2a34 hanya
+  2,35:1; putih memberi 5,32:1. Merah termasuk warna dalam, jadi ia mengikuti
+  aturan yang sama dengan `.btn--grape` dan `.btn--sky` — bukan aturan tombol
+  berlatar terang seperti `.btn--primary` yang justru harus bertekst gelap.
+*/
 .btn--danger {
   background: var(--danger);
   border-color: var(--danger);
-  color: var(--text);
+  color: var(--text-on-deep);
 }
 
 /* ------------------------------------------- pengaturan & panduan pasang */

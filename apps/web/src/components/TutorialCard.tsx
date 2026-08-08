@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { BoardModal } from './BoardModal';
 import { BOMB_LIFE_COST, GOLD_POINT_MULTIPLIER, KIND_GLYPH, MAX_LIVES } from '@pixelmatrix/shared';
 import type { TutorialTopic } from '@pixelmatrix/shared';
 
@@ -39,7 +40,10 @@ export function TutorialCard({ topic, level, onDismiss }: TutorialCardProps) {
   const t = useTranslations('tutorial');
 
   return (
-    <div className="overlay overlay--tutorial" role="dialog" aria-modal="true">
+    // Modal lewat portal, bukan overlay di dalam papan: kartu tutorial memuat
+    // glyph besar, penjelasan beberapa baris, dan tombol — di papan yang pendek
+    // penjelasannya terpotong, padahal itu seluruh gunanya kartu ini.
+    <BoardModal className="overlay--tutorial">
       <span className="tutorial__badge">{t('unlocked', { level })}</span>
       <div className="tutorial__glyph" aria-hidden="true">
         {TOPIC_GLYPH[topic]}
@@ -57,6 +61,6 @@ export function TutorialCard({ topic, level, onDismiss }: TutorialCardProps) {
       <button className="btn btn--primary" type="button" onClick={onDismiss} autoFocus>
         {t('gotIt')}
       </button>
-    </div>
+    </BoardModal>
   );
 }
