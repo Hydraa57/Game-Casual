@@ -5,10 +5,32 @@ import { ALL_COLORS, COLOR_HEX, GRID_SIZE, remainingRatio } from '@pixelmatrix/s
 import type { Cell, Pixel } from '@pixelmatrix/shared';
 import { GRID_LINE, pixelStyle } from './palette';
 
-/** Resolusi internal papan. Phaser men-scale-nya ke ukuran layar (Scale.FIT). */
+/**
+ * Resolusi internal papan. Phaser men-scale-nya ke ukuran layar (Scale.FIT).
+ *
+ * TETAP 640 berapa pun jumlah selnya. Papan 10×10 tidak membuat kanvasnya lebih
+ * besar di layar — ia hanya membuat tiap selnya lebih kecil (80 px → 64 px di
+ * koordinat internal). Jadi tata letak halaman main tidak berubah sama sekali
+ * saat match ramai, dan itu memang yang diinginkan: papannya sudah pas memenuhi
+ * layar HP.
+ */
 export const BOARD_SIZE = 640;
-export const CELL = BOARD_SIZE / GRID_SIZE;
-const PIXEL_INSET = 6;
+
+/**
+ * Ukuran yang dulunya konstanta, sekarang diturunkan dari `cell`.
+ *
+ * Semua angka di bawah ditulis sebagai PECAHAN dari lebar sel, dengan nilai yang
+ * dipilih supaya papan 8×8 (sel 80 px) menghasilkan angka yang sama persis
+ * dengan versi sebelumnya: inset 6 px, glyph 40 px, angka poin 26 px. Jadi
+ * papan 8×8 dirender identik dengan sebelum patch ini, dan papan 10×10 ikut
+ * mengecil secara proporsional alih-alih memakai ukuran yang tiba-tiba
+ * kebesaran dan saling tindih.
+ */
+const INSET_RATIO = 6 / 80;
+const GLYPH_RATIO = 40 / 80;
+const SCORE_RATIO = 26 / 80;
+const CLAIM_MARK_RATIO = 0.62;
+
 const PARTICLE_TEXTURE = 'pm-particle';
 const PARTICLE_COUNT = 10;
 
@@ -28,6 +50,8 @@ export class BoardRenderer {
   private readonly views = new Map<string, PixelView>();
   /** Tekstur partikel dibuat sekali per scene, bukan per ledakan. */
   private particleTextureReady = false;
+  /** Ditahan supaya kisinya bisa dibuang saat ukuran papan berganti. */
+  private gridGraphics: Phaser.GameObjects.Graphics | null = null;
 
   /**
    * Pemain meminta gerakan dikurangi lewat setelan sistemnya.
@@ -42,10 +66,36 @@ export class BoardRenderer {
    */
   private readonly reducedMotion: boolean;
 
-  constructor(private readonly scene: Phaser.Scene) {
+  /** Lebar satu sel dalam koordinat internal papan. */
+  private readonly cell: number;
+  private readonly inset: number;
+
+  /**
+   * `gridSize` diberikan pemanggil, tidak dibaca dari konstanta.
+   *
+   * Solo selalu memakai GRID_SIZE; multiplayer memakai angka yang dikirim server
+   * lewat `game:started`/`resync`, karena match ramai bermain di papan 10×10.
+   * Nilainya tidak pernah berubah selama satu ronde — kalau berubah, seluruh
+   * pixel yang sudah digambar akan berada di koordinat yang salah, jadi ia
+   * `readonly` dan renderer-nya dibuat ulang bersama scene-nya.
+   */
+  constructor(
+    private readonly scene: Phaser.Scene,
+    private readonly gridSize: number = GRID_SIZE,
+  ) {
     this.reducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    this.cell = BOARD_SIZE / gridSize;
+    this.inset = this.cell * INSET_RATIO;
+  }
+
+  /** Titik tengah sel dalam koordinat internal papan. */
+  private centerOf(cell: Cell): { readonly x: number; readonly y: number } {
+    return {
+      x: cell.col * this.cell + this.cell / 2,
+      y: cell.row * this.cell + this.cell / 2,
+    };
   }
 
   /** Guncangan kamera yang menghormati setelan gerakan pemain. */
@@ -64,27 +114,39 @@ export class BoardRenderer {
   }
 
   drawGrid(): void {
+    // Garis lama dibuang dulu. Renderer multiplayer bisa diganti di tengah
+    // hidup scene (papan 8×8 berubah jadi 10×10 begitu `game:started` datang),
+    // dan tanpa ini kedua kisi tergambar bertumpuk — terlihat seperti papan
+    // 8×8 dan 10×10 yang saling menembus.
+    this.gridGraphics?.destroy();
     const graphics = this.scene.add.graphics();
+    this.gridGraphics = graphics;
     graphics.lineStyle(1, GRID_LINE, 1);
-    for (let index = 1; index < GRID_SIZE; index += 1) {
-      const offset = index * CELL;
+    for (let index = 1; index < this.gridSize; index += 1) {
+      const offset = index * this.cell;
       graphics.lineBetween(offset, 0, offset, BOARD_SIZE);
       graphics.lineBetween(0, offset, BOARD_SIZE, offset);
     }
   }
 
+  /** Buang semua yang digambar renderer ini, termasuk kisinya. */
+  destroy(): void {
+    this.clear();
+    this.gridGraphics?.destroy();
+    this.gridGraphics = null;
+  }
+
   /** Ubah koordinat pointer menjadi sel papan; `null` kalau di luar papan. */
   cellAt(x: number, y: number): Cell | null {
-    const col = Math.floor(x / CELL);
-    const row = Math.floor(y / CELL);
-    if (col < 0 || col >= GRID_SIZE || row < 0 || row >= GRID_SIZE) return null;
+    const col = Math.floor(x / this.cell);
+    const row = Math.floor(y / this.cell);
+    if (col < 0 || col >= this.gridSize || row < 0 || row >= this.gridSize) return null;
     return { row, col };
   }
 
   add(pixel: Pixel, hideGlyph: boolean): void {
-    const centerX = pixel.cell.col * CELL + CELL / 2;
-    const centerY = pixel.cell.row * CELL + CELL / 2;
-    const size = CELL - PIXEL_INSET * 2;
+    const { x: centerX, y: centerY } = this.centerOf(pixel.cell);
+    const size = this.cell - this.inset * 2;
     const style = pixelStyle(pixel);
 
     const rect = this.scene.add.rectangle(centerX, centerY, size, size, style.fill);
@@ -95,7 +157,7 @@ export class BoardRenderer {
     // di layar HP papan ini menyusut ke ~45% ukuran internalnya.
     const glyph = this.scene.add.text(centerX, centerY, hideGlyph ? '' : style.glyph, {
       fontFamily: 'monospace',
-      fontSize: '40px',
+      fontSize: `${Math.round(this.cell * GLYPH_RATIO)}px`,
       color: style.glyphColor,
     });
     glyph.setOrigin(0.5);
@@ -141,12 +203,13 @@ export class BoardRenderer {
   }
 
   floatingScore(cell: Cell, text: string, color = '#fffffe'): void {
-    const label = this.scene.add.text(
-      cell.col * CELL + CELL / 2,
-      cell.row * CELL + CELL / 2,
-      text,
-      { fontFamily: 'monospace', fontSize: '26px', color, fontStyle: 'bold' },
-    );
+    const at = this.centerOf(cell);
+    const label = this.scene.add.text(at.x, at.y, text, {
+      fontFamily: 'monospace',
+      fontSize: `${Math.round(this.cell * SCORE_RATIO)}px`,
+      color,
+      fontStyle: 'bold',
+    });
     label.setOrigin(0.5);
 
     /**
@@ -173,7 +236,7 @@ export class BoardRenderer {
     label.setScale(0.7);
     this.scene.tweens.add({
       targets: label,
-      y: label.y - CELL * 0.7,
+      y: label.y - this.cell * 0.7,
       scale: 1,
       duration: 520,
       ease: 'Cubic.easeOut',
@@ -216,24 +279,20 @@ export class BoardRenderer {
       this.particleTextureReady = true;
     }
 
-    const emitter = this.scene.add.particles(
-      cell.col * CELL + CELL / 2,
-      cell.row * CELL + CELL / 2,
-      PARTICLE_TEXTURE,
-      {
-        // Sedikit dan pendek: papan ini dilihat di layar HP, dan partikel yang
-        // berlebihan justru menutupi pixel berikutnya yang harus diketuk.
-        lifespan: 380,
-        speed: { min: 70, max: 190 },
-        // Papan 640px internal menyusut ke ~360px di layar HP, jadi partikel
-        // berukuran "wajar" di koordinat internal jadi bintik tak terbaca.
-        scale: { start: 1.8, end: 0 },
-        alpha: { start: 1, end: 0 },
-        tint,
-        quantity: PARTICLE_COUNT,
-        emitting: false,
-      },
-    );
+    const at = this.centerOf(cell);
+    const emitter = this.scene.add.particles(at.x, at.y, PARTICLE_TEXTURE, {
+      // Sedikit dan pendek: papan ini dilihat di layar HP, dan partikel yang
+      // berlebihan justru menutupi pixel berikutnya yang harus diketuk.
+      lifespan: 380,
+      speed: { min: 70, max: 190 },
+      // Papan 640px internal menyusut ke ~360px di layar HP, jadi partikel
+      // berukuran "wajar" di koordinat internal jadi bintik tak terbaca.
+      scale: { start: 1.8, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint,
+      quantity: PARTICLE_COUNT,
+      emitting: false,
+    });
     emitter.explode(PARTICLE_COUNT);
     // Emitter dibuang setelah partikel terakhir mati; kalau tidak, satu ronde
     // panjang meninggalkan ratusan emitter menganggur di scene.
@@ -248,12 +307,11 @@ export class BoardRenderer {
    * keluar", tapi "SIAPA yang menyerobot pixel itu".
    */
   claimMark(cell: Cell, glyph: string, byMe: boolean): void {
-    const mark = this.scene.add.text(
-      cell.col * CELL + CELL / 2,
-      cell.row * CELL + CELL / 2,
-      glyph,
-      { fontFamily: 'sans-serif', fontSize: `${Math.round(CELL * 0.62)}px` },
-    );
+    const at = this.centerOf(cell);
+    const mark = this.scene.add.text(at.x, at.y, glyph, {
+      fontFamily: 'sans-serif',
+      fontSize: `${Math.round(this.cell * CLAIM_MARK_RATIO)}px`,
+    });
     mark.setOrigin(0.5);
     // Cap sendiri lebih tegas daripada cap lawan: kamu perlu bisa membedakan
     // keduanya dalam sekejap tanpa membaca nama.
@@ -359,13 +417,14 @@ export class BoardRenderer {
     const palette = ALL_COLORS;
     const cells: Phaser.GameObjects.Rectangle[] = [];
 
-    for (let row = 0; row < GRID_SIZE; row += 1) {
-      for (let col = 0; col < GRID_SIZE; col += 1) {
+    for (let row = 0; row < this.gridSize; row += 1) {
+      for (let col = 0; col < this.gridSize; col += 1) {
+        const at = this.centerOf({ row, col });
         const tile = this.scene.add.rectangle(
-          col * CELL + CELL / 2,
-          row * CELL + CELL / 2,
-          CELL - PIXEL_INSET * 2,
-          CELL - PIXEL_INSET * 2,
+          at.x,
+          at.y,
+          this.cell - this.inset * 2,
+          this.cell - this.inset * 2,
           COLOR_HEX[palette[(row + col) % palette.length]!],
         );
         // Di bawah pixel permainan, di atas latar. Ini barisnya.
@@ -387,9 +446,11 @@ export class BoardRenderer {
     }
 
     // Dibersihkan setelah sapuan terjauh selesai. Sudut terjauh menunggu
-    // (7+7)*18 ms sebelum mulai, jadi angkanya dihitung dari situ — bukan
-    // ditebak, supaya tidak ada kotak yang terhapus selagi masih terlihat.
-    const longestWave = this.reducedMotion ? 0 : (GRID_SIZE - 1) * 2 * 18;
+    // (n-1)+(n-1) kali 18 ms sebelum mulai, jadi angkanya dihitung dari situ —
+    // bukan ditebak, supaya tidak ada kotak yang terhapus selagi masih terlihat.
+    // Ikut jumlah sel papan ini: di papan 10×10 sapuannya lebih panjang, dan
+    // angka tetap akan memotong perayaannya di tengah jalan.
+    const longestWave = this.reducedMotion ? 0 : (this.gridSize - 1) * 2 * 18;
     const total = longestWave + 140 * 2 + 260;
     this.scene.time.delayedCall(total, () => {
       for (const tile of cells) tile.destroy();
@@ -442,7 +503,7 @@ export class BoardRenderer {
         this.scene.tweens.add({
           targets: label,
           alpha: 0,
-          y: label.y - CELL * 0.5,
+          y: label.y - this.cell * 0.5,
           duration: 420,
           delay: 380,
           onComplete: () => label.destroy(),
@@ -469,7 +530,7 @@ export class BoardRenderer {
     this.scene.tweens.add({
       targets: label,
       alpha: 0,
-      y: this.reducedMotion ? label.y : label.y + CELL * 0.4,
+      y: this.reducedMotion ? label.y : label.y + this.cell * 0.4,
       duration: 620,
       onComplete: () => label.destroy(),
     });

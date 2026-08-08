@@ -187,6 +187,10 @@ export function MatchView({
         const scene = controller?.scene;
 
         scene?.beginMatch();
+        // Ukuran papan DULUAN, sebelum pixelnya dipasang: mengganti ukuran
+        // menggambar ulang isi papan, jadi urutan terbalik berarti pixelnya
+        // digambar di koordinat lama lalu langsung dibuang.
+        scene?.setGridSize(snapshot.gridSize);
         scene?.setTargets(snapshot.targetColors);
         scene?.setChaos(snapshot.chaos);
         scene?.replaceBoard(snapshot.pixels);
@@ -219,6 +223,9 @@ export function MatchView({
     const onCountdown = ({ seconds }: { seconds: number }) => setCountdown(seconds);
 
     const onStarted = (payload: GameStartedPayload) => {
+      // Sebelum apa pun yang menggambar: match ramai bermain di papan 10×10,
+      // dan pixel pertama bisa datang di milidetik yang sama dengan event ini.
+      scene()?.setGridSize(payload.gridSize);
       scene()?.setTargets(payload.targetColors);
       setTargetColors(payload.targetColors);
       setCountdown(null);

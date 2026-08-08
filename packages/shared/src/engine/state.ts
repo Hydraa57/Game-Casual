@@ -17,6 +17,14 @@ import { nextInRange, pickOne } from './rng';
 export interface GameConfig {
   readonly mode: GameMode;
   readonly gridSize: number;
+  /**
+   * Jeda spawn DIBAGI angka ini — makin ramai match, makin deras pixelnya.
+   *
+   * Selalu 1 untuk solo dan untuk match sampai 4 pemain. Lihat `spawnCrowdFactor`
+   * di `crowd.ts` untuk angka yang diukurnya dan alasan kenapa ia tidak pernah
+   * turun di bawah 1.
+   */
+  readonly spawnCrowdFactor: number;
   /** Solo: nyawa awal. Multiplayer: `null` (tanpa sistem nyawa). */
   readonly startingLives: number | null;
   /** Multiplayer: batas waktu match. Solo: `null` (endless). */
@@ -100,6 +108,9 @@ export function soloConfig(overrides: Partial<GameConfig> = {}): GameConfig {
   return {
     mode: 'solo',
     gridSize: GRID_SIZE,
+    // Solo selalu satu pemain, jadi tidak ada keramaian yang perlu diimbangi —
+    // dan mengubahnya akan membuat high score lama tidak sebanding.
+    spawnCrowdFactor: 1,
     startingLives: SOLO_STARTING_LIVES,
     timeLimitMs: null,
     targetScore: null,
@@ -115,6 +126,9 @@ export function multiplayerConfig(
   return {
     mode: 'multiplayer',
     gridSize: GRID_SIZE,
+    // Baku 1; server menimpanya lewat `overrides` dengan `spawnCrowdFactor(n)`
+    // begitu jumlah pemain match diketahui.
+    spawnCrowdFactor: 1,
     startingLives: MP_STARTING_LIVES,
     timeLimitMs: timeLimitSec * 1000,
     targetScore,

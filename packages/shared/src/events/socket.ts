@@ -159,6 +159,16 @@ export interface RemoveBotPayload {
  */
 export interface ResyncPayload {
   readonly pixels: readonly Pixel[];
+  /**
+   * Ikut dikirim di sini, bukan hanya di `game:started`.
+   *
+   * Justru di sinilah ia paling penting: pemain yang reconnect di tengah match
+   * MELEWATKAN `game:started` sepenuhnya. Tanpa angka ini ia menggambar papan
+   * 8×8 di atas match 10×10 — papannya terlihat wajar, tapi setiap ketukan
+   * mendarat di sel yang berbeda dari yang dilihatnya, dan tidak ada satu pun
+   * error yang menandainya.
+   */
+  readonly gridSize: number;
   readonly targetColors: readonly Color[];
   readonly stroopInk: readonly Color[] | null;
   readonly level: number;
@@ -177,6 +187,16 @@ export interface GameStartedPayload {
   readonly targetScore: number;
   readonly timeLimitSec: number;
   readonly level: number;
+  /**
+   * Jumlah sel per sisi papan match ini — 8, atau 10 kalau pemainnya ramai.
+   *
+   * Dikirim, bukan dihitung ulang client dari jumlah pemain di lobby. Server
+   * menetapkannya sekali saat match dibuat, dan sejak itu daftar pemain bisa
+   * berubah (ada yang putus, ada yang keluar). Client yang menghitung sendiri
+   * akan menggambar papan dengan jumlah sel yang berbeda dari papan server —
+   * dan di papan rebutan itu berarti ketukannya mendarat di sel yang salah.
+   */
+  readonly gridSize: number;
 }
 
 export interface PixelSpawnedPayload {

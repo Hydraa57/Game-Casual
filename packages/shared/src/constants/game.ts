@@ -5,13 +5,30 @@ import type { AvatarId, Color, GameMode, PixelKind, RoomSettings } from '../type
 // ---------------------------------------------------------------------------
 
 /**
- * Papan selalu GRID_SIZE × GRID_SIZE, termasuk di layar HP. Ukurannya TIDAK
- * boleh berubah per device: papan multiplayer harus identik untuk semua pemain,
- * dan high score solo harus sebanding. Di mobile yang menyesuaikan adalah
- * ukuran pixel-nya (canvas di-scale), bukan jumlah selnya.
+ * Ukuran papan baku: 8 × 8. Dipakai solo dan multiplayer sampai 4 pemain.
+ *
+ * Ukurannya TIDAK boleh berubah per device — papan multiplayer harus identik
+ * untuk semua pemain di satu match, dan high score solo harus sebanding. Yang
+ * menyesuaikan layar adalah ukuran pixel-nya (canvas di-scale), bukan jumlah
+ * selnya. Yang boleh mengubahnya hanyalah JUMLAH PEMAIN, dan itu diputuskan
+ * sekali di server saat match dimulai lalu dikirim ke semua client.
  */
 export const GRID_SIZE = 8;
 export const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
+
+/** Papan besar untuk match ramai — lihat `gridSizeFor`. */
+export const BIG_GRID_SIZE = 10;
+
+/** Mulai dari sekian pemain, papannya memakai BIG_GRID_SIZE. */
+export const BIG_GRID_MIN_PLAYERS = 5;
+
+/**
+ * Sampai berapa pemain kepadatan pixel dibiarkan apa adanya.
+ *
+ * Di bawah/sama dengan angka ini, `spawnCrowdFactor` bernilai 1 — mode 2–4
+ * pemain yang sudah dimainkan orang tidak berubah sedikit pun oleh fitur tim.
+ */
+export const CROWD_REFERENCE_PLAYERS = 4;
 
 export const ALL_COLORS = [
   'red',

@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import {
   AVATAR_GLYPH,
   chaosHidesGlyphs,
+  GRID_SIZE,
   isComboMilestone,
   MP_WRONG_CLICK_COOLDOWN_MS,
 } from '@pixelmatrix/shared';
@@ -11,7 +12,12 @@ import { BOARD_BACKGROUND } from './palette';
 import type { Sfx } from './sfx';
 
 interface DebugWindow {
-  __pmRemote?: { pixels: () => Pixel[]; targets: () => Color[] };
+  __pmRemote?: {
+    pixels: () => Pixel[];
+    targets: () => Color[];
+    /** Jumlah sel yang BENAR-BENAR dipakai renderer, bukan yang dikira client. */
+    gridSize: () => number;
+  };
 }
 
 export interface RemoteBoardOptions {
@@ -30,6 +36,15 @@ export interface RemoteBoardOptions {
  */
 export class RemoteBoardScene extends Phaser.Scene {
   private boardView!: BoardRenderer;
+  /**
+   * Jumlah sel papan yang sedang digambar.
+   *
+   * Scene ini dibuat saat halaman match dipasang — SEBELUM `game:started`
+   * datang, jadi ukuran papan sebenarnya belum diketahui waktu `create()`
+   * berjalan. Papan digambar dengan ukuran baku dulu, lalu `setGridSize`
+   * menggantinya begitu server memberi tahu.
+   */
+  private gridSize = GRID_SIZE;
   private pixels = new Map<string, Pixel>();
   private elapsedMs = 0;
   private chaos: ChaosModifier | null = null;
@@ -44,7 +59,7 @@ export class RemoteBoardScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(BOARD_BACKGROUND);
-    this.boardView = new BoardRenderer(this);
+    this.boardView = new BoardRenderer(this, this.gridSize);
     this.boardView.drawGrid();
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
 
@@ -54,6 +69,7 @@ export class RemoteBoardScene extends Phaser.Scene {
       (window as unknown as DebugWindow).__pmRemote = {
         pixels: () => [...this.pixels.values()],
         targets: () => [...this.targets],
+        gridSize: () => this.gridSize,
       };
     }
   }
@@ -71,6 +87,33 @@ export class RemoteBoardScene extends Phaser.Scene {
   /** Warna target saat ini — dikirim server lewat `game:started`/`targetChanged`. */
   setTargets(colors: readonly Color[]): void {
     this.targets = colors;
+  }
+
+  /**
+   * Pakai papan sebanyak ini selnya. Datang dari server, tidak pernah ditebak.
+   *
+   * Dipanggil dari `game:started` DAN dari resync — pemain yang kembali di
+   * tengah match melewatkan `game:started` sepenuhnya, dan tanpa panggilan
+   * kedua ia akan menggambar papan 8×8 di atas match 10×10. Papannya akan
+   * terlihat wajar; yang salah adalah setiap ketukannya mendarat di sel yang
+   * berbeda dari yang dilihatnya, tanpa satu pun error yang menandainya.
+   *
+   * Aman dipanggil berkali-kali: ukuran yang sama tidak melakukan apa-apa.
+   */
+  setGridSize(gridSize: number): void {
+    if (gridSize === this.gridSize || !Number.isFinite(gridSize) || gridSize < 2) return;
+    this.gridSize = gridSize;
+    // Scene bisa belum sempat `create()` kalau eventnya datang sangat awal;
+    // nilainya sudah tersimpan dan akan dipakai saat renderer-nya dibuat.
+    if (!this.boardView) return;
+
+    const isi = [...this.pixels.values()];
+    this.boardView.destroy();
+    this.boardView = new BoardRenderer(this, gridSize);
+    this.boardView.drawGrid();
+    // Pixel yang sedang hidup digambar ulang di koordinat baru. Membuangnya
+    // akan membuat papan kosong beberapa detik tepat setelah pemain kembali.
+    this.boardView.redraw(isi, chaosHidesGlyphs(this.chaos));
   }
 
   override update(_time: number, delta: number): void {

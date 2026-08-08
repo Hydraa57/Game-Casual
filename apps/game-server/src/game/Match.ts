@@ -4,7 +4,7 @@ import {
   COUNTDOWN_SECONDS,
   createGameState,
   createScoreState,
-  GRID_SIZE,
+  gridSizeFor,
   isStroopActive,
   isTargetChangeImminent,
   MP_FREEZE_MS,
@@ -14,6 +14,7 @@ import {
   MP_TICK_BROADCAST_MS,
   mpLevelProgress,
   SERVER_TICK_MS,
+  spawnCrowdFactor,
   step,
   stroopInkFor,
   SUDDEN_DEATH_LIFETIME_MS,
@@ -95,7 +96,10 @@ export class Match {
     private readonly io: GameServer,
     private readonly onFinished: (room: Room) => void,
   ) {
-    this.board = createGameState({ seed: Date.now(), config: boardConfig() });
+    this.board = createGameState({
+      seed: Date.now(),
+      config: boardConfig(room.playerCount),
+    });
     for (const player of room.allPlayers()) {
       this.players.set(player.id, {
         nickname: player.nickname,
@@ -255,6 +259,7 @@ export class Match {
       targetScore: this.targetScore,
       timeLimitSec: this.room.currentSettings.timeLimitSec,
       level: this.board.board.level,
+      gridSize: this.board.config.gridSize,
     });
     this.broadcastRoomState();
 
@@ -390,9 +395,13 @@ export class Match {
 
   private spawnSuddenDeathPixel(): void {
     const color = this.board.board.targetColors[0]!;
+    // Dibaca dari config papan ini, bukan dari konstanta: match ramai memakai
+    // papan 10×10, dan menaruh pixel sudden death memakai angka 8 akan
+    // mengurung penentu kemenangan di sudut kiri atas papan.
+    const grid = this.board.config.gridSize;
     const cell = {
-      row: Math.floor(Math.random() * GRID_SIZE),
-      col: Math.floor(Math.random() * GRID_SIZE),
+      row: Math.floor(Math.random() * grid),
+      col: Math.floor(Math.random() * grid),
     };
     this.suddenDeathSeq += 1;
 
@@ -543,6 +552,7 @@ export class Match {
   snapshot(): ResyncPayload {
     return {
       pixels: this.board.board.pixels,
+      gridSize: this.board.config.gridSize,
       targetColors: this.board.board.targetColors,
       stroopInk: this.stroopInk(),
       level: this.board.board.level,
@@ -668,11 +678,17 @@ export function tiedAtTop(scores: readonly number[]): boolean {
  * `timeLimitMs` dan `targetScore` sengaja `null`: kalau engine yang memutuskan
  * akhir match, ia akan menghentikan papan tepat saat waktu habis — padahal
  * sudden death justru harus berjalan melewati batas itu. Match yang memutuskan.
+ *
+ * Ukuran papan dan kederasan spawn diputuskan SEKALI di sini dari jumlah pemain,
+ * lalu dikirim ke semua client lewat `game:started`. Bukan dihitung ulang di
+ * client: papan rebutan yang tiap pemainnya memakai jumlah sel berbeda berarti
+ * koordinat sel yang sama menunjuk pixel yang berbeda.
  */
-function boardConfig(): GameConfig {
+function boardConfig(playerCount: number): GameConfig {
   return {
     mode: 'multiplayer',
-    gridSize: GRID_SIZE,
+    gridSize: gridSizeFor(playerCount),
+    spawnCrowdFactor: spawnCrowdFactor(playerCount),
     startingLives: null,
     timeLimitMs: null,
     targetScore: null,

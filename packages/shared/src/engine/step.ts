@@ -115,7 +115,14 @@ export function step(state: GameState, deltaMs: number): StepResult {
     const spawned = spawnPixel(board, level, state.config.gridSize, spawnAtMs, canDropLife, chaos);
     board = {
       ...spawned.board,
-      nextSpawnAtMs: spawnAtMs + Math.round(spawnIntervalMs(level) * chaosSpawnFactor(chaos)),
+      // Faktor keramaian MEMBAGI jedanya (match ramai = pixel lebih deras),
+      // sedangkan faktor chaos MENGALIKANNYA. Keduanya bisa aktif bersamaan
+      // dan memang saling menumpuk dengan sengaja.
+      nextSpawnAtMs:
+        spawnAtMs +
+        Math.round(
+          (spawnIntervalMs(level) * chaosSpawnFactor(chaos)) / state.config.spawnCrowdFactor,
+        ),
     };
     if (spawned.pixel) {
       events.push({ type: 'pixelSpawned', pixel: spawned.pixel });

@@ -25,6 +25,7 @@ function multiplayerBoardConfig(): GameConfig {
   return {
     mode: 'multiplayer',
     gridSize: GRID_SIZE,
+    spawnCrowdFactor: 1,
     startingLives: MP_STARTING_LIVES,
     timeLimitMs: null,
     targetScore: null,

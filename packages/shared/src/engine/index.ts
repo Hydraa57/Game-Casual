@@ -10,6 +10,8 @@ export {
 export { applyClick } from './click';
 export type { ClickResult } from './click';
 
+export { gridSizeFor, spawnCrowdFactor } from './crowd';
+
 export {
   activeColorCount,
   activeColors,
