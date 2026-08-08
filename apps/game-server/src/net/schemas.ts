@@ -8,6 +8,7 @@ import {
   MIN_PLAYERS_TO_START,
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,
+  TEAM_IDS,
 } from '@pixelmatrix/shared';
 import { z } from 'zod';
 
@@ -39,6 +40,7 @@ const settings = z
     maxPlayers: z.number().int().min(MIN_PLAYERS_TO_START).max(MAX_PLAYERS_LIMIT).optional(),
     targetScore: z.literal(ALLOWED_TARGET_SCORES).optional(),
     timeLimitSec: z.literal(ALLOWED_TIME_LIMITS_SEC).optional(),
+    teamMode: z.enum(['ffa', 'teams']).optional(),
   })
   .optional();
 
@@ -62,10 +64,13 @@ export const updateSettingsSchema = z.object({
     maxPlayers: z.number().int().min(MIN_PLAYERS_TO_START).max(MAX_PLAYERS_LIMIT).optional(),
     targetScore: z.literal(ALLOWED_TARGET_SCORES).optional(),
     timeLimitSec: z.literal(ALLOWED_TIME_LIMITS_SEC).optional(),
+    teamMode: z.enum(['ffa', 'teams']).optional(),
   }),
 });
 
 export const readySchema = z.object({ ready: z.boolean() });
+
+export const setTeamSchema = z.object({ team: z.enum(TEAM_IDS) });
 
 /**
  * Kunci sesi untuk mengklaim ulang kursi.

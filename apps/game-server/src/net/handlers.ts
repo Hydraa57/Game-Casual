@@ -27,6 +27,7 @@ import {
   createRoomSchema,
   joinRoomSchema,
   readySchema,
+  setTeamSchema,
   reconnectSchema,
   removeBotSchema,
   updateSettingsSchema,
@@ -459,6 +460,49 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
     broadcastState(room);
   });
 
+  /**
+   * Pindah regu. Setiap pemain untuk dirinya sendiri, bukan hak host.
+   *
+   * Sengaja BUKAN hak host, tidak seperti pengaturan room dan bot. Di lobby HP,
+   * host yang harus menyeret delapan orang ke tempatnya berarti tujuh orang
+   * menunggu satu orang mengetuk — dan penyeimbangan otomatis sudah menaruh
+   * semua orang di tempat yang wajar sejak mereka masuk. Tombol ini hanya untuk
+   * yang ingin main bareng teman tertentu.
+   */
+  on(socket, 'room:setTeam', (payload, ack) => {
+    const parsed = setTeamSchema.safeParse(payload);
+    if (!parsed.success) {
+      ack(fail('INVALID_PAYLOAD'));
+      return;
+    }
+
+    const playerId = seatOf(socket);
+    const room = roomOfSocket(socket, rooms);
+    if (!room || playerId === undefined) {
+      ack(fail('NOT_IN_ROOM'));
+      return;
+    }
+    if (room.currentStatus !== 'waiting') {
+      ack(fail('GAME_IN_PROGRESS'));
+      return;
+    }
+    const hasil = room.setTeam(playerId, parsed.data.team);
+    if (hasil === 'rejected') {
+      ack(fail('TEAM_FULL'));
+      return;
+    }
+
+    // Kesiapan dibatalkan HANYA kalau ia benar-benar berpindah. Susunan regu
+    // adalah bagian dari apa yang dia setujui saat menekan "siap", jadi pindah
+    // sisi setelah itu berarti match bisa dimulai dalam susunan yang belum
+    // pernah dia lihat. Tapi "pindah" ke regu yang sudah ditempati tidak
+    // mengubah apa pun, dan membatalkan kesiapan di situ hanya membuat lobby
+    // yang sudah siap semua kembali menunggu tanpa sebab yang terlihat.
+    if (hasil === 'moved') room.setReady(playerId, false);
+    ack(succeed(stateOf(room, match)));
+    broadcastState(room);
+  });
+
   on(socket, 'player:ready', (payload) => {
     const parsed = readySchema.safeParse(payload);
     const playerId = seatOf(socket);
@@ -484,8 +528,13 @@ export function registerHandlers(socket: GameSocket, deps: HandlerDeps): void {
       ack(fail('GAME_IN_PROGRESS'));
       return;
     }
-    if (!room.canStart()) {
-      ack(fail('NOT_ENOUGH_PLAYERS'));
+    // Alasannya dibedakan, bukan satu NOT_ENOUGH_PLAYERS untuk semuanya:
+    // lobby 3v1 yang sudah penuh akan menampilkan "kurang pemain", dan tidak
+    // ada seorang pun yang akan menebak bahwa yang harus dilakukan adalah
+    // pindah sisi.
+    const blocker = room.startBlocker();
+    if (blocker !== 'ok') {
+      ack(fail(blocker === 'unevenTeams' ? 'UNEVEN_TEAMS' : 'NOT_ENOUGH_PLAYERS'));
       return;
     }
 

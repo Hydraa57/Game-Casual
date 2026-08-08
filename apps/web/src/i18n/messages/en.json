@@ -99,6 +99,20 @@
     "waitingForPlayers": "Waiting for at least 2 players.",
     "waitingForReady": "Waiting for everyone to be ready.",
     "waitingForHost": "Waiting for the host to start.",
+    "waitingForTeams": "Both teams need the same number of players.",
+    "teamMode": "Mode",
+    "teamModeName": {
+      "ffa": "Free-for-all",
+      "teams": "Teams"
+    },
+    "teamFormat": "Format",
+    "teamsTitle": "Teams",
+    "teamName": {
+      "a": "Blue Team",
+      "b": "Red Team"
+    },
+    "joinTeam": "Join",
+    "teamFull": "Full",
     "leaveRoom": "Leave room",
     "share": "Share",
     "copied": "Copied!",
@@ -120,6 +134,8 @@
     "errRateLimited": "Slow down a little.",
     "errNotInRoom": "You are not in a room.",
     "errInvalidPayload": "Invalid request.",
+    "errTeamFull": "That team is already full.",
+    "errUnevenTeams": "Both teams need the same number of players.",
     "timeLeft": "Time left",
     "target": "Target",
     "level": "Level",

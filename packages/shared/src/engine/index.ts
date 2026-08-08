@@ -13,6 +13,15 @@ export type { ClickResult } from './click';
 export { gridSizeFor, spawnCrowdFactor } from './crowd';
 
 export {
+  balancedTeamFor,
+  canJoinTeam,
+  otherTeam,
+  teamCapacity,
+  teamsReady,
+  teamTargetScore,
+} from './team';
+
+export {
   activeColorCount,
   activeColors,
   curveProgress,

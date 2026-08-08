@@ -1,4 +1,4 @@
-import type { AvatarId, Color, GameMode, PixelKind, RoomSettings } from '../types/index';
+import type { AvatarId, Color, GameMode, PixelKind, RoomSettings, TeamId } from '../types/index';
 
 // ---------------------------------------------------------------------------
 // Papan (GDD §2)
@@ -392,7 +392,20 @@ export const SERVER_TICK_MS = 1000 / SERVER_TICK_HZ;
 
 export const ROOM_CODE_LENGTH = 6;
 export const MIN_PLAYERS_TO_START = 2;
-export const MAX_PLAYERS_LIMIT = 4;
+
+/**
+ * Batas atas kursi di satu room: 8, karena 4v4 butuh delapan.
+ *
+ * Angka ini juga batas jumlah avatar — setiap pemain di satu room harus punya
+ * avatar berbeda supaya cap di sel papan berarti sesuatu, dan kebetulan
+ * avatarnya memang tepat delapan. Ada test di `game.test.ts` yang gagal kalau
+ * batas ini dinaikkan tanpa menambah avatar.
+ *
+ * Papan menyesuaikan sendiri: dari 5 pemain ia menjadi 10×10 dan jeda spawnnya
+ * diperpendek. Lihat `crowd.ts` — menaikkan angka ini tanpa keduanya akan
+ * membuat delapan orang berebut satu pixel.
+ */
+export const MAX_PLAYERS_LIMIT = 8;
 export const COUNTDOWN_SECONDS = 3;
 
 export const NICKNAME_MIN_LENGTH = 2;
@@ -482,7 +495,27 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   maxPlayers: 4,
   targetScore: 1000,
   timeLimitSec: 180,
+  // Room baru selalu mulai sebagai semua-lawan-semua. Beregu dinyalakan host
+  // dengan sengaja — bukan tebakan dari jumlah pemain, karena 4 orang yang
+  // ingin main bebas sama wajarnya dengan 4 orang yang ingin 2v2.
+  teamMode: 'ffa',
 };
+
+// ---------------------------------------------------------------------------
+// Beregu (2v2 / 3v3 / 4v4)
+// ---------------------------------------------------------------------------
+
+export const TEAM_IDS = ['a', 'b'] as const satisfies readonly TeamId[];
+
+/**
+ * Jumlah pemain yang sah untuk match beregu.
+ *
+ * Hanya yang genap dan simetris. Regu yang timpang bukan sekadar tidak adil —
+ * di mode ini poin seluruh anggota dijumlahkan, jadi regu bertiga mengumpulkan
+ * poin lebih cepat daripada regu berdua sepanjang match, dan tidak ada
+ * keterampilan yang bisa menutupinya.
+ */
+export const TEAM_MATCH_SIZES = [4, 6, 8] as const;
 
 // ---------------------------------------------------------------------------
 // Batas kewajaran skor solo

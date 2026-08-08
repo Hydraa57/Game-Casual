@@ -5,7 +5,7 @@ import type { FinishedMatch } from './matchStore';
 
 const finished: FinishedMatch = {
   roomCode: 'ABC234',
-  settings: { maxPlayers: 4, targetScore: 150, timeLimitSec: 120 },
+  settings: { maxPlayers: 4, targetScore: 150, timeLimitSec: 120, teamMode: 'ffa' },
   endReason: 'timeUp',
   startedAt: new Date('2026-07-27T02:00:00Z'),
   endedAt: new Date('2026-07-27T02:02:00Z'),

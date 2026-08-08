@@ -10,6 +10,7 @@ import type {
   RoomErrorCode,
   RoomSettings,
   RoomState,
+  TeamId,
 } from '@pixelmatrix/shared';
 import { CHAT_HISTORY_LIMIT } from '@pixelmatrix/shared';
 import { clearRoomSession, readRoomSession, writeRoomSession } from '@/lib/roomSession';
@@ -50,6 +51,8 @@ export interface UseRoom {
   /** Isi satu kursi kosong dengan lawan buatan (host saja, hanya di lobby). */
   addBot(difficulty: BotDifficulty): void;
   removeBot(botId: string): void;
+  /** Pindah regu sendiri. Hanya berarti di mode beregu dan hanya di lobby. */
+  setTeam(team: TeamId): void;
   startMatch(): Promise<boolean>;
   clearError(): void;
 }
@@ -264,6 +267,13 @@ export function useRoom(): UseRoom {
     [request],
   );
 
+  const setTeam = useCallback(
+    (team: TeamId) => {
+      void request<RoomState>((socket, resolve) => socket.emit('room:setTeam', { team }, resolve));
+    },
+    [request],
+  );
+
   const startMatch = useCallback(async () => {
     const result = await request<null>((socket, resolve) => socket.emit('game:start', resolve));
     return result?.ok ?? false;
@@ -306,6 +316,7 @@ export function useRoom(): UseRoom {
       updateSettings,
       addBot,
       removeBot,
+      setTeam,
       startMatch,
       clearError,
     }),
@@ -328,6 +339,7 @@ export function useRoom(): UseRoom {
       updateSettings,
       addBot,
       removeBot,
+      setTeam,
       startMatch,
       clearError,
     ],

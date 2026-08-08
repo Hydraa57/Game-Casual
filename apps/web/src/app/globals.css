@@ -63,6 +63,20 @@
   --sky: #2a72b8;
   --mint: #1f9e6b;
   --bubblegum: #d12e72;
+  /*
+    Merah muda untuk MENULIS — pasangan ketiga setelah `--accent-ink` dan
+    `--success-ink`, dan jebakan yang sama untuk ketiga kalinya.
+
+    `--bubblegum` lulus 4,51:1 di atas krem halaman, jadi selama ini ia aman.
+    Tapi di atas `--surface-raised` (#fdf3ff) yang sedikit lebih terang ia
+    turun ke 4,47:1 — gagal, dan gagalnya baru muncul ketika lobby beregu
+    memakainya untuk nama regu. Selisih 0,04 itu yang membedakan "aman" dari
+    "tidak", dan tidak ada mata yang bisa menilainya.
+
+    #b82a63 memberi 5,48:1 di panel terang dan 5,92:1 di putih, jadi ia tidak
+    lagi bergantung pada latar mana yang kebetulan ada di belakangnya.
+  */
+  --bubblegum-ink: #b82a63;
   --lemon: #ffc531;
   --grape: #7238dd;
   --danger: #cc2a34;
@@ -757,7 +771,10 @@ h3 {
 /* Nomor langkah ikut berwarna supaya daftarnya terbaca sebagai bagian dari
    permainan, bukan sebagai syarat & ketentuan. */
 .steps li::marker {
-  color: var(--bubblegum);
+  /* Ikut versi tulisannya. Di krem ia lulus 4,51:1 — lewat, tapi hanya sejauh
+     0,01 dari ambang, dan angka setipis itu akan gagal begitu ada latar yang
+     bergeser sedikit saja. */
+  color: var(--bubblegum-ink);
   font-family: var(--font-display);
   font-weight: 700;
 }
@@ -1091,6 +1108,104 @@ h3 {
 .playerList__me {
   color: var(--accent-ink);
   font-weight: 700;
+}
+
+/* --------------------------------------------------------------- regu (2v2+) */
+
+/*
+  Dua kolom berdampingan, bukan satu daftar berlencana.
+
+  Pertanyaan yang paling sering muncul di lobby beregu adalah "siapa lawan
+  siapa", dan menjawabnya dari lencana di tiap baris berarti membaca delapan
+  baris lalu mengelompokkannya sendiri di kepala. Dua kolom menjawabnya sebelum
+  dibaca.
+
+  Tetap dua kolom di layar 320 px. Menumpuknya ke bawah di layar sempit akan
+  menghapus justru satu-satunya hal yang dikomunikasikan tata letak ini — dua
+  sisi yang berhadapan. Yang mengalah adalah ukuran teksnya.
+*/
+.teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.teams__col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 3px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  min-width: 0;
+}
+
+/* Warna regu diambil dari palet yang sudah ada, bukan warna baru: keduanya
+   harus jelas berbeda dari enam warna PAPAN, karena pemain sedang belajar
+   membedakan warna sebagai inti permainannya. Biru dan merah jambu tidak
+   dipakai sebagai warna target di papan. */
+.teams__col--a {
+  border-color: var(--sky);
+}
+
+.teams__col--b {
+  border-color: var(--bubblegum);
+}
+
+.teams__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.teams__col--a .teams__name {
+  color: var(--sky);
+}
+
+.teams__col--b .teams__name {
+  color: var(--bubblegum-ink);
+}
+
+.teams__count {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Baris pemain di dalam kolom regu selalu bertumpuk, tidak pernah
+   berdampingan: kolomnya sudah setengah lebar layar. */
+.teams__col .playerList__item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px;
+  font-size: 0.8rem;
+}
+
+.teams__col .playerList__item > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teams__col .playerList__right {
+  justify-content: flex-end;
+}
+
+.teams__col .badge {
+  margin-left: 0;
 }
 
 /* Ping dan status siap dikelompokkan supaya keduanya tetap rapat di kanan;

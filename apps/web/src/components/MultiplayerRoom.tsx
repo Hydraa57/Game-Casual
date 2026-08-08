@@ -26,6 +26,8 @@ const ERROR_LABEL: Record<RoomErrorCode, string> = {
   NOT_IN_ROOM: 'errNotInRoom',
   RATE_LIMITED: 'errRateLimited',
   INVALID_PAYLOAD: 'errInvalidPayload',
+  TEAM_FULL: 'errTeamFull',
+  UNEVEN_TEAMS: 'errUnevenTeams',
 };
 
 export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) {
@@ -147,6 +149,7 @@ export function MultiplayerRoom({ initialCode = '' }: { initialCode?: string }) 
           onLeave={room.leaveRoom}
           onAddBot={room.addBot}
           onRemoveBot={room.removeBot}
+          onSetTeam={room.setTeam}
           chat={room.chat}
           onSendChat={room.sendChat}
         />

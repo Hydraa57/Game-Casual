@@ -8,6 +8,7 @@ import type {
   Pixel,
   RoomSettings,
   RoomState,
+  TeamId,
 } from '../types/index';
 
 /**
@@ -28,7 +29,19 @@ export type RoomErrorCode =
   | 'NOT_ENOUGH_PLAYERS'
   | 'NOT_IN_ROOM'
   | 'RATE_LIMITED'
-  | 'INVALID_PAYLOAD';
+  | 'INVALID_PAYLOAD'
+  /** Regu tujuan sudah penuh — pindahnya ditolak, pemain tetap di regu lamanya. */
+  | 'TEAM_FULL'
+  /**
+   * Mode beregu, tapi regunya belum simetris (misal 3v1 atau 2v0).
+   *
+   * DIBEDAKAN dari NOT_ENOUGH_PLAYERS dengan sengaja: keduanya sama-sama
+   * "belum bisa mulai", tapi yang satu berarti "tunggu temanmu masuk" dan yang
+   * satu berarti "ada yang harus pindah sisi". Satu kode untuk keduanya membuat
+   * lobby 3v1 yang sudah penuh menampilkan "kurang pemain", dan tidak ada
+   * seorang pun yang akan tahu harus berbuat apa.
+   */
+  | 'UNEVEN_TEAMS';
 
 export interface SocketError {
   readonly code: RoomErrorCode;
@@ -73,6 +86,10 @@ export interface JoinRoomPayload {
 
 export interface UpdateSettingsPayload {
   readonly settings: Partial<RoomSettings>;
+}
+
+export interface SetTeamPayload {
+  readonly team: TeamId;
 }
 
 export interface ReadyPayload {
@@ -362,6 +379,14 @@ export interface ClientToServerEvents {
     payload: UpdateSettingsPayload,
     ack: (result: Ack<RoomState>) => void,
   ) => void;
+  /**
+   * Pindah regu sendiri. Bukan hak host — pemain memilih sisinya sendiri.
+   *
+   * Hanya berarti di mode beregu dan hanya di lobby. Server tetap menolak
+   * kalau regunya penuh, jadi client boleh menampilkan tombolnya dengan
+   * optimis tanpa risiko menghasilkan keadaan yang tidak sah.
+   */
+  'room:setTeam': (payload: SetTeamPayload, ack: (result: Ack<RoomState>) => void) => void;
   'player:ready': (payload: ReadyPayload) => void;
   'game:start': (ack: (result: Ack<null>) => void) => void;
   'game:click': (payload: ClickPayload) => void;

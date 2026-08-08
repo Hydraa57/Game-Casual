@@ -16,6 +16,8 @@ const MESSAGES: Record<RoomErrorCode, string> = {
   NOT_IN_ROOM: 'You are not in a room',
   RATE_LIMITED: 'Too many actions',
   INVALID_PAYLOAD: 'Malformed request',
+  TEAM_FULL: 'That team is already full',
+  UNEVEN_TEAMS: 'Teams must have the same number of players',
 };
 
 export function socketError(code: RoomErrorCode): SocketError {

@@ -99,6 +99,20 @@
     "waitingForPlayers": "Tunggu minimal 2 pemain.",
     "waitingForReady": "Tunggu semua pemain siap.",
     "waitingForHost": "Tunggu host memulai match.",
+    "waitingForTeams": "Jumlah pemain kedua tim harus sama.",
+    "teamMode": "Mode",
+    "teamModeName": {
+      "ffa": "Bebas",
+      "teams": "Beregu"
+    },
+    "teamFormat": "Format",
+    "teamsTitle": "Tim",
+    "teamName": {
+      "a": "Tim Biru",
+      "b": "Tim Merah"
+    },
+    "joinTeam": "Gabung",
+    "teamFull": "Penuh",
     "leaveRoom": "Keluar room",
     "share": "Bagikan",
     "copied": "Tersalin!",
@@ -120,6 +134,8 @@
     "errNotInRoom": "Kamu belum ada di room.",
     "errRateLimited": "Terlalu cepat, coba lagi.",
     "errInvalidPayload": "Permintaan tidak valid.",
+    "errTeamFull": "Tim itu sudah penuh.",
+    "errUnevenTeams": "Jumlah pemain kedua tim harus sama.",
     "timeLeft": "Sisa waktu",
     "target": "Target",
     "level": "Level",

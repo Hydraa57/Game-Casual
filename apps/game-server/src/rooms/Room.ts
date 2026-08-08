@@ -1,11 +1,15 @@
 import {
   ALLOWED_TARGET_SCORES,
   ALLOWED_TIME_LIMITS_SEC,
+  balancedTeamFor,
+  canJoinTeam,
   CHAT_HISTORY_LIMIT,
   DEFAULT_ROOM_SETTINGS,
   MAX_PLAYERS_LIMIT,
   MIN_PLAYERS_TO_START,
   smoothLatency,
+  TEAM_IDS,
+  teamsReady,
 } from '@pixelmatrix/shared';
 import type {
   AvatarId,
@@ -15,6 +19,7 @@ import type {
   RoomSettings,
   RoomState,
   RoomStatus,
+  TeamId,
 } from '@pixelmatrix/shared';
 
 /**
@@ -51,6 +56,20 @@ export interface RoomPlayer {
    * `null` untuk guest — dan guest adalah cara main yang sepenuhnya sah.
    */
   userId: string | null;
+  /**
+   * Regu pemain ini.
+   *
+   * Diisi untuk SEMUA pemain, termasuk saat mode-nya masih `ffa`. Alasannya
+   * praktis: host bisa menyalakan mode beregu kapan saja selagi di lobby, dan
+   * kalau regunya baru dibagikan pada saat itu, empat orang yang sudah duduk
+   * tenang tiba-tiba dilempar ke sisi acak. Dengan selalu terisi, menyalakan
+   * mode beregu hanya menampilkan pembagian yang sudah terbentuk sejak mereka
+   * masuk satu per satu — dan itu sudah seimbang dengan sendirinya.
+   *
+   * Yang menentukan tampil atau tidaknya di UI adalah `settings.teamMode`,
+   * bukan ada/tidaknya nilai ini.
+   */
+  team: TeamId;
 }
 
 /**
@@ -88,7 +107,43 @@ export class Room {
       latencyMs: null,
       bot: null,
       userId: hostUserId,
+      team: 'a',
     });
+  }
+
+  // ------------------------------------------------------------------- regu
+
+  /** Berapa anggota di tiap regu sekarang. */
+  teamCounts(): Record<TeamId, number> {
+    const counts: Record<TeamId, number> = { a: 0, b: 0 };
+    for (const player of this.players.values()) counts[player.team] += 1;
+    return counts;
+  }
+
+  /**
+   * Pindahkan pemain ke regu lain.
+   *
+   * Hasilnya TIGA keadaan, bukan boolean. `unchanged` dibedakan dari `moved`
+   * karena pemanggilnya harus memperlakukan keduanya berbeda: berpindah regu
+   * membatalkan kesiapan pemain, dan menganggap "pindah ke regu yang sudah
+   * kutempati" sebagai perpindahan berarti membatalkan kesiapan orang tanpa ada
+   * satu pun hal yang berubah. Versi pertama memakai boolean dan melakukan
+   * persis itu — lobby yang sudah siap semua tiba-tiba menunggu satu orang
+   * menekan "siap" lagi, tanpa ada yang bisa melihat penyebabnya.
+   *
+   * `rejected` menutupi tiga hal sekaligus: pemainnya tidak ada, regunya penuh,
+   * atau match sudah berjalan. Yang terakhir bukan formalitas — regu menentukan
+   * ke mana poin mengalir dan nyawa siapa yang terpakai bersama, jadi berpindah
+   * di tengah match berarti memindahkan skor yang sudah terkumpul.
+   */
+  setTeam(playerId: string, team: TeamId): 'moved' | 'unchanged' | 'rejected' {
+    if (this.status !== 'waiting') return 'rejected';
+    const player = this.players.get(playerId);
+    if (!player) return 'rejected';
+    if (player.team === team) return 'unchanged';
+    if (!canJoinTeam(this.teamCounts(), team, this.settings.maxPlayers)) return 'rejected';
+    player.team = team;
+    return 'moved';
   }
 
   get playerCount(): number {
@@ -216,6 +271,9 @@ export class Room {
       latencyMs: null,
       bot: null,
       userId,
+      // Diseimbangkan saat masuk, bukan saat mode beregu dinyalakan. Lihat
+      // catatan di `RoomPlayer.team`.
+      team: balancedTeamFor(this.teamCounts()),
     });
   }
 
@@ -254,6 +312,11 @@ export class Room {
       latencyMs: null,
       bot: difficulty,
       userId: null,
+      // Lewat jalur penyeimbang yang SAMA dengan manusia. Bot yang punya aturan
+      // regunya sendiri akan menjadi kasus khusus yang cepat atau lambat lupa
+      // ikut diperbarui — dan hasilnya lobby 3v1 yang tidak bisa dimulai tanpa
+      // ada yang tahu kenapa.
+      team: balancedTeamFor(this.teamCounts()),
     });
   }
 
@@ -308,12 +371,44 @@ export class Room {
     // bisa memulai match antar-bot dan berjalan terus memakan tick server
     // tanpa ada seorang pun yang menontonnya.
     const anyHuman = ready.some((player) => player.bot === null);
-    return (
+    const dasar =
       this.status === 'waiting' &&
       anyHuman &&
       ready.length >= MIN_PLAYERS_TO_START &&
-      ready.every((player) => player.isReady)
-    );
+      ready.every((player) => player.isReady);
+    if (!dasar) return false;
+    if (this.settings.teamMode !== 'teams') return true;
+
+    // Regunya dihitung dari pemain yang TERSAMBUNG saja, sejalan dengan sisa
+    // syarat di atas. Kalau memakai semua pemain, satu orang yang kehilangan
+    // sinyal di lobby akan membuat regunya terlihat penuh padahal ia tidak akan
+    // ikut bermain — dan match 3v3 sesungguhnya berjalan 3v2.
+    const counts: Record<TeamId, number> = { a: 0, b: 0 };
+    for (const player of ready) counts[player.team] += 1;
+    return teamsReady(counts);
+  }
+
+  /**
+   * Kenapa match belum bisa dimulai — untuk ditampilkan, bukan untuk diputuskan.
+   *
+   * `canStart` menjawab ya/tidak; ini menjawab "kenapa tidak". Dipisah karena
+   * lobby yang cuma bisa menampilkan tombol mati membuat pemain menebak: apakah
+   * kurang orang, ada yang belum siap, atau regunya timpang? Ketiganya butuh
+   * tindakan yang berbeda.
+   */
+  startBlocker(): 'ok' | 'playing' | 'tooFewPlayers' | 'notAllReady' | 'unevenTeams' {
+    if (this.status !== 'waiting') return 'playing';
+    const ready = this.connectedPlayers();
+    if (ready.length < MIN_PLAYERS_TO_START || !ready.some((player) => player.bot === null)) {
+      return 'tooFewPlayers';
+    }
+    if (!ready.every((player) => player.isReady)) return 'notAllReady';
+    if (this.settings.teamMode === 'teams') {
+      const counts: Record<TeamId, number> = { a: 0, b: 0 };
+      for (const player of ready) counts[player.team] += 1;
+      if (!teamsReady(counts)) return 'unevenTeams';
+    }
+    return 'ok';
   }
 
   /** Reset kesiapan setelah match selesai, supaya rematch butuh konfirmasi ulang. */
@@ -375,6 +470,10 @@ export class Room {
       connected: player.connected,
       latencyMs: player.latencyMs,
       bot: player.bot,
+      // `null` di mode ffa: regunya memang tersimpan terus di server, tapi
+      // mengirimkannya ke client saat mode-nya bukan beregu akan membuat UI
+      // menggambar dua kolom regu untuk match yang bukan beregu.
+      team: this.settings.teamMode === 'teams' ? player.team : null,
     }));
 
     return {
@@ -403,8 +502,16 @@ export class Room {
  */
 export function normalizeSettings(patch?: Partial<RoomSettings>): RoomSettings {
   const merged = { ...DEFAULT_ROOM_SETTINGS, ...patch };
+  const teamMode = merged.teamMode === 'teams' ? 'teams' : 'ffa';
   return {
-    maxPlayers: clamp(merged.maxPlayers, MIN_PLAYERS_TO_START, MAX_PLAYERS_LIMIT),
+    // Beregu butuh kursi yang bisa dibagi dua. `maxPlayers` ganjil di mode
+    // beregu berarti satu kursi yang tidak akan pernah bisa dipakai — dan
+    // lobby yang menunggu pemain kedelapan di room berkapasitas 7 akan
+    // menunggu selamanya tanpa pernah menjelaskan kenapa.
+    maxPlayers:
+      teamMode === 'teams'
+        ? clampGenap(merged.maxPlayers)
+        : clamp(merged.maxPlayers, MIN_PLAYERS_TO_START, MAX_PLAYERS_LIMIT),
     targetScore: clamp(
       merged.targetScore,
       Math.min(...ALLOWED_TARGET_SCORES),
@@ -415,10 +522,25 @@ export function normalizeSettings(patch?: Partial<RoomSettings>): RoomSettings {
       Math.min(...ALLOWED_TIME_LIMITS_SEC),
       Math.max(...ALLOWED_TIME_LIMITS_SEC),
     ),
+    teamMode,
   };
 }
 
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+/**
+ * Kapasitas yang sah untuk match beregu: 4, 6, atau 8.
+ *
+ * Dibulatkan KE ATAS ke angka genap terdekat, bukan ke bawah. Host yang
+ * memilih 5 hampir pasti berpikir "lima orang mau main", dan menurunkannya ke 4
+ * diam-diam menutup pintu untuk orang kelima yang sedang dalam perjalanan
+ * masuk. Menaikkan ke 6 paling buruk menyisakan satu kursi kosong yang terlihat
+ * jelas di lobby.
+ */
+function clampGenap(value: number): number {
+  const dasar = clamp(value, TEAM_IDS.length * 2, MAX_PLAYERS_LIMIT);
+  return dasar % 2 === 0 ? dasar : Math.min(dasar + 1, MAX_PLAYERS_LIMIT);
 }

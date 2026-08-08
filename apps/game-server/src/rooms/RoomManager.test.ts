@@ -126,13 +126,23 @@ describe('avatar', () => {
     expect(room.get('p2')?.avatar).not.toBe('fox');
   });
 
-  it('empat pemain di satu room selalu punya avatar berbeda', () => {
+  /**
+   * Room penuh — dan sejak 4v4 ada, "penuh" berarti delapan.
+   *
+   * Ini yang paling ketat: avatarnya tepat delapan, jadi di kursi terakhir
+   * tidak ada satu pun pilihan cadangan tersisa. Kalau pencari avatar
+   * pengganti punya celah sekecil apa pun, ia akan muncul di sini dan bukan
+   * di room berempat.
+   */
+  it(`${MAX_PLAYERS_LIMIT} pemain di satu room selalu punya avatar berbeda`, () => {
     const manager = new RoomManager();
     const room = manager.create('host', 'Budi', 'fox');
+    room.updateSettings({ maxPlayers: MAX_PLAYERS_LIMIT });
     // Semuanya minta avatar yang sama — kasus terburuk.
-    manager.join(room.code, 'p2', 'Siti', 'fox');
-    manager.join(room.code, 'p3', 'Agus', 'fox');
-    manager.join(room.code, 'p4', 'Dewi', 'fox');
+    for (let i = 2; i <= MAX_PLAYERS_LIMIT; i += 1) {
+      const result = manager.join(room.code, `p${i}`, `Pemain${i}`, 'fox');
+      expect(result.ok).toBe(true);
+    }
 
     const avatars = room.takenAvatars();
     expect(avatars).toHaveLength(MAX_PLAYERS_LIMIT);

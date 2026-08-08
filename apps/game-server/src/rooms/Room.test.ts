@@ -323,3 +323,127 @@ describe('lawan bot', () => {
     expect(state.players.find((p) => p.id === 'p1')?.bot).toBeNull();
   });
 });
+
+describe('regu', () => {
+  /** Room beregu berisi `total` pemain, semuanya siap. */
+  function beregu(total: number, maxPlayers = total): Room {
+    const room = new Room('AAA111', 'p1', 'Budi', 'fox', { maxPlayers, teamMode: 'teams' });
+    for (let i = 2; i <= total; i += 1) room.add(`p${i}`, `Pemain${i}`, 'cat');
+    for (const player of room.allPlayers()) room.setReady(player.id, true);
+    return room;
+  }
+
+  it('membagi pemain rata saat mereka masuk', () => {
+    expect(beregu(4).teamCounts()).toEqual({ a: 2, b: 2 });
+    expect(beregu(6).teamCounts()).toEqual({ a: 3, b: 3 });
+    expect(beregu(8).teamCounts()).toEqual({ a: 4, b: 4 });
+  });
+
+  /**
+   * Bot lewat jalur penyeimbang yang SAMA dengan manusia.
+   *
+   * Kalau bot punya aturannya sendiri, ia akan jadi kasus khusus yang cepat
+   * atau lambat lupa diperbarui — dan hasilnya lobby timpang yang tidak bisa
+   * dimulai tanpa ada yang tahu kenapa.
+   */
+  it('bot ikut diseimbangkan seperti pemain biasa', () => {
+    const room = new Room('AAA111', 'p1', 'Budi', 'fox', { maxPlayers: 4, teamMode: 'teams' });
+    room.addBot('bot-1', 'Bot 1', 'cat', 'medium');
+    room.addBot('bot-2', 'Bot 2', 'frog', 'medium');
+    room.addBot('bot-3', 'Bot 3', 'owl', 'medium');
+    expect(room.teamCounts()).toEqual({ a: 2, b: 2 });
+  });
+
+  it('pindah regu ditolak kalau tujuannya penuh', () => {
+    const room = beregu(4);
+    // a sudah berisi 2 dari kapasitas 2.
+    const diB = room.allPlayers().find((p) => p.team === 'b')!;
+    expect(room.setTeam(diB.id, 'a')).toBe('rejected');
+    expect(room.get(diB.id)?.team).toBe('b');
+  });
+
+  it('pindah regu membatalkan kesiapan', () => {
+    // Susunan regu bagian dari apa yang disetujui saat menekan "siap".
+    const room = beregu(4, 8);
+    const diA = room.allPlayers().find((p) => p.team === 'a')!;
+    expect(room.get(diA.id)?.isReady).toBe(true);
+    // Lewat handler kesiapan direset; di sini yang diuji perpindahannya sendiri.
+    expect(room.setTeam(diA.id, 'b')).toBe('moved');
+    expect(room.get(diA.id)?.team).toBe('b');
+  });
+
+  it('pindah regu ditolak saat match berjalan', () => {
+    const room = beregu(4);
+    room.setStatus('playing');
+    const diA = room.allPlayers().find((p) => p.team === 'a')!;
+    expect(room.setTeam(diA.id, 'b')).toBe('rejected');
+  });
+
+  /**
+   * Bug yang ditemukan verifikasi end-to-end, bukan oleh unit test.
+   *
+   * Versi pertama mengembalikan boolean, jadi "pindah ke regu yang sudah
+   * kutempati" terbaca sebagai perpindahan yang berhasil — dan handler
+   * membatalkan kesiapan pemain itu. Lobby 4v4 yang sudah siap semua tiba-tiba
+   * kembali menunggu satu orang, tanpa ada satu pun yang berubah di layar.
+   */
+  it('pindah ke regu sendiri bukan perpindahan', () => {
+    const room = beregu(4);
+    const diA = room.allPlayers().find((p) => p.team === 'a')!;
+    expect(room.setTeam(diA.id, 'a')).toBe('unchanged');
+    expect(room.get(diA.id)?.team).toBe('a');
+  });
+
+  it('tidak bisa mulai kalau regunya timpang', () => {
+    const room = beregu(4, 8);
+    expect(room.canStart()).toBe(true);
+    const diA = room.allPlayers().find((p) => p.team === 'a')!;
+    room.setTeam(diA.id, 'b');
+    room.setReady(diA.id, true);
+    expect(room.teamCounts()).toEqual({ a: 1, b: 3 });
+    expect(room.canStart()).toBe(false);
+    expect(room.startBlocker()).toBe('unevenTeams');
+  });
+
+  /**
+   * Kenapa alasannya dibedakan: lobby 3v1 yang sudah penuh akan menampilkan
+   * "kurang pemain" kalau keduanya memakai kode yang sama, dan tidak ada
+   * seorang pun yang akan menebak bahwa yang harus dilakukan adalah pindah sisi.
+   */
+  it('membedakan regu timpang dari kurang pemain', () => {
+    const kurang = new Room('AAA111', 'p1', 'Budi', 'fox', { teamMode: 'teams' });
+    kurang.setReady('p1', true);
+    expect(kurang.startBlocker()).toBe('tooFewPlayers');
+
+    const belumSiap = beregu(4);
+    belumSiap.setReady('p2', false);
+    expect(belumSiap.startBlocker()).toBe('notAllReady');
+  });
+
+  it('mode ffa tidak peduli susunan regu', () => {
+    const room = new Room('AAA111', 'p1', 'Budi', 'fox', { maxPlayers: 4 });
+    room.add('p2', 'Siti', 'cat');
+    room.add('p3', 'Agus', 'frog');
+    for (const player of room.allPlayers()) room.setReady(player.id, true);
+    // 2v1 — tidak sah untuk beregu, tapi ffa memang tidak memakai regu.
+    expect(room.currentSettings.teamMode).toBe('ffa');
+    expect(room.canStart()).toBe(true);
+  });
+
+  it('regu tidak dikirim ke client saat mode ffa', () => {
+    const room = new Room('AAA111', 'p1', 'Budi', 'fox');
+    expect(room.toState().players[0]?.team).toBeNull();
+    room.updateSettings({ teamMode: 'teams' });
+    expect(room.toState().players[0]?.team).toBe('a');
+  });
+
+  it('kapasitas ganjil dibulatkan ke atas di mode beregu', () => {
+    // Ke ATAS: host yang memilih 5 hampir pasti berpikir "lima orang mau main",
+    // dan menurunkannya ke 4 menutup pintu untuk orang kelima diam-diam.
+    expect(normalizeSettings({ teamMode: 'teams', maxPlayers: 5 }).maxPlayers).toBe(6);
+    expect(normalizeSettings({ teamMode: 'teams', maxPlayers: 7 }).maxPlayers).toBe(8);
+    expect(normalizeSettings({ teamMode: 'teams', maxPlayers: 3 }).maxPlayers).toBe(4);
+    // Sudah genap: dibiarkan.
+    expect(normalizeSettings({ teamMode: 'teams', maxPlayers: 6 }).maxPlayers).toBe(6);
+  });
+});

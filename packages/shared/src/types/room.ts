@@ -11,10 +11,33 @@ export type RoomStatus = 'waiting' | 'countdown' | 'playing' | 'finished';
  */
 export type AvatarId = 'fox' | 'cat' | 'frog' | 'owl' | 'panda' | 'bee' | 'shark' | 'robot';
 
+/**
+ * Regu di match beregu. Dua sisi, dan hanya dua.
+ *
+ * Bukan `number`: id yang bertipe angka mengundang tim ketiga masuk diam-diam
+ * lewat aritmetika (`(t + 1) % n`), sementara seluruh aturan di bawahnya —
+ * "tinggal satu tim yang hidup", "seri di puncak", pembagian target — ditulis
+ * untuk dua sisi. Kalau suatu saat mau tiga tim, tipe ini yang harus diubah
+ * lebih dulu, dan setiap tempat yang belum siap akan ketahuan dari compiler.
+ */
+export type TeamId = 'a' | 'b';
+
+/**
+ * Cara match dimainkan.
+ *
+ * `ffa` (free-for-all) adalah mode yang sudah ada sejak awal: semua lawan
+ * semua. `teams` membagi pemain jadi dua regu dan menjumlahkan poin mereka.
+ * Disimpan sebagai string, bukan boolean `isTeams`, supaya mode berikutnya
+ * (misalnya tiga regu, atau co-op lawan papan) tidak perlu membongkar
+ * seluruh pengaturan room.
+ */
+export type TeamMode = 'ffa' | 'teams';
+
 export interface RoomSettings {
   readonly maxPlayers: number;
   readonly targetScore: number;
   readonly timeLimitSec: number;
+  readonly teamMode: TeamMode;
 }
 
 export interface Player {
@@ -42,6 +65,15 @@ export interface Player {
    * sendiri dalam dua ronde, lalu berhenti percaya pada papan skornya.
    */
   readonly bot: BotDifficulty | null;
+  /**
+   * Regu pemain ini; `null` di mode `ffa`.
+   *
+   * Tetap dikirim ke client walau mode-nya ffa (sebagai `null`) alih-alih
+   * dihilangkan dari payload — UI yang harus memeriksa "ada field ini atau
+   * tidak" sebelum memakainya akan salah menampilkan pemain tanpa regu sebagai
+   * regu pertama begitu ada satu tempat yang lupa memeriksanya.
+   */
+  readonly team: TeamId | null;
 }
 
 export interface RoomState {
