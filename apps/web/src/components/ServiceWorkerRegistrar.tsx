@@ -20,12 +20,28 @@ import { useEffect } from 'react';
 export function ServiceWorkerRegistrar() {
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') return;
-    if (!('serviceWorker' in navigator)) return;
+
+    /*
+      Diperiksa dari OBJEKNYA, bukan dari `'serviceWorker' in navigator`.
+
+      Sebagian browser dalam aplikasi dan mode privasi tetap menyediakan
+      propertinya tapi mengisinya `undefined`. Pemeriksaan berbasis kunci lolos
+      di situ, lalu `.register()` melempar — di dalam effect, dan itu berarti
+      SELURUH halaman jatuh ke error boundary hanya karena service worker yang
+      memang tidak akan dipakai. Ditemukan saat menguji panel diagnosa dengan
+      service worker yang sengaja dilucuti.
+    */
+    const sw = navigator.serviceWorker as ServiceWorkerContainer | undefined;
+    if (!sw) return;
 
     // Kegagalan sengaja ditelan. Pendaftaran bisa gagal karena hal-hal yang
     // tidak bisa diperbaiki dari sini (mode penyamaran, storage dimatikan
     // pengguna), dan tidak satu pun di antaranya boleh menghalangi permainan.
-    void navigator.serviceWorker.register('/sw.js').catch(() => {});
+    try {
+      void sw.register('/sw.js').catch(() => {});
+    } catch {
+      /* browser menolak sebelum janji dibuat — tetap bukan alasan gagal main */
+    }
   }, []);
 
   return null;

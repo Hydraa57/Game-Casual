@@ -321,6 +321,17 @@
       "step2": "Scroll down and choose \"Add to Home Screen\".",
       "step3": "The icon appears on your home screen. Open it from there.",
       "sheetLabel": "Add to Home Screen"
-    }
+    },
+    "diagTitle": "Install readiness check",
+    "diagHint": "If the install button never appears, this shows which part isn't ready on your phone.",
+    "diagCopy": "Copy check result",
+    "diagCopied": "Copied",
+    "diagRetry": "Check again",
+    "checkSecure": "Secure connection (HTTPS)",
+    "checkManifest": "App manifest loads",
+    "checkSw": "Service worker controls the page",
+    "checkPrompt": "Browser offers to install",
+    "diagReloadHint": "The service worker just registered and doesn't control this page yet. Reload once, then check again.",
+    "diagBrowserHint": "Everything is ready on the site's side, but your browser isn't offering an install button. iPhone never does — use Share → Add to Home Screen. On Android, use Chrome and check whether the app is already installed."
   }
 }

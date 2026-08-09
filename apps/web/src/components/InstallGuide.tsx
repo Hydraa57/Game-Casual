@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { InstallDiagnostics } from './InstallDiagnostics';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 
 /**
@@ -87,6 +88,12 @@ export function InstallGuide() {
           {t('installNow')}
         </button>
       )}
+
+      {/* Ditaruh DI ATAS panduan langkah-langkah, bukan di bawahnya. Yang
+          membukanya adalah orang yang sudah mencoba dan gagal; menyuruhnya
+          menggulir melewati panduan yang sudah tidak menolong itu untuk
+          menemukan jawabannya adalah urutan yang terbalik. */}
+      <InstallDiagnostics canPrompt={canPrompt} />
 
       {showAndroid && (
         <div className="install__platform">

@@ -321,6 +321,17 @@
       "step2": "Gulir ke bawah, pilih \"Tambah ke Layar Utama\".",
       "step3": "Ikonnya muncul di layar utama. Buka dari situ.",
       "sheetLabel": "Tambah ke Layar Utama"
-    }
+    },
+    "diagTitle": "Cek kesiapan pemasangan",
+    "diagHint": "Kalau tombol pasang tidak muncul, ini menunjukkan bagian mananya yang belum siap di HP-mu.",
+    "diagCopy": "Salin hasil cek",
+    "diagCopied": "Tersalin",
+    "diagRetry": "Periksa lagi",
+    "checkSecure": "Koneksi aman (HTTPS)",
+    "checkManifest": "Manifest aplikasi terbaca",
+    "checkSw": "Service worker mengendalikan halaman",
+    "checkPrompt": "Browser menawarkan pemasangan",
+    "diagReloadHint": "Service worker baru terdaftar dan belum mengendalikan halaman ini. Muat ulang halamannya sekali, lalu cek lagi.",
+    "diagBrowserHint": "Semuanya siap dari sisi situs, tapi browsermu tidak menawarkan tombol pasang. Di iPhone memang tidak pernah ada — pakai Bagikan → Tambah ke Layar Utama. Di Android, pakai Chrome dan cek apakah aplikasinya sudah terpasang sebelumnya."
   }
 }
