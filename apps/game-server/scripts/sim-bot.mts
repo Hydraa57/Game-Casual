@@ -20,12 +20,14 @@ import {
   applyClick,
   createGameState,
   createScoreState,
-  GRID_SIZE,
+  gridSizeFor,
   MP_FREEZE_MS,
   MP_LEVEL_DURATION_MS,
   MP_MAX_KNOCKOUTS,
   MP_STARTING_LIVES,
+  multiplayerConfig,
   SERVER_TICK_MS,
+  spawnCrowdFactor,
   step,
 } from '@pixelmatrix/shared';
 import type { BotDifficulty, GameState, ScoreState } from '@pixelmatrix/shared';
@@ -85,16 +87,31 @@ interface Duel {
 
 function duel(difficulty: BotDifficulty, reference: keyof typeof REFERENCES): Duel {
   (BOT_PROFILES as Record<string, unknown>)[HUMAN] = REFERENCES[reference];
+  /*
+    Config dibangun lewat `multiplayerConfig`, BUKAN ditulis tangan.
+
+    Versi sebelumnya menyusun objeknya sendiri dan — sejak `spawnCrowdFactor`
+    ditambahkan ke `GameConfig` — melewatkan field itu. Akibatnya
+    `spawnIntervalMs(level) / undefined` menghasilkan NaN, `nextSpawnAtMs` jadi
+    NaN, dan papan tidak pernah memunculkan pixel sama sekali. Skripnya tetap
+    jalan dan tetap mencetak tabel, cuma seluruh angkanya sampah: skor 3-9 poin
+    setelah 180 detik, dan 0% eliminasi.
+
+    Tidak ketahuan karena `tsconfig.json` game-server hanya menyertakan berkas
+    di dalam `src` — folder `scripts` tidak pernah di-typecheck.
+  */
   let state: GameState = {
     ...createGameState({
       seed: Math.floor(Math.random() * 1e9),
-      config: {
-        mode: 'multiplayer',
-        gridSize: GRID_SIZE,
-        startingLives: null,
+      config: multiplayerConfig(TARGET_SCORE, DURATION_MS / 1000, {
+        gridSize: gridSizeFor(2),
+        spawnCrowdFactor: spawnCrowdFactor(2),
+        // Batas match ditegakkan oleh loop di bawah, bukan oleh engine: skrip
+        // ini perlu tahu ALASAN berhentinya, dan engine hanya melaporkan
+        // statusnya.
         timeLimitMs: null,
         targetScore: null,
-      },
+      }),
     }),
     status: 'running',
   };

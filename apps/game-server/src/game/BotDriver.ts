@@ -26,8 +26,8 @@ export class BotDriver {
    * yang satu selalu kalah dari yang lain semata-mata karena urutan iterasi.
    */
   private readonly seenAt = new Map<string, number>();
-  /** Jam papan saat bot boleh mengetuk lagi — irama tangan, bukan mesin. */
-  private nextClickAtMs = 0;
+  /** Jam papan saat bot boleh MEMUTUSKAN lagi — irama tangan, bukan mesin. */
+  private nextDecisionAtMs = 0;
 
   constructor(
     readonly botId: string,
@@ -47,17 +47,42 @@ export class BotDriver {
   step(pixels: readonly Pixel[], targetColors: readonly Color[], elapsedMs: number): string | null {
     this.forgetGonePixels(pixels);
 
-    if (elapsedMs < this.nextClickAtMs) return null;
+    if (elapsedMs < this.nextDecisionAtMs) return null;
 
     const visible = pixels.filter((pixel) => elapsedMs >= this.visibleFrom(pixel));
-    const choice = pickBotTarget(visible, targetColors, this.profile, this.random);
-    if (!choice) return null;
+    // Papan benar-benar kosong bukan sebuah keputusan. Kalau tidak ada apa pun
+    // untuk dilihat, iramanya tidak terpakai — bot yang menunggu spawn tidak
+    // sedang "menahan diri", ia memang tidak punya pilihan.
+    if (visible.length === 0) return null;
 
-    // Irama tangan punya tuasnya sendiri — lihat `BotProfile.tapIntervalMs`.
-    // Batas klik per detik tetap ditegakkan `Match.handleClick` untuk semua
-    // orang; angka ini yang membuat iramanya wajar, bukan yang mencegah curang.
-    this.nextClickAtMs = elapsedMs + this.profile.tapIntervalMs;
-    return choice.pixelId;
+    /*
+      Irama tangan dipakai per KEPUTUSAN, bukan per ketukan. Ini perbaikan bug,
+      bukan penalaan.
+
+      Versi sebelumnya hanya memajukan jamnya kalau bot benar-benar mengetuk.
+      Akibatnya, saat papan cuma berisi warna yang SALAH, `pickBotTarget`
+      dipanggil ulang 20 kali per detik — dan tiap panggilan mengundi lagi
+      peluang salahnya. Akurasi 98,5% yang tertulis di profil dengan begitu
+      berubah jadi "1,5% per 50 ms selama papannya salah semua", yang praktis
+      berarti bot PASTI mengetuk warna salah kalau dibiarkan menunggu cukup
+      lama.
+
+      Diukur: match 2 pemain berakhir di ~60 detik karena salah satu bot
+      tereliminasi (3 KO = 9 klik salah) — 9 klik salah dari hanya 25 ketukan,
+      37% salah pada profil berakurasi 98,5%. Dan karena eliminasi mengakhiri
+      match, TIDAK ADA target skor yang bisa membuat match berjalan lebih lama;
+      menaikkan target hanya membuat garis finis makin tidak pernah tersentuh.
+
+      Dengan jamnya dimajukan di sini, undiannya jadi sekali per irama tangan —
+      persis seperti angka akurasinya dibaca orang.
+
+      Batas klik per detik tetap ditegakkan `Match.handleClick` untuk semua
+      orang; angka ini yang membuat iramanya wajar, bukan yang mencegah curang.
+    */
+    this.nextDecisionAtMs = elapsedMs + this.profile.tapIntervalMs;
+
+    const choice = pickBotTarget(visible, targetColors, this.profile, this.random);
+    return choice === null ? null : choice.pixelId;
   }
 
   /** Kapan pixel ini mulai "terlihat" oleh bot; diundi saat pertama kali ditemui. */

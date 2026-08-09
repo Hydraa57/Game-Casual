@@ -81,6 +81,13 @@ export const KIND_GLYPH: Record<Exclude<PixelKind, 'normal'>, string> = {
 /**
  * Urutannya menentukan tampilan pemilih DAN urutan pencarian avatar pengganti
  * saat pilihan pemain sudah dipakai orang lain di room yang sama.
+ *
+ * Enam belas, bukan delapan. Delapan tepat sama dengan `MAX_PLAYERS_LIMIT`,
+ * dan "cukup" di sini berarti sesuatu yang buruk: di room penuh, pemain
+ * terakhir yang masuk tidak punya pilihan sama sekali — apa pun yang ia pilih
+ * sudah diambil, dan server memberinya satu-satunya yang tersisa. Dengan dua
+ * kali lipat, bahkan room berdelapan menyisakan delapan avatar bebas, jadi
+ * memilih avatar tetap terasa seperti memilih.
  */
 export const AVATAR_IDS = [
   'fox',
@@ -91,6 +98,14 @@ export const AVATAR_IDS = [
   'bee',
   'shark',
   'robot',
+  'dog',
+  'monkey',
+  'lion',
+  'penguin',
+  'unicorn',
+  'octopus',
+  'dino',
+  'dragon',
 ] as const satisfies readonly AvatarId[];
 
 /**
@@ -109,6 +124,14 @@ export const AVATAR_GLYPH: Record<AvatarId, string> = {
   bee: '🐝',
   shark: '🦈',
   robot: '🤖',
+  dog: '🐶',
+  monkey: '🐵',
+  lion: '🦁',
+  penguin: '🐧',
+  unicorn: '🦄',
+  octopus: '🐙',
+  dino: '🦖',
+  dragon: '🐲',
 };
 
 /** Jumlah avatar harus ≥ MAX_PLAYERS_LIMIT — dijaga test di `game.test.ts`. */
@@ -478,27 +501,42 @@ export const CHAT_RATE_WINDOW_MS = 5000;
  * tiap MP_LEVEL_DURATION_MS, jadi panjang match ADALAH kurva kesulitannya:
  * menaikkan target skor satu-satunya cara memberi papan waktu untuk berkembang.
  *
- * Diukur dengan mensimulasikan engine yang sama persis dengan server, pemain
- * berebut satu papan dengan urutan kedatangan acak, 8 seed, nilai median:
+ * Diukur ulang dengan `scripts/sim-durasi.mts` (engine yang sama persis dengan
+ * server, satu papan diperebutkan, urutan giliran diacak tiap tick, 8 seed,
+ * profil pemain lancar, nilai median). Level di kolom = level saat match
+ * berhenti:
  *
- * | target | 2 pemain      | 4 pemain       |
- * |--------|---------------|----------------|
- * |    500 |  50 dtk, Lv 4 |  76 dtk, Lv 6  |
- * |   1000 |  93 dtk, Lv 7 | 123 dtk, Lv 9  |
- * |   1500 | 122 dtk, Lv 9 | 173 dtk, Lv 12 |
+ * | target | 2 pemain    | 4 pemain     | 8 pemain     |
+ * |--------|-------------|--------------|--------------|
+ * |    500 |  62 dtk Lv5 | 105 dtk Lv7  |  88 dtk Lv6  |
+ * |   1000 |  94 dtk Lv7 | 154 dtk Lv11 | 143 dtk Lv10 |
+ * |   1500 | 127 dtk Lv9 | 206 dtk Lv14 | 196 dtk Lv14 |
+ * |   2500 | 195 dtk Lv13| 274 dtk Lv19 | 222 dtk Lv15 |
+ * |   4000 | 229 dtk Lv16| 307 dtk Lv21 | 283 dtk Lv19 |
+ *
+ * 2500 dan 4000 ditambahkan untuk pemain yang ingin match panjang sampai
+ * menyentuh puncak kurva (Lv 20) dan mode chaos di atasnya. Keduanya BUKAN
+ * default: makin tinggi targetnya, makin sering match justru berakhir karena
+ * eliminasi sebelum garis finis — 4000 hanya sampai garis finis pada 38-75%
+ * match, dan target yang jarang tersentuh berhenti berarti sebagai target.
  */
-export const ALLOWED_TARGET_SCORES = [500, 1000, 1500] as const;
+export const ALLOWED_TARGET_SCORES = [500, 1000, 1500, 2500, 4000] as const;
 
 /**
  * Batas waktu di sini adalah JARING PENGAMAN, bukan cara normal match berakhir.
  *
  * Kalau batasnya lebih pendek dari waktu yang dibutuhkan untuk mencapai target,
  * hampir semua match akan berakhir karena kehabisan waktu — dan "siapa yang
- * lebih cepat" tidak pernah terjawab. Karena itu 300 ditambahkan: target 1500
- * dengan 4 pemain butuh ~173 dtk dan bisa menyentuh 188 dtk, jadi 180 saja
- * akan memotong sebagian match tepat sebelum garis finis.
+ * lebih cepat" tidak pernah terjawab.
+ *
+ * Karena itu tiap kali ada target baru, harus ada batas waktu yang menampung
+ * seed TERLAMBAT-nya, bukan mediannya. Dari `sim-durasi.mts`: target 2500
+ * bisa memakan 296 dtk dan target 4000 sampai 334 dtk (keduanya di 4 pemain),
+ * jadi 300 saja akan memotong sebagian match tepat sebelum garis finis. 420
+ * menampung keduanya; 600 disediakan untuk pemain sungguhan, yang lebih lambat
+ * daripada simulasi ini.
  */
-export const ALLOWED_TIME_LIMITS_SEC = [90, 120, 180, 300] as const;
+export const ALLOWED_TIME_LIMITS_SEC = [90, 120, 180, 300, 420, 600] as const;
 
 /**
  * Laju skor pemain TERDEPAN di match rebutan — hasil pengukuran, bukan desain.
@@ -518,8 +556,22 @@ export const MP_LEADER_POINTS_PER_SECOND = 10.7;
 
 export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   maxPlayers: 4,
-  targetScore: 1000,
-  timeLimitSec: 180,
+  /*
+    Naik dari 1000 ke 1500, dan batas waktunya ikut dari 180 ke 300.
+
+    Dilaporkan pemain: match terlalu cepat selesai dan level tinggi tidak
+    pernah kelihatan. Penyebab terbesarnya sudah diperbaiki di `BotDriver`
+    (bot tereliminasi karena mengundi peluang salah 20x per detik), tapi
+    defaultnya sendiri memang pendek: 1000 berakhir di 94 dtk pada level 7
+    untuk dua pemain — sebelum bom (Lv 8) sekali pun muncul.
+
+    1500 mendarat di 127 dtk Lv 9 berdua dan 206 dtk Lv 14 berempat, jadi bom
+    dan dua warna target sama-sama sempat terlihat di susunan yang paling
+    umum. Yang ingin lebih pendek tinggal menurunkannya; yang ingin sampai
+    puncak kurva punya 2500 dan 4000.
+  */
+  targetScore: 1500,
+  timeLimitSec: 300,
   // Room baru selalu mulai sebagai semua-lawan-semua. Beregu dinyalakan host
   // dengan sengaja — bukan tebakan dari jumlah pemain, karena 4 orang yang
   // ingin main bebas sama wajarnya dengan 4 orang yang ingin 2v2.

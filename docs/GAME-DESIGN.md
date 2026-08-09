@@ -201,9 +201,26 @@ Dengan aturan sekarang, **3 klik warna salah = 1 KO**, dan **3 KO = tereliminasi
 
 Itu keras, dan memang dimaksudkan keras. Tapi kalau saat main bareng ternyata ada yang tereliminasi di menit pertama secara rutin, tuas yang paling tepat diputar adalah **`MP_MAX_KNOCKOUTS`** (3 → 4/5) atau **`MP_STARTING_LIVES`** — bukan menghapus penalti nyawa pada klik salah, karena justru itu yang membuat ketelitian punya arti.
 
-**Simulasi lawan bot memberi bukti angka untuk peringatan di atas.** `apps/game-server/scripts/sim-bot.mts` mengadu profil bot melawan dua acuan manusia dengan aturan MP lengkap. Hasilnya: pada akurasi yang masuk akal untuk manusia (96–98,5%), **hampir setiap match berakhir karena eliminasi dalam 30–55 detik** — target skor dan batas waktu praktis tidak pernah tercapai. Jadi pilihan target skor 500/1000/1500 dan batas waktu 90–300 detik saat ini sebagian besar tidak terpakai.
+**Simulasi lawan bot memberi bukti angka untuk peringatan di atas.** `apps/game-server/scripts/sim-bot.mts` mengadu profil bot melawan dua acuan manusia dengan aturan MP lengkap.
 
-Ini belum tentu masalah: kalau pemain sungguhan lebih teliti dari 98,5% (sangat mungkin, karena hukumannya terlihat dan orang cepat belajar), eliminasi jadi jarang. Yang perlu dilakukan adalah **memeriksanya di playtest**, dan tuasnya sudah disebut di paragraf sebelumnya.
+> **Catatan revisi — dua bug, bukan satu sifat aturan.**
+>
+> Versi sebelumnya dokumen ini menyimpulkan bahwa "hampir setiap match berakhir karena eliminasi dalam 30–55 detik" adalah sifat aturannya, dan menyarankan memutar `MP_MAX_KNOCKOUTS` kalau terasa terlalu keras. Kesimpulan itu **salah alamat**, dan dua hal yang berbeda menyembunyikannya:
+>
+> 1. **`BotDriver` mengundi peluang salahnya per TICK, bukan per ketukan.** Selama papan hanya berisi warna yang salah, `pickBotTarget` dipanggil ulang 20× per detik dan tiap panggilan mengundi lagi. Akurasi 98,5% yang tertulis di profil praktis jadi 37% salah di permainan sungguhan — 9 klik salah dari 25 ketukan, cukup untuk 3 KO dan eliminasi sebelum menit pertama lewat.
+> 2. **`sim-bot.mts` sendiri sudah lama rusak.** Ia menyusun `GameConfig`-nya sendiri dan melewatkan `spawnCrowdFactor` yang belakangan ditambahkan, jadi `spawnIntervalMs(level) / undefined` = NaN dan papannya **tidak pernah memunculkan satu pixel pun**. Skripnya tetap mencetak tabel — skor 3–9 poin setelah 180 detik — dan tabel itu ikut dikutip di sini. Folder `scripts` tidak masuk `tsconfig`, jadi tidak ada yang menangkapnya. Sekarang masuk.
+>
+> Setelah keduanya diperbaiki (`sim-durasi.mts`, 8 seed, median): match yang tadinya berhenti di **~60 dtk pada Lv 4–5 dengan 0% menyentuh target** kini berjalan **94 dtk Lv 7 (2 pemain) sampai 307 dtk Lv 21 (4 pemain, target 4000)**, dan seluruh match bertarget ≤1500 benar-benar berakhir di garis finis. Diperiksa juga di aplikasi yang berjalan: match default 1500 dengan dua bot `medium` berlangsung **155 detik sampai level 11**.
+
+Dengan `sim-bot.mts` yang sudah benar, tangga kesulitannya juga akhirnya bisa dibaca — dan ia sesuai dengan yang dimaksudkan:
+
+| Tingkat | vs pemain kasual | vs pemain lancar |
+|---|---|---|
+| `easy` | menang 8% | menang 0% |
+| `medium` | menang 62% | menang 0% |
+| `hard` | menang 100% | menang 60% |
+
+Eliminasi tetap keras, dan tetap perlu diperiksa di playtest dengan manusia — tapi ia bukan lagi hal yang mengakhiri hampir semua match sebelum kurva kesulitannya sempat jalan (0–22% match berakhir karena eliminasi, bukan ~100%).
 
 ### Lawan bot (`easy` / `medium` / `hard`)
 
@@ -226,7 +243,8 @@ Bot juga **tidak menampilkan lencana ping**: ia tidak punya jaringan untuk diuku
 
 Ditambahkan setelah playtest pertama di HP. Keluhannya: papannya terasa seperti main sendiri-sendiri, karena tidak ada tanda apa pun bahwa pixel yang hilang itu direbut orang lain.
 
-- Sebelum masuk room, pemain memilih satu dari **8 avatar** (🦊 🐱 🐸 🦉 🐼 🐝 🦈 🤖). Pilihannya diingat di `localStorage`.
+- Sebelum masuk room, pemain memilih satu dari **16 avatar** (🦊 🐱 🐸 🦉 🐼 🐝 🦈 🤖 🐶 🐵 🦁 🐧 🦄 🐙 🦖 🐲). Pilihannya diingat di `localStorage`.
+  Jumlahnya **dua kali** `MAX_PLAYERS_LIMIT`, bukan sama dengannya. Kalau jumlahnya pas, pemain terakhir yang masuk ke room penuh tidak punya pilihan sama sekali — apa pun yang ia tekan sudah diambil, dan server memberinya satu-satunya sisa. Dengan dua kali lipat, room berdelapan pun masih menyisakan delapan avatar bebas.
 - Saat sebuah pixel diklaim, **glyph avatar perebutnya dicap di sel itu** selama ±0,6 detik. Cap sendiri tampil penuh dan lebih besar; cap lawan diredupkan — supaya bisa dibedakan sekejap tanpa membaca nama.
 - Avatar juga tampil di daftar lobby, leaderboard, dan layar hasil.
 
@@ -242,8 +260,8 @@ Avatar tidak dikirim di dalam `game:pixelClaimed`. Client memetakan `byPlayerId`
 | Setting | Pilihan | Default |
 |---|---|---|
 | Max players | 2 / 3 / 4 | 4 |
-| Target skor | 500 / 1000 / 1500 | 1000 |
-| Batas waktu | 90 / 120 / 180 / 300 dtk | 180 dtk |
+| Target skor | 500 / 1000 / 1500 / 2500 / 4000 | 1500 |
+| Batas waktu | 90s / 2m / 3m / 5m / 7m / 10m | 5m |
 
 **Kondisi menang**: pemain pertama yang mencapai target skor, ATAU skor tertinggi saat waktu habis (FR-08). **Seri → sudden death**: papan dikosongkan, satu pixel warna target muncul — siapa cepat dia menang. Layar hasil menampilkan **waktu tempuh** match (M:SS) — itu yang membuat setiap ronde jadi rekor yang bisa dikejar ronde berikutnya, bukan cuma daftar angka.
 
@@ -251,18 +269,24 @@ Avatar tidak dikirim di dalam `game:pixelClaimed`. Client memetakan `byPlayerId`
 
 Level multiplayer naik menurut waktu (`MP_LEVEL_DURATION_MS`, 15 dtk/level), bukan menurut klik. Konsekuensinya langsung: **target skor menentukan seberapa jauh kurva kesulitan sempat berjalan.**
 
-Angka pertama (100/150/200, default 150) melewatkan itu sepenuhnya. Diukur dengan mensimulasikan engine yang sama persis dengan server — pemain berebut satu papan, urutan kedatangan acak, 8 seed, nilai median:
+Angka pertama (100/150/200, default 150) melewatkan itu sepenuhnya: match berakhir di level 2, dan warna keempat (Lv 3), bom (Lv 8), serta dua warna target (Lv 12) **tidak pernah muncul sama sekali di multiplayer**.
 
-| Target | 2 pemain | 4 pemain |
-|---|---|---|
-| **150** (lama) | **23 dtk → Lv 2** | **30 dtk → Lv 3** |
-| 500 | 50 dtk → Lv 4 | 76 dtk → Lv 6 |
-| **1000** (default) | **93 dtk → Lv 7** | **123 dtk → Lv 9** |
-| 1500 | 122 dtk → Lv 9 | 173 dtk → Lv 12 |
+Diukur ulang dengan `apps/game-server/scripts/sim-durasi.mts` — engine yang sama persis dengan server, satu papan diperebutkan, urutan giliran diacak tiap tick, ukuran papan dan pasokan pixel mengikuti jumlah pemain, aturan nyawa/beku/eliminasi lengkap, 8 seed, profil pemain lancar, nilai median. "target%" = berapa persen match yang benar-benar berakhir di garis finis, bukan karena eliminasi:
 
-Dengan target 150, match berakhir di level 2. Warna keempat (Lv 3), bom (Lv 8), dan dua warna target (Lv 12) **tidak pernah muncul sama sekali di multiplayer** — seluruh isi Fase 1.5 praktis tidak ada di mode yang justru paling penting.
+| Target | 2 pemain | 4 pemain | 8 pemain | target% |
+|---|---|---|---|---|
+| 500 | 62 dtk → Lv 5 | 105 dtk → Lv 7 | 88 dtk → Lv 6 | 100% |
+| 1000 | 94 dtk → Lv 7 | 154 dtk → Lv 11 | 143 dtk → Lv 10 | 100% |
+| **1500** (default) | **127 dtk → Lv 9** | **206 dtk → Lv 14** | **196 dtk → Lv 14** | 88–100% |
+| 2500 | 195 dtk → Lv 13 | 274 dtk → Lv 19 | 222 dtk → Lv 15 | 75–88% |
+| 4000 | 229 dtk → Lv 16 | 307 dtk → Lv 21 | 283 dtk → Lv 19 | 38–75% |
 
-Batas waktu adalah **jaring pengaman, bukan cara normal match berakhir**. Kalau batasnya lebih pendek dari waktu yang dibutuhkan untuk mencapai target, hampir semua match habis waktu dan "siapa yang lebih cepat" tidak pernah terjawab. Itu alasan 300 dtk ditambahkan: target 1500 dengan 4 pemain butuh ~173 dtk dan bisa menyentuh 188 dtk.
+Dua hal yang dibaca dari tabel ini:
+
+1. **Target tinggi memang membawa ke level tinggi** — 4000 dengan 4 pemain menembus Lv 21, yaitu mode chaos. Itu sebabnya keduanya ditambahkan.
+2. **Tapi makin tinggi targetnya, makin sering match justru berakhir karena eliminasi.** Pada 4000 hanya 38–75% match yang sampai garis finis. Target yang jarang tersentuh berhenti berarti sebagai target — karena itu default tetap di 1500, bukan di angka tertinggi.
+
+Batas waktu adalah **jaring pengaman, bukan cara normal match berakhir**. Kalau batasnya lebih pendek dari waktu yang dibutuhkan untuk mencapai target, hampir semua match habis waktu dan "siapa yang lebih cepat" tidak pernah terjawab. Yang harus ditampung adalah seed **terlambat**, bukan mediannya: target 2500 bisa memakan 296 dtk dan 4000 sampai 334 dtk, jadi 300 dtk saja akan memotong sebagian match tepat sebelum garis finis. 7 menit menampung keduanya; 10 menit disediakan untuk pemain sungguhan, yang lebih lambat daripada simulasi.
 
 ### Alur match
 

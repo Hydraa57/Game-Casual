@@ -293,7 +293,10 @@ export function RoomLobby({
               label={t('timeLimit')}
               options={[...ALLOWED_TIME_LIMITS_SEC]}
               value={room.settings.timeLimitSec}
-              suffix="s"
+              // "420s" memaksa orang membaginya sendiri di kepala; "7m" tidak.
+              // Yang di bawah semenit tetap dalam detik — "1.5m" lebih buruk
+              // daripada "90s" untuk angka sependek itu.
+              format={formatTimeLimit}
               onChange={(timeLimitSec) => onUpdateSettings({ timeLimitSec })}
             />
           </div>
@@ -482,6 +485,17 @@ function PlayerRow({
       </span>
     </li>
   );
+}
+
+/**
+ * Batas waktu sebagai teks tombol.
+ *
+ * Di bawah dua menit tetap detik, di atasnya menit. Batasnya di 120 dan bukan
+ * 60 supaya "90s" tidak berubah jadi "1.5m" — pecahan menit lebih sulit dibaca
+ * sekilas daripada angka detik yang sudah akrab.
+ */
+function formatTimeLimit(seconds: number): string {
+  return seconds < 120 ? `${seconds}s` : `${seconds / 60}m`;
 }
 
 /**

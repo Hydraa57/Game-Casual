@@ -9,7 +9,23 @@ export type RoomStatus = 'waiting' | 'countdown' | 'playing' | 'finished';
  * langsung tahu SIAPA yang menyerobot pixel itu. Karena itu setiap pemain di
  * satu room harus punya avatar yang berbeda.
  */
-export type AvatarId = 'fox' | 'cat' | 'frog' | 'owl' | 'panda' | 'bee' | 'shark' | 'robot';
+export type AvatarId =
+  | 'fox'
+  | 'cat'
+  | 'frog'
+  | 'owl'
+  | 'panda'
+  | 'bee'
+  | 'shark'
+  | 'robot'
+  | 'dog'
+  | 'monkey'
+  | 'lion'
+  | 'penguin'
+  | 'unicorn'
+  | 'octopus'
+  | 'dino'
+  | 'dragon';
 
 /**
  * Regu di match beregu. Dua sisi, dan hanya dua.

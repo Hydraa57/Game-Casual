@@ -190,6 +190,22 @@ describe('konstanta skor & multiplayer', () => {
     expect(levelReached(DEFAULT_ROOM_SETTINGS.targetScore)).toBeGreaterThanOrEqual(
       COLOR_UNLOCK_LEVELS[1],
     );
+
+    /*
+      Dan harus ADA pilihan yang sanggup membawa match sampai puncak kurva.
+
+      Ini permintaan pemain yang dikunci sebagai aturan: "biar bisa jumpai
+      level tinggi". Tanpa assertion ini, seseorang bisa membuang pilihan
+      target tertinggi demi menyeragamkan lama match, dan level 20 — beserta
+      seluruh mode chaos di atasnya — kembali jadi bagian permainan yang tidak
+      pernah dilihat siapa pun di multiplayer.
+
+      Dihitung memakai laju pemain TERDEPAN, dan itu memang arah yang benar:
+      leader tercepat = match terpendek = level terendah. Kalau pilihan ini
+      lolos pada laju tercepat, ia lolos pada laju mana pun.
+    */
+    const tertinggi = ALLOWED_TARGET_SCORES[ALLOWED_TARGET_SCORES.length - 1]!;
+    expect(levelReached(tertinggi)).toBeGreaterThanOrEqual(MAX_CURVE_LEVEL);
   });
 
   /**
