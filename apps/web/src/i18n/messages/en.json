@@ -176,6 +176,7 @@
     "removeBot": "Remove",
     "pingTitle": "Latency to the server — lower means your taps land sooner",
     "pingValue": "Ping {ms} milliseconds",
+    "pingEqualized": "Taps held {ms} ms to stay level with the slowest connection in the room",
     "pingUnknown": "Ping not measured yet",
     "reconnectedNotice": "You're back — the match continues.",
     "dismiss": "OK",

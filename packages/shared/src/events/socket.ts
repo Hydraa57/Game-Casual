@@ -285,6 +285,15 @@ export interface ScoreboardEntry {
   readonly connected: boolean;
   /** Lihat `Player.latencyMs`. */
   readonly latencyMs: number | null;
+  /**
+   * Berapa ms ketukan pemain ini ditahan server demi penyetaraan ping; 0 kalau
+   * dia memang yang paling lambat di room. Lihat `engine/fairness`.
+   *
+   * Ditampilkan, bukan disembunyikan. Pemain berping bagus akan merasakan
+   * permainannya sedikit lebih lamban, dan tanpa angka ini rasa itu tidak punya
+   * penjelasan apa pun selain "server-nya jelek".
+   */
+  readonly fairDelayMs: number;
   /** Lihat `Player.bot` — ditampilkan juga di scoreboard saat match berjalan. */
   readonly bot: BotDifficulty | null;
   /** Regu pemain ini; `null` di match ffa. */

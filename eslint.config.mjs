@@ -38,4 +38,22 @@ export default tseslint.config(
       globals: { Buffer: 'readonly', console: 'readonly', process: 'readonly' },
     },
   },
+  {
+    // Service worker punya global-nya sendiri: `self` adalah
+    // ServiceWorkerGlobalScope, bukan window, dan `caches`/`fetch`/`clients`
+    // hanya ada di sana. Dipisahkan per berkas, bukan dilonggarkan global —
+    // `caches` yang tiba-tiba boleh dipakai di kode halaman akan lolos diam-diam
+    // dan baru gagal di browser lama.
+    files: ['apps/web/public/sw.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        clients: 'readonly',
+        URL: 'readonly',
+        Promise: 'readonly',
+      },
+    },
+  },
 );

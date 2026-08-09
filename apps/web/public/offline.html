@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Pixel Matrix — offline</title>
+    <!--
+      Halaman ini disajikan service worker saat jaringan benar-benar mati, jadi
+      ia TIDAK BOLEH bergantung pada apa pun: tanpa CSS eksternal, tanpa font
+      unduhan, tanpa skrip. Semuanya sebaris di sini.
+
+      Dwibahasa dan bukan mengikuti locale: locale ditentukan proxy di server,
+      dan saat halaman ini dibutuhkan servernya justru sedang tidak bisa
+      dihubungi.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 24px;
+        text-align: center;
+        background: #fff6e9;
+        color: #35296b;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      .kotak {
+        display: flex;
+        gap: 8px;
+      }
+      .kotak span {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        border: 3px solid #35296b;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+      p {
+        margin: 0;
+        max-width: 24rem;
+        line-height: 1.5;
+      }
+      .kedua {
+        opacity: 0.65;
+        font-size: 0.9rem;
+      }
+      button {
+        margin-top: 6px;
+        padding: 12px 24px;
+        min-height: 44px;
+        font: inherit;
+        font-weight: 700;
+        color: #35296b;
+        background: #f7a832;
+        border: 3px solid #35296b;
+        border-radius: 10px;
+        box-shadow: 0 4px 0 #35296b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="kotak" aria-hidden="true">
+      <span style="background: #e43b44"></span>
+      <span style="background: #4d9be6"></span>
+      <span style="background: #63c74d"></span>
+      <span style="background: #fee761"></span>
+    </div>
+    <h1>Tidak ada koneksi</h1>
+    <p>Pixel Matrix butuh internet untuk main bareng. Cek koneksimu, lalu coba lagi.</p>
+    <p class="kedua">You're offline. Check your connection and try again.</p>
+    <button type="button" onclick="location.reload()">Coba lagi / Retry</button>
+  </body>
+</html>

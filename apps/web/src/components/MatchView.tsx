@@ -592,7 +592,11 @@ export function MatchView({
                           putus sudah memakai lencana AFK di sebelahnya, jadi
                           angka ping terakhirnya cuma kebohongan yang basi. */}
                       {player.bot === null && player.connected && (
-                        <PingBadge latencyMs={player.latencyMs} connected={player.connected} />
+                        <PingBadge
+                          latencyMs={player.latencyMs}
+                          connected={player.connected}
+                          fairDelayMs={player.fairDelayMs}
+                        />
                       )}
                       <span className="teamBar__memberScore">{player.score}</span>
                     </li>
@@ -640,7 +644,11 @@ export function MatchView({
                 {/* Bot tidak punya jaringan untuk diukur, jadi ia tidak pernah
                     membawa lencana ini. */}
                 {entry.bot === null && entry.connected && (
-                  <PingBadge latencyMs={entry.latencyMs} connected={entry.connected} />
+                  <PingBadge
+                    latencyMs={entry.latencyMs}
+                    connected={entry.connected}
+                    fairDelayMs={entry.fairDelayMs}
+                  />
                 )}
                 {entry.lives !== null && (
                   <span

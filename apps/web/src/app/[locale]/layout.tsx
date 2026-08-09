@@ -4,6 +4,7 @@ import { Fredoka, Nunito } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
 import { routing } from '@/i18n/routing';
 import '../globals.css';
 
@@ -113,6 +114,11 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${fredoka.variable} ${nunito.variable}`}>
       <body>
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        {/* Tidak menggambar apa pun. Ditaruh di layout supaya pendaftarannya
+            terjadi di halaman mana pun pemain mendarat — termasuk tautan room
+            yang dibagikan teman, yang justru paling sering jadi kunjungan
+            pertama seseorang ke game ini. */}
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );

@@ -89,6 +89,7 @@ export {
 export type { BotChoice, BotDifficulty, BotProfile } from './bot';
 export { LATENCY_FAIR_MAX_MS, LATENCY_GOOD_MAX_MS, latencyQuality, smoothLatency } from './latency';
 export type { LatencyQuality } from './latency';
+export { equalizeDelayMs, referenceLatencyMs } from './fairness';
 export { mpLevelProgress, soloLevelProgress } from './levelProgress';
 export type { LevelProgress } from './levelProgress';
 export { isStroopActive, stroopInkFor } from './stroop';

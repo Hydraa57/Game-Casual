@@ -113,7 +113,18 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 
 > **Sisa Fase 4 hanya bisa kamu kerjakan:** uji di HP nyata (Android Chrome + iOS Safari) dan playtest bareng teman untuk mengulik angka balancing. Keduanya butuh perangkat dan orang sungguhan.
 
-> **PWA tanpa service worker, disengaja.** Pemasangan ke home screen tetap jalan lewat menu browser di Android dan iOS; yang hilang hanya prompt install otomatis di Android. Menambah SW berarti menambah lapisan cache yang bisa menyajikan build lama setelah deploy. Konsekuensinya: tidak ada mode offline, termasuk untuk solo yang sebenarnya sanggup jalan tanpa jaringan.
+> **~~PWA tanpa service worker, disengaja.~~ Keputusan ini DIBALIK** setelah pemain melaporkan bahwa "install" tidak menghasilkan apa-apa di home screen.
+>
+> Catatan lama menilai yang hilang cuma "prompt install otomatis di Android". Itu meremehkan akibatnya. Tanpa service worker, Chrome di Android tidak memasang aplikasi sama sekali — "Tambahkan ke layar utama" hanya membuat **pintasan bookmark**, yang tetap membuka browser lengkap dengan address bar, bukan aplikasi `standalone` yang dijanjikan manifest. Jadi seluruh manifest, ikon, dan `display: standalone` yang sudah dikerjakan praktis tidak pernah terpakai di platform yang paling banyak dipakai pemainnya.
+>
+> Kekhawatiran aslinya — "cache bisa menyajikan build lama setelah deploy" — nyata, dan dijawab dengan MEMBATASI apa yang boleh disimpan, bukan dengan tidak punya service worker:
+>
+> - **HTML tidak pernah disimpan.** Halamannya dirender server dan membawa locale serta keadaan login; versi lama dari salah satunya lebih membingungkan daripada menunggu jaringan.
+> - **`/api/` tidak pernah disimpan.** Di situ sesi, skor, dan papan peringkat lewat.
+> - Yang disimpan hanya `/_next/static/` (nama berkasnya sudah mengandung hash build, jadi URL yang sama tidak mungkin berubah isi), ikon, dan satu halaman offline statis.
+> - `skipWaiting` + `clients.claim`, jadi versi baru mengambil alih tanpa menunggu semua tab ditutup.
+>
+> Sisi baiknya melampaui pemasangan: Phaser sendiri ~330 KB, dan sekarang tidak diunduh ulang tiap kali aplikasi dibuka.
 
 ## Fase 5 — Menuju PRD Penuh (opsional, urutan bebas)
 

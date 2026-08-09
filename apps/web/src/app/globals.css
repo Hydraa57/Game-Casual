@@ -666,6 +666,39 @@ h3 {
   border-radius: 5px;
   border: 3px solid var(--border-strong);
   box-shadow: 0 3px 0 rgba(53, 41, 107, 0.2);
+  /*
+    Kemiringan disimpan sebagai variabel, bukan ditulis langsung di `transform`.
+
+    `transform` cuma satu properti: begitu animasinya ikut memakai `translateY`,
+    nilai `rotate` yang ditulis terpisah akan TERTIMPA seluruhnya dan semua
+    kotaknya kembali lurus. Dengan variabel, tiap keyframe bisa menyusun ulang
+    keduanya dan kemiringan aslinya tetap terjaga.
+  */
+  transform: rotate(var(--pixel-rot));
+  animation: pixelFloat var(--pixel-dur) ease-in-out var(--pixel-delay) infinite;
+}
+
+/*
+  Kotak-kotaknya melayang, bukan berkedip atau berputar penuh.
+
+  Gerakannya kecil dengan sengaja: ini halaman AWAL, tempat pemain membaca
+  judul dan memilih menu. Gerakan yang besar di belakang teks membuat judulnya
+  lebih sulit dibaca, bukan lebih hidup. Yang dituju adalah kesan benda yang
+  mengambang pelan — cukup untuk menarik mata, tidak cukup untuk mengganggunya.
+
+  Durasi tiap kotak sengaja tidak ada yang kelipatan satu sama lain (3,4 / 4,1 /
+  3,7 / 4,6 / 3,1 detik). Kalau seragam atau berkelipatan, kelimanya akan
+  bertemu di puncak yang sama secara berkala dan gerakannya berubah jadi denyut
+  serempak — yang justru terbaca seperti animasi murahan.
+*/
+@keyframes pixelFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--pixel-rot));
+  }
+  50% {
+    transform: translateY(-7px) rotate(calc(var(--pixel-rot) + 7deg));
+  }
 }
 
 .landing__pixel--1 {
@@ -674,7 +707,9 @@ h3 {
   top: 2px;
   left: 4%;
   background: #e43b44;
-  transform: rotate(-12deg);
+  --pixel-rot: -12deg;
+  --pixel-dur: 3.4s;
+  --pixel-delay: 0s;
 }
 
 .landing__pixel--2 {
@@ -683,7 +718,9 @@ h3 {
   top: 12%;
   right: -1%;
   background: #4d9be6;
-  transform: rotate(14deg);
+  --pixel-rot: 14deg;
+  --pixel-dur: 4.1s;
+  --pixel-delay: 0.5s;
 }
 
 .landing__pixel--3 {
@@ -692,7 +729,9 @@ h3 {
   bottom: 0;
   left: 12%;
   background: #63c74d;
-  transform: rotate(9deg);
+  --pixel-rot: 9deg;
+  --pixel-dur: 3.7s;
+  --pixel-delay: 1.1s;
 }
 
 .landing__pixel--4 {
@@ -701,7 +740,9 @@ h3 {
   top: 6px;
   right: 16%;
   background: #fee761;
-  transform: rotate(-18deg);
+  --pixel-rot: -18deg;
+  --pixel-dur: 4.6s;
+  --pixel-delay: 0.2s;
 }
 
 .landing__pixel--5 {
@@ -710,7 +751,18 @@ h3 {
   bottom: -2px;
   right: 4%;
   background: #f77622;
-  transform: rotate(-7deg);
+  --pixel-rot: -7deg;
+  --pixel-dur: 3.1s;
+  --pixel-delay: 0.8s;
+}
+
+/* Gerakan latar yang terus berulang termasuk yang paling sering memicu mual
+   pada orang dengan gangguan vestibular. Kotaknya tetap ada dan tetap miring —
+   yang berhenti hanya layangannya. */
+@media (prefers-reduced-motion: reduce) {
+  .landing__pixel {
+    animation: none;
+  }
 }
 
 .landing__tagline {
@@ -1557,6 +1609,28 @@ h3 {
 
 .ping__unit {
   opacity: 0.6;
+}
+
+/*
+  Penanda penyetaraan ping.
+
+  Sengaja tidak mengubah WARNA lencananya: warna di sini berarti mutu koneksi,
+  dan koneksi pemain yang ditahan justru sedang bagus — mewarnainya seolah
+  buruk akan mengatakan kebalikan dari yang sebenarnya. Yang ditambahkan cuma
+  satu tanda kecil, dan penjelasannya ada di `title`.
+
+  Lebar minimum lencananya ikut naik supaya angka ping di baris yang ditahan
+  tetap sejajar dengan yang tidak.
+*/
+.ping--fair {
+  min-width: 4.6em;
+}
+
+.ping__fair {
+  font-size: 0.85em;
+  line-height: 1;
+  opacity: 0.75;
+  flex-shrink: 0;
 }
 
 .ping--good {

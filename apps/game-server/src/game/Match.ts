@@ -5,6 +5,7 @@ import {
   COUNTDOWN_SECONDS,
   createGameState,
   createScoreState,
+  equalizeDelayMs,
   gridSizeFor,
   isStroopActive,
   isTargetChangeImminent,
@@ -13,6 +14,7 @@ import {
   MP_MAX_KNOCKOUTS,
   MP_STARTING_LIVES,
   MP_TICK_BROADCAST_MS,
+  referenceLatencyMs,
   mpLevelProgress,
   SERVER_TICK_MS,
   spawnCrowdFactor,
@@ -112,6 +114,14 @@ export class Match {
   /** Satu penggerak per bot, digerakkan dari tick yang sama dengan papannya. */
   private readonly bots: BotDriver[] = [];
   private readonly limiter = new RateLimiter();
+  /**
+   * Ketukan yang sedang ditahan demi penyetaraan ping.
+   *
+   * Isinya selalu sangat sedikit — penahanannya paling lama
+   * `MP_PING_EQUALIZE_CAP_MS` (80 ms), jadi tidak ada entri yang bertahan
+   * lebih dari dua tick.
+   */
+  private pendingClicks: { playerId: string; pixelId: string; applyAtMs: number }[] = [];
   private status: MatchStatus = 'countdown';
   private timer: NodeJS.Timeout | null = null;
   private lastTickAt = 0;
@@ -216,6 +226,9 @@ export class Match {
   /** Pemain keluar/terputus: skornya dibekukan tapi tetap masuk hasil akhir. */
   removePlayer(playerId: string): void {
     this.limiter.forget(playerId);
+    // Ketukannya yang masih ditahan ikut dibuang: pemain yang sudah pergi tidak
+    // boleh tiba-tiba merebut pixel 80 ms kemudian.
+    this.pendingClicks = this.pendingClicks.filter((entry) => entry.playerId !== playerId);
     if (!this.players.has(playerId)) return;
 
     // Match yang tidak lagi ditonton siapa pun harus berhenti.
@@ -255,6 +268,85 @@ export class Match {
       });
       return;
     }
+
+    /*
+      Penyetaraan ping — lihat `engine/fairness` untuk alasannya.
+
+      Ditaruh SETELAH rate limiter, dan itu disengaja: pembatas laju adalah
+      penjaga anti-spam dan harus menghitung ketukan pada saat ia benar-benar
+      tiba. Kalau ia dipindahkan ke belakang penahanan, seseorang bisa
+      mengirim badai ketukan dan hanya sebagian yang terhitung.
+
+      Yang ditahan cuma penyelesaiannya, bukan pemeriksaannya.
+    */
+    const tahan = this.equalizeDelayFor(playerId);
+    if (tahan > 0) {
+      this.pendingClicks.push({ playerId, pixelId, applyAtMs: Date.now() + tahan });
+      return;
+    }
+    this.resolveClick(playerId, pixelId);
+  }
+
+  /**
+   * Ketukan yang penahanannya sudah lewat, dijalankan di awal tick.
+   *
+   * Dikuras di tick dan bukan lewat `setTimeout` per ketukan supaya urutannya
+   * tetap satu jalur dengan spawn, kenaikan level, dan bot — timer terpisah
+   * bisa menyisipkan klik di TENGAH `step()`, dan papan yang setengah diperbarui
+   * adalah sumber bug yang tidak akan pernah bisa direproduksi.
+   *
+   * Harganya: penahanannya membulat ke atas sampai satu tick (50 ms). Itu
+   * berlaku sama untuk semua yang ditahan, jadi ia tidak menggeser
+   * keadilannya — cuma membuat angka penahanannya tidak persis.
+   */
+  private drainPendingClicks(now: number): void {
+    if (this.pendingClicks.length === 0) return;
+
+    const siap = this.pendingClicks.filter((entry) => entry.applyAtMs <= now);
+    if (siap.length === 0) return;
+    this.pendingClicks = this.pendingClicks.filter((entry) => entry.applyAtMs > now);
+
+    for (const entry of siap) {
+      if (this.status !== 'running' && this.status !== 'suddenDeath') return;
+      const player = this.players.get(entry.playerId);
+      if (!player) continue;
+      /*
+        Beku dan eliminasi diperiksa LAGI di sini, bukan cuma saat ketukannya
+        tiba. Ketukan yang ditahan diselesaikan seolah-olah ia memang datang
+        selambat itu, jadi keadaan yang berlaku adalah keadaan saat ia
+        diselesaikan — persis seperti yang dialami pemain berping tinggi yang
+        sedang disetarai.
+      */
+      if (this.eliminatedOf(player) || isFrozen(this.frozenUntilOf(player), now)) continue;
+      this.resolveClick(entry.playerId, entry.pixelId);
+    }
+  }
+
+  /** Berapa lama ketukan pemain ini ditahan supaya setara dengan yang terlambat. */
+  private equalizeDelayFor(playerId: string): number {
+    return equalizeDelayMs(this.room.get(playerId)?.latencyMs ?? null, this.referenceLatencyMs());
+  }
+
+  /**
+   * Ping acuan match ini: yang terburuk di antara pemain yang MASIH TERSAMBUNG.
+   *
+   * Yang terputus tidak ikut. Pemain yang koneksinya hilang meninggalkan angka
+   * ping terakhirnya yang biasanya buruk justru karena itulah ia terputus —
+   * dan membiarkannya menjadi acuan berarti seluruh room ditahan demi seseorang
+   * yang sudah tidak mengetuk apa pun.
+   */
+  private referenceLatencyMs(): number {
+    return referenceLatencyMs(
+      [...this.players.keys()].map((id) => {
+        const seat = this.room.get(id);
+        return seat && seat.connected ? seat.latencyMs : null;
+      }),
+    );
+  }
+
+  private resolveClick(playerId: string, pixelId: string): void {
+    const player = this.players.get(playerId);
+    if (!player) return;
 
     // Engine dipanggil dengan papan bersama + skor pemain ini. Karena `applyClick`
     // pure, papan hasilnya (dengan pixel yang sudah dihapus) langsung jadi papan
@@ -378,6 +470,36 @@ export class Match {
       id: `dbg${board.nextPixelSeq}`,
       cell: { row: 0, col: 0 },
       color: salah ?? board.targetColors[0]!,
+      kind: 'normal',
+      spawnedAtMs: this.board.elapsedMs,
+      lifetimeMs: 60_000,
+    };
+    this.board = {
+      ...this.board,
+      board: {
+        ...board,
+        pixels: [...board.pixels, pixel],
+        nextPixelSeq: board.nextPixelSeq + 1,
+      },
+    };
+    return pixel.id;
+  }
+
+  /**
+   * Taruh satu pixel BERWARNA TARGET, lalu kembalikan id-nya.
+   *
+   * Pasangan `debugPlaceWrongPixel`, dipakai untuk menguji rebutan: dua pemain
+   * mengincar pixel yang sama dan hanya satu yang boleh mendapatkannya. Papan
+   * sungguhan memang memunculkan pixel target sendiri, tapi kapan tepatnya
+   * tidak bisa diketahui dari luar — dan test rebutan harus tahu persis pixel
+   * mana yang sedang diperebutkan.
+   */
+  debugPlaceTargetPixel(): string {
+    const { board } = this.board;
+    const pixel: Pixel = {
+      id: `dbgt${board.nextPixelSeq}`,
+      cell: { row: 1, col: 1 },
+      color: board.targetColors[0]!,
       kind: 'normal',
       spawnedAtMs: this.board.elapsedMs,
       lifetimeMs: 60_000,
@@ -519,6 +641,16 @@ export class Match {
     this.forwardBoardEvents(result.events);
 
     this.reviveThawedPlayers(now);
+    /*
+      Ketukan manusia yang ditahan diselesaikan SEBELUM bot digerakkan.
+
+      Urutan ini yang membuat penyetaraan ping ada gunanya. Bot berjalan di
+      dalam proses server tanpa jaringan sama sekali, jadi ia pihak yang paling
+      diuntungkan di papan rebutan; kalau ia mengetuk lebih dulu di tick yang
+      sama, pixel yang seharusnya jadi milik manusia yang sudah menunggu
+      penahanannya keburu diambil.
+    */
+    this.drainPendingClicks(now);
     this.driveBots();
 
     if (this.status === 'running' && this.board.elapsedMs >= this.timeLimitMs) {
@@ -801,6 +933,11 @@ export class Match {
       // diketahui pemain lain.
       connected: this.room.get(id)?.connected === true,
       latencyMs: this.room.get(id)?.latencyMs ?? null,
+      // Penahanan penyetaraan ping. Dikirim ke SEMUA pemain, bukan hanya ke
+      // yang ditahan: kalau angkanya disembunyikan, pemain berping bagus cuma
+      // merasakan permainannya jadi lebih lamban tanpa penjelasan apa pun, dan
+      // itu terbaca sebagai server yang buruk — bukan sebagai keadilan.
+      fairDelayMs: this.equalizeDelayFor(id),
       bot: player.bot,
     }));
   }
@@ -947,6 +1084,9 @@ export class Match {
     if (this.status === 'ended') return;
     this.status = 'ended';
     this.stop();
+    // Ketukan yang masih ditahan dibuang. Menerapkannya sesudah match usai akan
+    // mengubah papan skor yang sudah disiarkan sebagai hasil akhir.
+    this.pendingClicks = [];
 
     const ranking = this.ranking();
 

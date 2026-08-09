@@ -438,6 +438,39 @@ export const SUDDEN_DEATH_LIFETIME_MS = 4000;
 export const SERVER_TICK_HZ = 20;
 export const SERVER_TICK_MS = 1000 / SERVER_TICK_HZ;
 
+/**
+ * Batas atas penahanan ketukan untuk penyetaraan ping (lihat `engine/fairness`).
+ *
+ * Dua angka yang menjepitnya dari dua sisi:
+ *
+ * - **Di bawahnya, `SERVER_TICK_MS` (50 ms).** Antrean ketukan dikuras di awal
+ *   tick, jadi penahanan yang lebih kecil dari satu tick akan tertelan
+ *   pembulatan dan tidak mengubah urutan rebutan sama sekali. Batas yang lebih
+ *   kecil dari 50 berarti fiturnya cuma ada di atas kertas.
+ * - **Di atasnya, ambang rasa.** Tambahan input lag mulai terasa buat kebanyakan
+ *   orang di sekitar 100 ms. 80 ms tetap di bawahnya, dan itu batas yang
+ *   disengaja: tujuannya MEMPERKECIL jurang, bukan meratakannya dengan
+ *   memperlambat semua orang sampai selambat koneksi terburuk di room.
+ *
+ * Contoh yang bisa dihitung: ping 40 ms lawan 240 ms berarti jurang satu arah
+ * 100 ms. Dengan batas ini yang cepat ditahan 80 ms, jadi sisa jurangnya 20 ms
+ * — sekitar seperlima dari sebelumnya.
+ */
+export const MP_PING_EQUALIZE_CAP_MS = 80;
+
+/**
+ * Penahanan terkecil yang masih berarti — satu tick server.
+ *
+ * Di bawah ini penahanannya tidak dijalankan sama sekali. Bukan karena terlalu
+ * kecil untuk penting, tapi karena mekanismenya memang tidak sanggup
+ * melakukannya: antrean dikuras di awal tick, jadi permintaan menahan 3 ms
+ * pada praktiknya menahan sampai 50 ms. Membulatkannya ke atas akan MEMPERBESAR
+ * jurang yang sedang diperkecil — dua orang di WiFi yang sama (45 dan 50 ms)
+ * tidak punya jurang yang berarti, tapi yang lebih cepat akan tertahan satu
+ * tick penuh lalu kalah rebutan dari yang lebih lambat.
+ */
+export const MP_PING_EQUALIZE_MIN_MS = SERVER_TICK_MS;
+
 export const ROOM_CODE_LENGTH = 6;
 export const MIN_PLAYERS_TO_START = 2;
 

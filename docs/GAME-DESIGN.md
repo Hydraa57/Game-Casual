@@ -237,7 +237,26 @@ Empat hal yang mudah dilanggar tanpa sadar saat mengubahnya:
 3. **Room yang tinggal berisi bot langsung bubar.** `isEmpty` saja tidak cukup sejak bot menempati kursi — manusia terakhir yang keluar akan meninggalkan room yang tidak akan pernah kosong sendiri.
 4. **Chat tetap menghitung manusia saja.** Bot tidak membaca apa pun; membuka chat karena ada bot di lobby sama saja menyuruh pemain bicara sendiri.
 
-Bot juga **tidak menampilkan lencana ping**: ia tidak punya jaringan untuk diukur, dan "0 ms" akan terbaca sebagai lawan berkoneksi sempurna.
+Bot juga **tidak menampilkan lencana ping**: ia tidak punya jaringan untuk diukur, dan "0 ms" akan terbaca sebagai lawan berkoneksi sempurna. Tapi ia **ikut ditahan penyetaraan ping** (di bawah) — justru karena ia tidak berjaringan, ia pihak yang paling diuntungkan di papan rebutan.
+
+### Penyetaraan ping
+
+Dilaporkan pemain, dan memang bisa dihitung: server yang otoritatif menyelesaikan rebutan menurut **urutan kedatangan** ketukan. Dua pemain yang bereaksi di milidetik yang persis sama, satu berping 40 ms dan satu 240 ms, sampai ke server terpaut 100 ms — dan yang lambat kalah setiap kali, tanpa satu pun hubungannya dengan refleksnya. Di game yang seluruh isinya refleks, itu bukan gangguan kecil.
+
+Ketukan pemain berkoneksi cepat karena itu **ditahan sebentar** sampai kira-kira setara dengan pemain terlambat di match yang sama (`engine/fairness.ts`). Teknik yang sama dengan delay-based netcode di game fighting.
+
+Empat aturan yang menjaganya tidak berubah jadi masalah baru:
+
+| Aturan | Kenapa |
+|---|---|
+| Penahanan **dibatasi 80 ms** (`MP_PING_EQUALIZE_CAP_MS`) | Tujuannya memperkecil jurang, bukan meratakan semua orang ke koneksi terburuk di room. 80 ms masih di bawah ambang rasa (~100 ms). Contoh: 40 vs 240 ms → jurang satu arah 100 ms turun jadi 20 ms |
+| Penahanan **di bawah satu tick server (50 ms) tidak dijalankan** | Antrean dikuras di awal tick, jadi permintaan menahan 3 ms pada praktiknya menahan sampai 50 ms. Membulatkannya ke atas justru MEMPERBESAR jurang: dua orang di WiFi yang sama (45 dan 50 ms) akan bertukar posisi |
+| **Acuannya hanya pemain yang masih tersambung** | Ping terakhir orang yang koneksinya putus biasanya buruk justru karena itulah ia putus. Membiarkannya jadi acuan berarti seisi room ditahan demi orang yang sudah tidak mengetuk apa pun |
+| **Rate limiter tetap di titik kedatangan** | Ia penjaga anti-spam. Kalau ikut dipindahkan ke belakang penahanan, badai ketukan hanya sebagian yang terhitung |
+
+Angkanya **ditampilkan, bukan disembunyikan** — lencana ping pemain yang sedang ditahan diberi penanda, dan keterangannya menyebut berapa ms. Tanpa itu, pemain berping bagus cuma merasakan permainannya jadi lebih lamban, dan rasa itu terbaca sebagai server yang buruk alih-alih sebagai keadilan.
+
+**Yang tidak dipilih:** mengurutkan rebutan menurut cap waktu dari client. Itu tidak memperlambat siapa pun dan lebih adil di atas kertas, tapi cap waktunya berasal dari mesin pemain — siapa pun yang mau curang tinggal mengaku menekan lebih awal dan memenangkan setiap rebutan. Di room yang kodenya bisa dibagikan ke siapa saja, itu bukan risiko teoretis.
 
 ### Avatar & umpan balik "siapa yang merebut"
 

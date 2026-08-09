@@ -176,6 +176,7 @@
     "removeBot": "Keluarkan",
     "pingTitle": "Latensi ke server — makin kecil makin cepat kliknya sampai",
     "pingValue": "Ping {ms} milidetik",
+    "pingEqualized": "Ketukannya ditahan {ms} md demi penyetaraan ping — supaya setara dengan koneksi paling lambat di room",
     "pingUnknown": "Ping belum terukur",
     "reconnectedNotice": "Kamu tersambung lagi — match dilanjutkan.",
     "dismiss": "Oke",
