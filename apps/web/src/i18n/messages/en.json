@@ -331,7 +331,6 @@
     "checkManifest": "App manifest loads",
     "checkSw": "Service worker controls the page",
     "checkPrompt": "Browser offers to install",
-    "diagReloadHint": "The service worker just registered and doesn't control this page yet. Reload once, then check again.",
-    "diagBrowserHint": "Everything is ready on the site's side, but your browser isn't offering an install button. iPhone never does — use Share → Add to Home Screen. On Android, use Chrome and check whether the app is already installed."
+    "diagReloadHint": "The service worker just registered and doesn't control this page yet. Reload once, then check again."
   }
 }

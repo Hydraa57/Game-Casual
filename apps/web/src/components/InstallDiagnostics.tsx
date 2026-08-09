@@ -20,10 +20,17 @@ const LABEL: Record<string, string> = {
  * sisi pengembang keadaan itu tidak terlihat sama sekali — semua syaratnya ada
  * di perangkat pemain, dan tidak satu pun terkirim ke server.
  *
- * Panel ini menutup jarak itu dua arah: ia memberi tahu pemain apa yang kurang
- * (dan seringkali ia bisa langsung memperbaikinya sendiri — muat ulang sekali,
- * atau pindah dari Chrome ke Safari di iPhone), dan kalau ternyata bukan itu,
- * satu tombol menyalin seluruh hasilnya untuk dikirim ke orang yang membantu.
+ * **Hanya muncul saat ada yang benar-benar salah dari sisi SITUS.** Empat
+ * baris "✓ HTTP 200" di halaman orang yang pemasangannya baik-baik saja itu
+ * bukan informasi, itu kotoran — dan halaman Pengaturan bukan panel
+ * pengembang. Selama HTTPS, manifest, dan service worker-nya beres, panel ini
+ * tidak menggambar apa pun.
+ *
+ * Yang TIDAK ikut memunculkannya: browser yang tidak menawarkan pemasangan.
+ * Itu keadaan yang normal di iPhone dan sudah dijelaskan panduan langkah demi
+ * langkah tepat di bawahnya; memunculkan panel diagnosa untuk itu berarti
+ * setiap pengguna iPhone melihat laporan teknis yang tidak menyiratkan apa-apa
+ * selain "ada yang rusak" — padahal tidak ada.
  */
 export function InstallDiagnostics({ canPrompt }: { readonly canPrompt: boolean }) {
   const t = useTranslations('install');
@@ -40,10 +47,14 @@ export function InstallDiagnostics({ canPrompt }: { readonly canPrompt: boolean 
   if (checks.length === 0) return null;
 
   const gagal = (id: string): boolean => checks.some((c) => c.id === id && c.pass === false);
-  // Dua kegagalan yang punya jalan keluar langsung, jadi keduanya diberi
-  // saran alih-alih dibiarkan sebagai tanda silang tanpa tindak lanjut.
+  // Tiga syarat yang memang tanggung jawab situs ini. Hanya ini yang berhak
+  // memunculkan panelnya.
+  const adaMasalahSitus = gagal('secure') || gagal('manifest') || gagal('sw');
+  if (!adaMasalahSitus) return null;
+
+  // Kegagalan yang punya jalan keluar langsung diberi saran, bukan dibiarkan
+  // sebagai tanda silang tanpa tindak lanjut.
   const perluMuatUlang = gagal('sw') && !gagal('secure') && !gagal('manifest');
-  const situsSiapTapiBrowserTidak = gagal('prompt') && !gagal('sw') && !gagal('manifest');
 
   return (
     <div className="diag">
@@ -66,7 +77,6 @@ export function InstallDiagnostics({ canPrompt }: { readonly canPrompt: boolean 
       </ul>
 
       {perluMuatUlang && <p className="hint hint--warn">{t('diagReloadHint')}</p>}
-      {situsSiapTapiBrowserTidak && <p className="hint hint--warn">{t('diagBrowserHint')}</p>}
 
       <div className="diag__actions">
         <button className="btn btn--small btn--ghost" type="button" onClick={salin}>

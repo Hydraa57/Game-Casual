@@ -331,7 +331,6 @@
     "checkManifest": "Manifest aplikasi terbaca",
     "checkSw": "Service worker mengendalikan halaman",
     "checkPrompt": "Browser menawarkan pemasangan",
-    "diagReloadHint": "Service worker baru terdaftar dan belum mengendalikan halaman ini. Muat ulang halamannya sekali, lalu cek lagi.",
-    "diagBrowserHint": "Semuanya siap dari sisi situs, tapi browsermu tidak menawarkan tombol pasang. Di iPhone memang tidak pernah ada — pakai Bagikan → Tambah ke Layar Utama. Di Android, pakai Chrome dan cek apakah aplikasinya sudah terpasang sebelumnya."
+    "diagReloadHint": "Service worker baru terdaftar dan belum mengendalikan halaman ini. Muat ulang halamannya sekali, lalu cek lagi."
   }
 }
