@@ -44,6 +44,45 @@ function formatDuration(ms: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
+/**
+ * Batas jumlah nyawa yang masih pantas digambar sebagai batang.
+ *
+ * Enam, karena itu tepat kolam nyawa 2v2 (3 × 2) — format beregu terkecil.
+ * Regu kecil dengan begitu tetap melihat bentuk yang sama seperti solo dan ffa,
+ * dan yang berpindah ke angka hanya 3v3 (9) dan 4v4 (12).
+ *
+ * Yang diukur, di layar 320 px: dua belas batang membuat nama regu terpotong
+ * jadi 50 dari 63 px yang dibutuhkannya, sementara "▮×12" menyisakannya utuh.
+ * Di layar 412 px keduanya masih muat — jadi batas ini memang untuk HP kecil,
+ * bukan untuk semua orang.
+ *
+ * Mode solo dan ffa tidak pernah menyentuh batas ini sama sekali: nyawa
+ * maksimum satu orang adalah `MAX_LIVES` = 5.
+ */
+const LIVES_BAR_MAX = 6;
+
+/**
+ * Nyawa sebagai batang — selama batangnya masih muat.
+ *
+ * Nyawa regu adalah kolam bersama sebesar 3 × jumlah anggota, jadi 4v4 memberi
+ * DUA BELAS — dan dua belas "▮" tidak muat berdampingan dengan nama regu di
+ * kartu selebar setengah layar. Itu yang dilaporkan pemain.
+ *
+ * Ada dua hal berbeda yang harus dijaga di sini, dan CSS hanya mengurus yang
+ * pertama. `.teamBar__head .lives` menolak menyusut supaya batangnya tidak
+ * terpotong di tengah, tapi itu cuma memindahkan korbannya: yang terpotong
+ * lalu jadi nama regunya. Yang kedua inilah yang diselesaikan fungsi ini.
+ *
+ * Di atas ambang, batangnya diganti angka. Ini bukan sekadar jalan keluar dari
+ * masalah lebar: tidak ada orang yang menghitung dua belas batang satu per satu
+ * di tengah permainan tap, jadi untuk jumlah sebesar itu angka justru lebih
+ * cepat dibaca daripada bentuk yang digantikannya.
+ */
+function livesLabel(lives: number): string {
+  if (lives <= 0) return '—';
+  return lives <= LIVES_BAR_MAX ? '▮'.repeat(lives) : `▮×${lives}`;
+}
+
 const CHAOS_LABEL: Record<ChaosModifier, string> = {
   rush: 'chaosRush',
   blackout: 'chaosBlackout',
@@ -523,7 +562,7 @@ export function MatchView({
                   <span className="lives lives--out">{t('eliminatedShort')}</span>
                 ) : (
                   <span className={`lives${entry.frozenMs > 0 ? ' lives--out' : ''}`}>
-                    {entry.frozenMs > 0 ? t('down') : '▮'.repeat(entry.lives)}
+                    {entry.frozenMs > 0 ? t('down') : livesLabel(entry.lives)}
                   </span>
                 )}
               </span>
@@ -546,6 +585,15 @@ export function MatchView({
                       </span>
                       <span className="teamBar__memberName">{player.nickname}</span>
                       {!player.connected && <span className="tagGone">{t('afkShort')}</span>}
+                      {/* Ping hilang saat kartu regu dan daftar pemain digabung
+                          jadi satu blok — ikut terbuang bersama baris lamanya.
+                          Aturannya sama persis dengan mode ffa di bawah: bot
+                          tidak punya jaringan untuk diukur, dan pemain yang
+                          putus sudah memakai lencana AFK di sebelahnya, jadi
+                          angka ping terakhirnya cuma kebohongan yang basi. */}
+                      {player.bot === null && player.connected && (
+                        <PingBadge latencyMs={player.latencyMs} connected={player.connected} />
+                      )}
                       <span className="teamBar__memberScore">{player.score}</span>
                     </li>
                   ))}
@@ -603,7 +651,7 @@ export function MatchView({
                       ? t('eliminatedShort')
                       : entry.frozenMs > 0
                         ? t('down')
-                        : '▮'.repeat(entry.lives)}
+                        : livesLabel(entry.lives)}
                   </span>
                 )}
                 {entry.combo >= 5 && <span className="badge">×{entry.combo}</span>}

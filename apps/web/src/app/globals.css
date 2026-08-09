@@ -1136,21 +1136,37 @@ h3 {
   menghapus justru satu-satunya hal yang dikomunikasikan tata letak ini — dua
   sisi yang berhadapan. Yang mengalah adalah ukuran teksnya.
 */
+/* Bertumpuk, tidak berdampingan — alasan lengkapnya di RoomLobby. Ringkasnya:
+   setengah lebar layar memaksa tiap anggota jadi tiga baris, dan 4v4 dengan
+   begitu lebih tinggi daripada layarnya. */
 .teams {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .teams__col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px 10px 10px;
   border: 3px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-raised);
   min-width: 0;
+}
+
+/* Pemisah dua regu. Bukan sekadar hiasan: tanpa sesuatu di antaranya, dua
+   kartu bertumpuk terbaca sebagai satu daftar bersambung — persis kesalahpahaman
+   yang dihindari sejak awal. "VS" mengembalikan arti berhadapannya. */
+.teams__vs {
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  line-height: 1;
 }
 
 /* Warna regu diambil dari palet yang sudah ada, bukan warna baru: keduanya
@@ -1171,10 +1187,25 @@ h3 {
   font-size: 0.85rem;
   font-weight: 700;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
+}
+
+.teams__nameText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tombol gabung didorong ke ujung kanan baris judul; nama dan hitungannya
+   tetap menempel di kiri sebagai satu kesatuan. */
+.teams__join {
+  margin-left: auto;
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 4px 12px;
 }
 
 .teams__col--a .teams__name {
@@ -1192,32 +1223,113 @@ h3 {
   flex-shrink: 0;
 }
 
-/* Baris pemain di dalam kolom regu selalu bertumpuk, tidak pernah
-   berdampingan: kolomnya sudah setengah lebar layar. */
-.teams__col .playerList__item {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  padding: 8px;
-  font-size: 0.8rem;
+/*
+  Anggota BERDAMPINGAN di dalam kartu regunya.
+
+  Ini bagian yang benar-benar memotong tinggi, dan angkanya diukur di 4v4:
+  kolom regu berdampingan memberi tiap anggota lebar 162 px, terlalu sempit
+  untuk satu baris, jadi tiap anggota jadi 86 px tinggi × empat orang. Regu
+  bertumpuk saja tidak menolong — empat baris penuh per regu justru sedikit
+  lebih tinggi daripada dua kolom paralel. Yang menolong adalah keduanya
+  sekaligus: regu bertumpuk supaya kartunya selebar layar, lalu anggotanya
+  dua per baris di dalam kartu itu.
+*/
+.teams__col .playerList {
+  display: grid;
+  /*
+    `auto-fit` dan bukan `1fr 1fr` mati: di layar 320 px kartu regu tinggal
+    242 px, dua kolom memberi tiap sel 109 px, dan setelah avatar + lencana bot
+    + tombol × yang semuanya menolak menyusut, sisa untuk nama pemain adalah
+    NOL piksel — kedelapan nama hilang total. 148 px adalah lebar terkecil yang
+    masih menyisakan ruang untuk nama; di bawah itu kisinya jatuh sendiri jadi
+    satu kolom, yang lebih tinggi tapi masih terbaca.
+  */
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 4px;
 }
 
-.teams__col .playerList__item > span:first-child {
+.playerList__item--compact {
+  gap: 6px;
+  padding: 6px 7px;
+  font-size: 0.78rem;
+  /* Sel kisi punya `min-width: auto` secara baku, artinya ia menolak menyusut
+     di bawah lebar isinya — dan isinya (nama + lencana bot + ping + tombol)
+     melebihi separuh kartu, jadi barisnya menjulur 9 px keluar bingkai. Nol di
+     sini yang memindahkan tekanan itu ke nama, yang memang punya elipsis. */
+  min-width: 0;
+}
+
+.playerList__item--compact > span:first-child {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.teams__col .playerList__right {
-  justify-content: flex-end;
+/* Margin kanan bawaan avatar dibuang: di sini jaraknya sudah diurus `gap`,
+   dan 6 px ganda × delapan baris adalah ruang yang dibutuhkan nama. */
+.playerList__item--compact .avatarMark {
+  margin-right: 0;
+  font-size: 1em;
+}
+
+.playerList__item--compact .playerList__right {
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+/* Sel di kisi dua kolom cuma ~160 px. Lencana ping tetap tampil — itu justru
+   yang barusan dipulihkan — tapi satuan "ms"-nya dibuang: angkanya sendiri
+   sudah punya arti lewat warna, dan dua huruf itu memakan ruang yang
+   dibutuhkan nama pemain. */
+.playerList__item--compact .ping {
+  padding: 0 5px;
+  font-size: 0.62rem;
+}
+
+.playerList__item--compact .ping__unit {
+  display: none;
+}
+
+.playerList__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Lencana tidak ikut menyusut: separuh lencana lebih buruk daripada nama yang
+   dipotong, karena nama yang dipotong masih terbaca sebagai nama sedangkan
+   "Mediur" terbaca sebagai UI rusak. */
+.playerList__item--compact .badge {
+  font-size: 0.55rem;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.ready--mark {
+  font-size: 0.9rem;
+  line-height: 1;
+  font-style: normal;
 }
 
 .teams__col .badge {
   margin-left: 0;
+}
+
+/* Tombol "keluarkan bot" versi ikon. 32 px memang di bawah 44 px yang nyaman
+   untuk kontrol yang dipakai saat bermain — tapi ini kontrol lobby yang jarang
+   ditekan, dan menukar 12 px tinggi × delapan baris demi sasaran sentuh yang
+   lebih besar berarti daftar regunya sendiri tidak muat di layar. */
+.btn--tiny {
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 /* ------------------------------------------------- skor regu saat match jalan */
@@ -1253,6 +1365,14 @@ h3 {
   justify-content: space-between;
   gap: 6px;
   min-width: 0;
+}
+
+/* Nyawa tidak boleh menyusut supaya muat — kalau ia disempitkan, batangnya
+   terpotong di tengah dan "▮▮▮" terbaca sebagai jumlah yang salah. Yang
+   mengalah adalah nama regunya, yang sudah punya elipsis. Lebar teksnya sendiri
+   dijaga tetap kecil oleh `livesLabel()` di MatchView. */
+.teamBar__head .lives {
+  flex-shrink: 0;
 }
 
 /* Daftar anggota tinggal DI DALAM kartu regunya, bukan sebagai blok terpisah
@@ -1297,6 +1417,19 @@ h3 {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+/* Baris anggota regu cuma setengah lebar layar, jadi lencana pingnya dikecilkan
+   — bukan dihilangkan. Menghilangkannya adalah regresi yang barusan diperbaiki:
+   pemain kehilangan satu-satunya cara melihat koneksi rekan seregunya. */
+.teamBar__member .ping {
+  flex-shrink: 0;
+  padding: 0 4px;
+  font-size: 0.6rem;
+}
+
+.teamBar__member .ping__unit {
+  display: none;
 }
 
 /*

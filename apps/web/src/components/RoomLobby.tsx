@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   ALLOWED_TARGET_SCORES,
@@ -126,58 +126,78 @@ export function RoomLobby({
 
       {beregu ? (
         /*
-          Dua kolom regu menggantikan satu daftar.
+          Dua regu BERTUMPUK, bukan berdampingan.
 
-          Bukan satu daftar dengan lencana regu di tiap baris: yang paling
-          sering ditanyakan di lobby beregu adalah "siapa lawan siapa", dan
-          menjawabnya dari lencana berarti membaca delapan baris lalu
-          mengelompokkannya sendiri di kepala. Dua kolom menjawabnya tanpa
-          dibaca.
+          Yang tidak berubah dari versi sebelumnya: keduanya tetap dua blok
+          terpisah, bukan satu daftar dengan lencana regu di tiap baris.
+          Pertanyaan yang paling sering muncul di lobby beregu adalah "siapa
+          lawan siapa", dan menjawabnya dari lencana berarti membaca delapan
+          baris lalu mengelompokkannya sendiri di kepala.
+
+          Yang berubah adalah ARAHNYA. Dua kolom berdampingan memberi tiap regu
+          cuma setengah lebar layar, dan di lebar segitu satu anggota terpaksa
+          dipecah jadi dua baris (nama di atas, ping/status di bawah) plus satu
+          tombol selebar kolom untuk mengeluarkan bot. Di 4v4 itu delapan
+          anggota × tiga baris — lobby yang lebih tinggi daripada layarnya
+          sendiri. Bertumpuk, tiap regu dapat lebar penuh, satu anggota kembali
+          muat dalam satu baris, dan "VS" di antaranya membaca pertandingan itu
+          persis seperti papan skor olahraga.
         */
         <section className="card">
           <h2 className="card__title">
             {t('teamsTitle')} ({connectedCount}/{room.settings.maxPlayers})
           </h2>
           <div className="teams">
-            {TEAM_IDS.map((team) => {
+            {TEAM_IDS.map((team, index) => {
               const anggota = room.players.filter((player) => player.team === team);
               const akuDiSini = me?.team === team;
               const penuh = teamCounts[team] >= perTeam;
               return (
-                <div className={`teams__col teams__col--${team}`} key={team}>
-                  <h3 className="teams__name">
-                    {t(`teamName.${team}`)}
-                    <span className="teams__count">
-                      {anggota.length}/{perTeam}
+                <Fragment key={team}>
+                  {index > 0 && (
+                    <span className="teams__vs" aria-hidden="true">
+                      VS
                     </span>
-                  </h3>
-                  <ul className="playerList">
-                    {anggota.map((player) => (
-                      <PlayerRow
-                        key={player.id}
-                        player={player}
-                        isMe={player.id === playerId}
-                        isHost={isHost}
-                        busy={busy}
-                        onRemoveBot={onRemoveBot}
-                      />
-                    ))}
-                  </ul>
-                  {/* Tombolnya hanya di regu SEBERANG. Tombol "gabung" di regu
-                      yang sudah kutempati tidak melakukan apa pun, dan tombol
-                      mati yang tidak melakukan apa pun membuat orang menekannya
-                      berulang kali lalu mengira lobby-nya macet. */}
-                  {!akuDiSini && room.status === 'waiting' && (
-                    <button
-                      className="btn btn--small"
-                      type="button"
-                      onClick={() => onSetTeam(team)}
-                      disabled={busy || penuh}
-                    >
-                      {penuh ? t('teamFull') : t('joinTeam')}
-                    </button>
                   )}
-                </div>
+                  <div className={`teams__col teams__col--${team}`}>
+                    <h3 className="teams__name">
+                      <span className="teams__nameText">{t(`teamName.${team}`)}</span>
+                      <span className="teams__count">
+                        {anggota.length}/{perTeam}
+                      </span>
+                      {/* Tombolnya ikut ke baris judul, tidak lagi berdiri
+                          sendiri di bawah daftar: satu tombol selebar kartu
+                          menghabiskan 40 px untuk satu kata. Dan ia hanya ada
+                          di regu SEBERANG — tombol "gabung" di regu yang sudah
+                          kutempati tidak melakukan apa pun, dan tombol mati
+                          yang tidak melakukan apa pun membuat orang menekannya
+                          berulang kali lalu mengira lobby-nya macet. */}
+                      {!akuDiSini && room.status === 'waiting' && (
+                        <button
+                          className="btn btn--small teams__join"
+                          type="button"
+                          onClick={() => onSetTeam(team)}
+                          disabled={busy || penuh}
+                        >
+                          {penuh ? t('teamFull') : t('joinTeam')}
+                        </button>
+                      )}
+                    </h3>
+                    <ul className="playerList">
+                      {anggota.map((player) => (
+                        <PlayerRow
+                          key={player.id}
+                          player={player}
+                          isMe={player.id === playerId}
+                          isHost={isHost}
+                          busy={busy}
+                          onRemoveBot={onRemoveBot}
+                          compact
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                </Fragment>
               );
             })}
           </div>
@@ -367,12 +387,21 @@ function PlayerRow({
   isHost,
   busy,
   onRemoveBot,
+  compact = false,
 }: {
   readonly player: Player;
   readonly isMe: boolean;
   readonly isHost: boolean;
   readonly busy: boolean;
   readonly onRemoveBot: (botId: string) => void;
+  /**
+   * Baris di dalam kartu regu, yang harus muat berdelapan di satu layar HP.
+   * Yang dipadatkan hanya BENTUK tombolnya — teks "Keluarkan" jadi "×" dengan
+   * `aria-label` yang tetap berbunyi lengkap, jadi pembaca layar tidak
+   * kehilangan apa pun. Isinya sendiri tidak ada yang dibuang: nama, lencana
+   * bot, ping, dan status siap semuanya tetap ada.
+   */
+  readonly compact?: boolean;
 }) {
   const t = useTranslations('room');
   return (
@@ -381,7 +410,9 @@ function PlayerRow({
       // tenggang. Tanpa penanda ini, pemain lain hanya melihat seseorang yang
       // tidak pernah menekan "siap" dan tidak tahu kenapa — lalu menyimpulkan
       // lobby-nya rusak.
-      className={`playerList__item${player.connected ? '' : ' playerList__item--gone'}`}
+      className={`playerList__item${player.connected ? '' : ' playerList__item--gone'}${
+        compact ? ' playerList__item--compact' : ''
+      }`}
     >
       <span className={isMe ? 'playerList__me' : undefined}>
         {/* Avatar ditampilkan di sini supaya pemain melihat karakter yang
@@ -390,7 +421,14 @@ function PlayerRow({
         <span className="avatarMark" aria-hidden="true">
           {AVATAR_GLYPH[player.avatar]}
         </span>
-        {player.nickname}
+        {/* Nama dibungkus elemennya sendiri, tidak dibiarkan jadi teks telanjang.
+            Teks telanjang di dalam flex memang ikut menyusut, tapi ia tidak bisa
+            diberi elipsis — jadi yang terpotong justru lencana di sebelahnya, dan
+            "Medium" terbaca "Mediur". Dengan pembungkus ini yang mengalah adalah
+            namanya, lengkap dengan "…" yang menandai bahwa ia dipotong. */}
+        <span className="playerList__name" title={player.nickname}>
+          {player.nickname}
+        </span>
         {player.isHost && <span className="badge">{t('host')}</span>}
         {/* Selalu terlihat. Menyembunyikan bahwa lawanmu bukan orang berarti
             skor yang kamu kalahkan tidak berarti apa-apa. */}
@@ -410,19 +448,36 @@ function PlayerRow({
         )}
         {player.bot !== null && isHost ? (
           <button
-            className="btn btn--small btn--ghost"
+            className={`btn btn--small btn--ghost${compact ? ' btn--tiny' : ''}`}
             type="button"
             onClick={() => onRemoveBot(player.id)}
             disabled={busy}
+            aria-label={compact ? t('removeBot') : undefined}
+            title={compact ? t('removeBot') : undefined}
           >
-            {t('removeBot')}
+            {compact ? '×' : t('removeBot')}
           </button>
         ) : player.connected ? (
-          <span className={player.isReady ? 'ready ready--yes' : 'ready'}>
-            {player.isReady ? t('ready') : t('notReady')}
+          /* Di baris padat statusnya jadi tanda, bukan kata: "Belum siap" saja
+             sudah selebar separuh sel di kisi dua kolom. Artinya tidak hilang —
+             `aria-label` dan `title` tetap berbunyi lengkap, dan ✓ hijau versus
+             ○ redup justru lebih cepat dipindai berdelapan daripada delapan
+             potong teks yang harus dibaca satu per satu. */
+          <span
+            className={`ready${player.isReady ? ' ready--yes' : ''}${compact ? ' ready--mark' : ''}`}
+            aria-label={compact ? (player.isReady ? t('ready') : t('notReady')) : undefined}
+            title={compact ? (player.isReady ? t('ready') : t('notReady')) : undefined}
+          >
+            {compact ? (player.isReady ? '✓' : '○') : player.isReady ? t('ready') : t('notReady')}
           </span>
         ) : (
-          <span className="ready ready--gone">{t('reconnecting')}</span>
+          <span
+            className={`ready ready--gone${compact ? ' ready--mark' : ''}`}
+            aria-label={compact ? t('reconnecting') : undefined}
+            title={compact ? t('reconnecting') : undefined}
+          >
+            {compact ? '…' : t('reconnecting')}
+          </span>
         )}
       </span>
     </li>
