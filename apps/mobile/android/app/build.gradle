@@ -43,6 +43,26 @@ react {
     //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
     // extraPackagerArgs = []
 
+    /*
+      Hermes: lokasinya dicari lewat Node, bukan ditulis sebagai path.
+
+      Sejak React Native 0.87 kompiler `hermesc` pindah ke paket npm terpisah
+      (`hermes-compiler`), sementara nilai baku plugin Gradle masih menunjuk ke
+      `node_modules/react-native/sdks/hermesc/...` — lokasi yang sudah tidak ada
+      lagi. Dengan npm yang node_modules-nya datar, paket barunya kebetulan
+      ter-hoist ke tempat yang bisa ditemukan; dengan pnpm ia berada di store
+      yang path-nya memuat hash versi, jadi menuliskannya sebagai path akan
+      rusak setiap kali versinya naik.
+
+      `require.resolve` memindahkan pertanyaan "di mana paketnya" ke Node, yang
+      memang satu-satunya yang tahu jawabannya. `%OS-BIN%` diganti sendiri oleh
+      plugin RN sesuai sistem operasinya.
+    */
+    hermesCommand = new File(
+        ["node", "--print", "require.resolve('hermes-compiler/package.json')"]
+            .execute(null, rootDir).text.trim()
+    ).getParent() + "/hermesc/%OS-BIN%/hermesc"
+
     /* Hermes Commands */
     //   The hermes compiler command to run. By default it is 'hermesc'
     // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"

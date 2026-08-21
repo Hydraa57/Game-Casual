@@ -51,10 +51,17 @@ cd apps/mobile/android && ./gradlew assembleDebug
 `apps/mobile/android/local.properties` menunjuk ke Android SDK dan **tidak
 ikut di-commit** — isinya path lokal tiap mesin.
 
-## Tiga jebakan pnpm + React Native
+## Empat jebakan pnpm + React Native
 
-Ketiganya sudah kena dan sudah diperbaiki. Ditulis di sini karena akan kembali
-setiap kali versi RN naik:
+Keempatnya sudah kena dan sudah diperbaiki. Ditulis di sini karena akan kembali
+setiap kali versi RN naik.
+
+Polanya sama di keempatnya, dan itu yang paling berguna diingat: **React Native
+mengasumsikan `node_modules` yang datar ala npm.** pnpm tidak datar, jadi setiap
+tempat yang menuliskan lokasi paket sebagai PATH akan meleset. Perbaikannya
+selalu ke arah yang sama — biarkan Node yang menjawab di mana paketnya, atau
+jadikan paketnya dependensi langsung supaya benar-benar ada di
+`apps/mobile/node_modules`.
 
 1. **Metro tidak melihat `packages/shared`.** Metro hanya mengawasi folder
    aplikasinya. Diperbaiki di `metro.config.js`: `watchFolders` memuat akar
@@ -71,6 +78,18 @@ setiap kali versi RN naik:
    fungsi yang berjalan di thread UI; plugin lain sesudahnya membuatnya bekerja
    pada kode yang sudah berubah bentuk, dan gagalnya muncul saat runtime, bukan
    saat build.
+4. **Hermes tidak ditemukan saat build RELEASE.** Sejak RN 0.87 kompiler
+   `hermesc` pindah ke paket npm terpisah (`hermes-compiler`), sementara nilai
+   baku plugin Gradle masih menunjuk `node_modules/react-native/sdks/hermesc/`.
+   Dengan npm yang datar paket barunya kebetulan ter-hoist ke tempat yang bisa
+   ditemukan, jadi bug ini tidak pernah muncul di setup biasa. Diperbaiki di
+   `app/build.gradle` dengan `require.resolve` lewat Node, BUKAN dengan
+   menuliskan path — path ke store pnpm memuat hash versi dan akan rusak setiap
+   kali versinya naik.
+
+   Yang sengaja TIDAK dilakukan: menyetel `hermesEnabled=false` supaya build-nya
+   lewat. Itu membuat layar hijau dengan harga mesin JS yang lebih lambat dan
+   APK yang lebih besar — menukar sifat produk demi centang.
 
 ## Apa yang dijaga test, dan apa yang tidak
 
