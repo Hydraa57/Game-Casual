@@ -36,6 +36,46 @@ bom) ternyata membuat `View` biasa tersendat. Menambahkannya nanti butuh satu
 `pnpm add`; membawanya sekarang berarti setiap pemain mengunduh 14 MB untuk
 sesuatu yang belum ada.
 
+### Font: jalan yang berputar, dan kenapa
+
+Web memakai **Fredoka** (judul, tombol, angka) dan **Nunito** (kalimat) lewat
+`next/font`. Selama keduanya belum ikut dipaketkan, versi Android memakai font
+sistem — dan itu perbedaan yang paling cepat terlihat saat kedua versi
+disandingkan, karena judulnya jadi terbaca sebagai aplikasi biasa alih-alih
+sebagai game.
+
+Android hanya bisa membaca **.ttf/.otf** dari `assets/fonts`. Google Fonts tidak
+menyajikan .ttf ke sembarang klien — yang keluar tergantung `User-Agent`:
+
+| Yang dikirim | Yang diterima | Bisa dipakai Android? |
+|---|---|---|
+| UA Internet Explorer lama | **EOT** | Tidak |
+| UA Firefox 3.6 | **WOFF** | Tidak |
+| UA peramban modern | **woff2** | Tidak langsung |
+
+Keduanya yang pertama sempat terunduh dan tampak benar — namanya berakhiran
+`.ttf` dan ukurannya masuk akal — padahal isinya bukan TrueType sama sekali.
+Yang membongkarnya cuma memeriksa empat byte pertama berkasnya.
+
+Jalan yang dipakai: ambil **woff2**, lalu buka pembungkusnya jadi TTF dengan
+`fontTools`. Ini justru pilihan yang paling tepat, bukan sekadar jalan pintas —
+woff2 adalah berkas yang SAMA persis dengan yang diunduh `next/font` untuk web,
+jadi bentuk hurufnya identik dan bukan sekadar "font dengan nama yang sama".
+
+Delapan bobot, subset latin, **total 304 KB**. Nama internal tiap berkas ditulis
+ulang jadi unik per bobot (`Nunito SemiBold`, bukan `Nunito`), karena Android
+juga membaca tabel nama di dalam font — empat berkas yang sama-sama mengaku
+bernama "Nunito" bisa membuat sistem memilih salah satunya dan bobot lain
+diam-diam tidak pernah terpakai.
+
+> **`fontWeight` sengaja tidak dipakai bersama font ini.** Bobot dipilih dengan
+> memilih BERKAS-nya (`fontFamily: 'Nunito-Bold'`). Kalau `fontWeight: '700'`
+> ikut disetel di atas font yang memang sudah tebal, Android menebalkannya lagi
+> secara sintetis dan hurufnya jadi gepeng dan kotor.
+
+Lisensinya **OFL 1.1** — boleh dipaketkan ke aplikasi, termasuk yang dijual.
+Teks lisensinya ikut di `assets/fonts/OFL-*.txt`, sebagaimana yang diminta.
+
 ## Yang dipakai bersama, dan yang tidak
 
 | Bagian | Nasib |
@@ -209,6 +249,13 @@ membandingkannya dengan token di `src/theme.ts`. Itu yang membuat janji
 kali disetel ulang karena audit kontras, dan tanpa test ini versi Android akan
 tertinggal tanpa satu pun tanda.
 
+Test kedua menjaga **font-nya**: ia membaca array `weight: [...]` milik
+`Fredoka()` dan `Nunito()` dari `layout.tsx` web, lalu memastikan tiap bobot
+punya berkas `.ttf`-nya di `assets/fonts`. Menambah bobot di web cuma butuh
+mengetik satu angka; di Android ia butuh berkas baru — dan tanpa test ini,
+teks yang memakai bobot yang tidak ada akan diam-diam jatuh ke bobot lain,
+dengan gejala "kok hurufnya agak beda", bukan sebuah error.
+
 Test yang sama juga menjaga bahwa **palet papan tidak pernah disalin** ke
 `theme.ts`. Enam warna papan adalah bagian dari aturan main — server memakainya
 untuk memutuskan pixel mana yang benar — jadi ia harus datang dari
@@ -222,21 +269,29 @@ memberi rasa aman yang tidak berdasar.
 > **Konsekuensinya harus disebut jujur.** Berbeda dengan versi web — yang tiap
 > patch-nya dibuktikan lewat match sungguhan di browser sungguhan — bagian
 > tampilan aplikasi Android hanya bisa diverifikasi di HP. Yang bisa dijamin
-> dari sisi ini: kodenya lulus typecheck, token design-nya cocok, dan Gradle
-> benar-benar menghasilkan APK.
+> dari sisi ini: kodenya lulus typecheck, token design-nya cocok, berkas
+> font-nya ada dan benar-benar TrueType, dan Gradle menghasilkan APK yang
+> memuatnya.
+>
+> Yang TIDAK bisa dijamin dari sini, dan karena itu tidak diklaim: bahwa
+> hasilnya benar-benar terlihat sama. Angka yang sama tidak otomatis berarti
+> tata letak yang sama — `clamp()`, pembungkusan baris, dan tinggi baris
+> ditangani mesin yang berbeda. Perbandingan sungguhannya adalah menyandingkan
+> screenshot web dan screenshot HP, dan itu butuh HP.
 
 ## Sisa jalan menuju Play Store
 
 - [x] Proyek Android + integrasi monorepo, `pnpm install` bersih
 - [x] Token design terkunci ke CSS web lewat test
-- [x] Halaman awal (logo beranimasi, menu, palet papan dari shared)
+- [x] Font Fredoka & Nunito dipaketkan (8 bobot, 304 KB) + lisensi OFL ikut serta
+- [x] Halaman awal sepadan dengan web: logo bergaris tepi, tagline, kartu "Cara
+      main", menu berwarna, dan empat noda gradien di latar
 - [x] APK debug, APK release, dan AAB terbukti benar-benar jadi
 - [x] Workflow CI yang membangun APK per-ABI tanpa perlu Android SDK lokal
 - [ ] Papan permainan + mode solo (offline) — penggambarnya diputuskan di situ
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server`
 - [ ] Audio: musik latar + efek suara
-- [ ] Font Fredoka & Nunito dipaketkan — **sampai ini selesai, tampilannya
-      belum boleh disebut sama persis dengan web**
+- [ ] Layar-layar SISANYA disamakan dengan web (papan, lobby, hasil, pengaturan)
 - [ ] Ikon adaptif + splash screen
 - [ ] Keystore penandatanganan — **dibuat di mesin pemilik, tidak pernah masuk
       repo publik ini**

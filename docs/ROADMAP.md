@@ -154,12 +154,14 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 
 - [x] Proyek Android + integrasi monorepo (Metro, Gradle, autolinking) — `pnpm install` bersih
 - [x] Token design terkunci ke `globals.css` lewat test yang membaca CSS-nya langsung
-- [x] Halaman awal: logo beranimasi, menu, palet papan dari `@pixelmatrix/shared`
+- [x] Font Fredoka & Nunito dipaketkan (8 bobot, 304 KB), dikunci test ke bobot yang diminta web
+- [x] Halaman awal sepadan dengan web: logo bergaris tepi + beranimasi, tagline, kartu "Cara main", menu berwarna, latar bergradien
 - [x] APK debug, APK release, dan AAB terbukti jadi — APK arm64 21,2 MiB, AAB 43,9 MiB
 - [x] Workflow `APK Android` di GitHub Actions: bangun & unduh APK tanpa Android SDK lokal
 - [ ] Papan permainan + mode solo offline (penggambarnya diputuskan di situ)
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server` (server tidak berubah)
-- [ ] Audio, font Fredoka & Nunito, ikon adaptif, splash
+- [ ] Layar sisanya disamakan dengan web (papan, lobby, hasil, pengaturan)
+- [ ] Audio, ikon adaptif, splash
 - [ ] Keystore (**dibuat pemilik, tidak pernah masuk repo publik**) + Play Console
 
 > **Yang tidak berubah:** `apps/game-server` sama sekali tidak disentuh. Server
