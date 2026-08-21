@@ -135,6 +135,34 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 - [x] **Reconnect mid-match.** Kursi pemain dipisahkan dari `socket.id` (lihat `rooms/sessions.ts`): client menyimpan `sessionKey` di localStorage, server menahan kursinya `RECONNECT_GRACE_MS` (45 dtk) setelah koneksi putus, lalu `game:requestResync` mengirim potret papan utuh. Skor, nyawa, dan combo bertahan
 - [ ] Load test k6/Artillery, lalu jalur scale-out (Redis adapter + sticky session) bila perlu
 
+## Fase 6 — Aplikasi Android native (`apps/mobile`)
+
+Diminta pemain, dengan tiga alasan yang mereka pilih sendiri: ingin **produk
+Android sungguhan** (bukan situs dibungkus), **mode solo harus jalan offline**,
+dan ingin terasa lebih mulus.
+
+Alasan kedua yang menentukan teknologinya. Solo offline berarti engine aturan
+main wajib jalan di HP, dan hanya **React Native** yang bisa memakai
+`@pixelmatrix/shared` apa adanya — Flutter dan Kotlin sama-sama menuntut 3.697
+baris aturan main diport ke bahasa lain, yaitu dua salinan yang harus dijaga
+sinkron selamanya. Papan digambar dengan Skia.
+
+Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
+[ANDROID-NATIVE.md](./ANDROID-NATIVE.md).
+
+- [x] Proyek Android + integrasi monorepo (Metro, Gradle, autolinking) — `pnpm install` bersih
+- [x] Token design terkunci ke `globals.css` lewat test yang membaca CSS-nya langsung
+- [x] Halaman awal: logo beranimasi, menu, palet papan dari `@pixelmatrix/shared`
+- [ ] Papan Skia + mode solo offline
+- [ ] Multiplayer lewat Socket.IO ke `apps/game-server` (server tidak berubah)
+- [ ] Audio, font Fredoka & Nunito, ikon adaptif, splash
+- [ ] Keystore (**dibuat pemilik, tidak pernah masuk repo publik**) + Play Console
+
+> **Yang tidak berubah:** `apps/game-server` sama sekali tidak disentuh. Server
+> sudah otoritatif untuk seluruh aturan rebutan, skor, tim, dan bot — jadi klien
+> Android hanya perlu menggambar dan mengirim ketukan. Versi web juga tetap
+> jalan dan tetap dikembangkan; keduanya berbagi engine yang sama.
+
 ## Cara Verifikasi per Fase
 
 | Fase | Uji |
@@ -145,3 +173,4 @@ Ditambahkan setelah playtest pertama. Keluhannya: gamenya terasa terlalu sederha
 | 2 | Dua tab browser + satu incognito (3 "pemain"): skor sinkron; klik rebutan hanya dimenangkan satu pemain; spam klik terkena rate limit; tutup satu tab → match jalan terus. Ulangi dengan 2 HP nyata |
 | 3 | Daftar akun username+password (OAuth sudah dibuang, lihat Fase 3); rekor guest dari localStorage ikut terbawa ke akun baru; main solo → skor muncul di profil & DB; main MP → match history terisi (guest tercatat sebagai nickname) |
 | 4 | Main dari 2 jaringan berbeda via URL publik; input terasa < 150 ms; load pertama < 3 dtk; uji di Android Chrome & iOS Safari |
+| 6 | `pnpm --filter @pixelmatrix/mobile test` + `typecheck` hijau, dan `./gradlew assembleDebug` benar-benar menghasilkan APK. **Tampilannya hanya bisa diverifikasi di HP** — tidak ada emulator di lingkungan pengembangan ini, jadi bagian itu butuh kamu |

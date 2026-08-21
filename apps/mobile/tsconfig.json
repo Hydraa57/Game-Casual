@@ -1,0 +1,10 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    // Tipe Jest dibuang: aplikasi ini memakai Vitest seperti seluruh repo,
+    // bukan dua test runner sekaligus. Template RN memasangnya secara baku.
+    "types": ["vitest/globals"]
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["**/node_modules", "android", "vendor"]
+}

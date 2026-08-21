@@ -10,3 +10,9 @@ coverage/
 # Dihasilkan otomatis oleh Next
 next-env.d.ts
 packages/db/generated/
+
+# Proyek Android React Native: `android/` seluruhnya dihasilkan scaffold RN
+# (Gradle, Java, XML). Memformatnya dengan Prettier hanya membuat diff besar
+# yang tidak dibaca siapa pun, dan menyulitkan membandingkannya dengan template
+# RN saat upgrade versi.
+apps/mobile/android/

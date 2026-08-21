@@ -11,6 +11,9 @@ export default tseslint.config(
       '**/next-env.d.ts',
       // Klien Prisma dibangkitkan dari schema.prisma — bukan kode yang kita tulis.
       'packages/db/generated/**',
+      // Proyek Android hasil scaffold React Native: Gradle, Java, dan XML.
+      // Bukan kode TypeScript kita, dan ESLint tidak punya urusan di sana.
+      'apps/mobile/android/**',
     ],
   },
   js.configs.recommended,
@@ -36,6 +39,23 @@ export default tseslint.config(
     files: ['**/scripts/**/*.mjs', '**/scripts/**/*.js'],
     languageOptions: {
       globals: { Buffer: 'readonly', console: 'readonly', process: 'readonly' },
+    },
+  },
+  {
+    // Berkas konfigurasi React Native (metro, babel, index) dijalankan Node
+    // dalam bentuk CommonJS, jadi `module`, `require`, dan `__dirname` memang
+    // ada di sana. Dibatasi ke berkas-berkas itu saja, bukan dilonggarkan
+    // untuk seluruh aplikasi — kode aplikasinya sendiri ESM dan tidak boleh
+    // diam-diam memakai global CommonJS.
+    files: ['apps/mobile/metro.config.js', 'apps/mobile/babel.config.js', 'apps/mobile/index.js'],
+    languageOptions: {
+      globals: { module: 'readonly', require: 'readonly', __dirname: 'readonly' },
+    },
+    rules: {
+      // Metro dan Babel MEMUAT berkas ini sebagai CommonJS sebelum ada
+      // transpilasi apa pun; `import` di sini gagal saat build, bukan saat
+      // lint. Larangan `require()` tetap berlaku di seluruh kode aplikasi.
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {
