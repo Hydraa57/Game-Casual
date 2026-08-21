@@ -78,9 +78,23 @@ Jalankan dari tab **Actions → APK Android → Run workflow**, pilih ABI-nya
 **Artifacts** di halaman run itu setelah selesai. Artefaknya kedaluwarsa dalam
 14 hari.
 
+Dua hal yang perlu diketahui sebelum mencoba:
+
+- **Yang diunduh adalah .zip, bukan .apk.** GitHub selalu membungkus artefak
+  jadi ZIP; APK-nya ada di dalamnya dan harus diekstrak dulu. Di HP itu berarti
+  butuh aplikasi pengelola berkas yang bisa membuka ZIP.
+- **APK-nya ditandatangani debug keystore** bawaan template, jadi Android akan
+  meminta izin "pasang dari sumber tidak dikenal". Cukup untuk mencoba sendiri,
+  **tidak bisa** diunggah ke Play Store.
+
+Sekali jalan memakan ~7 menit di runner GitHub, hampir semuanya di langkah
+Gradle. Test dan typecheck sengaja ditaruh sebelum langkah itu: kalau token
+design sudah menyimpang dari CSS web, lebih baik ketahuan dalam hitungan detik
+daripada setelah tujuh menit kompilasi native.
+
 Workflow ini **manual (`workflow_dispatch`), bukan tiap push** — sengaja. Build
-Android mengunduh Android SDK dan makan belasan menit; menjalankannya di tiap
-push memperlambat CI biasa (typecheck/lint/test) yang justru perlu cepat, tanpa
+Android mengunduh Android SDK dan makan ~7 menit; menjalankannya di tiap push
+memperlambat CI biasa (typecheck/lint/test) yang justru perlu cepat, tanpa
 memberi apa pun, karena APK hanya dibutuhkan saat memang mau dicoba di HP.
 
 ## Empat jebakan pnpm + React Native
