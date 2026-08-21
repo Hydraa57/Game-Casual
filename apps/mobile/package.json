@@ -8,7 +8,8 @@
     "apk": "cd android && ./gradlew assembleRelease",
     "apk:debug": "cd android && ./gradlew assembleDebug",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "aab": "cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@pixelmatrix/shared": "workspace:*",

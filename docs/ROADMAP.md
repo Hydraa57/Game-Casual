@@ -153,6 +153,7 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 - [x] Proyek Android + integrasi monorepo (Metro, Gradle, autolinking) — `pnpm install` bersih
 - [x] Token design terkunci ke `globals.css` lewat test yang membaca CSS-nya langsung
 - [x] Halaman awal: logo beranimasi, menu, palet papan dari `@pixelmatrix/shared`
+- [x] APK debug, APK release, dan AAB terbukti jadi — unduhan per perangkat ≈35 MB (arm64)
 - [ ] Papan Skia + mode solo offline
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server` (server tidak berubah)
 - [ ] Audio, font Fredoka & Nunito, ikon adaptif, splash

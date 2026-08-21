@@ -45,7 +45,9 @@ pnpm --filter @pixelmatrix/mobile test        # test yang tidak butuh HP
 pnpm --filter @pixelmatrix/mobile typecheck
 
 # APK debug (butuh Android SDK; lihat local.properties)
-cd apps/mobile/android && ./gradlew assembleDebug
+pnpm --filter @pixelmatrix/mobile apk:debug
+pnpm --filter @pixelmatrix/mobile apk     # APK release
+pnpm --filter @pixelmatrix/mobile aab     # AAB — ini yang diunggah ke Play Store
 ```
 
 `apps/mobile/android/local.properties` menunjuk ke Android SDK dan **tidak
@@ -91,6 +93,60 @@ jadikan paketnya dependensi langsung supaya benar-benar ada di
    lewat. Itu membuat layar hijau dengan harga mesin JS yang lebih lambat dan
    APK yang lebih besar — menukar sifat produk demi centang.
 
+## Ukuran build — angka yang sebenarnya
+
+Diukur dari build sungguhan, bukan diperkirakan:
+
+| Berkas | Ukuran | Untuk apa |
+|---|---|---|
+| `app-debug.apk` | 288 MB | Pengembangan saja. Empat ABI + perkakas dev + tanpa minifikasi |
+| `app-release.apk` | 115 MB | Uji langsung di HP. Masih memuat KEEMPAT ABI sekaligus |
+| `app-release.aab` | 87 MB | **Ini yang diunggah ke Play Store** |
+
+**Yang benar-benar diunduh pemain jauh lebih kecil**, karena Play memotong AAB
+per perangkat — satu HP hanya menerima satu ABI:
+
+| Perangkat | Unduhan |
+|---|---|
+| arm64-v8a (hampir semua HP modern) | **≈ 35 MB** |
+| armeabi-v7a (HP lama) | **≈ 26 MB** |
+
+Yang menyusun angka itu: 6,5 MB isi non-native (dex, aset, resources) plus satu
+pustaka native. Dan pustaka native terbesarnya adalah **Skia**:
+
+| Pustaka | arm64, terkompresi |
+|---|---|
+| `librnskia.so` | ~13,9 MB |
+| `libreactnative.so` | ~6,8 MB |
+
+> **Skia adalah biaya terbesar aplikasi ini.** Papan 8×8 berisi kotak berwarna
+> sebenarnya masih bisa digambar dengan komponen React Native biasa, tanpa Skia
+> sama sekali — dan itu akan memangkas belasan MB. Skia tetap dipakai karena
+> dipilih dengan sadar, tapi kalau suatu saat ukuran unduhan terasa terlalu
+> besar, di situlah tuas yang paling berpengaruh, bukan di aset atau kode.
+
+Dua hal yang sengaja BELUM disetel, dan keduanya akan mengubah angka di atas:
+
+- `enableProguardInReleaseBuilds = false` — R8/minifikasi mati. Menyalakannya
+  memangkas `classes.dex`, tapi juga bisa membuang kelas yang dipakai lewat
+  refleksi, jadi ia butuh pengujian di HP sungguhan lebih dulu.
+- Build release masih ditandatangani **debug keystore** bawaan template. Cukup
+  untuk memasang dan menguji sendiri, **tidak bisa** dipakai rilis Play Store.
+
+## Izin yang diminta aplikasi
+
+Diperiksa dari APK release yang sudah jadi, bukan dari niat:
+
+```
+android.permission.INTERNET
+com.pixelmatrix.game.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+```
+
+Cuma itu. `SYSTEM_ALERT_WINDOW` yang muncul di build DEBUG berasal dari layar
+merah error React Native dan **tidak ikut ke build rilis** — itu perlu
+diperiksa, bukan diasumsikan, karena Google Play memeriksa izin "gambar di atas
+aplikasi lain" dengan ketat.
+
 ## Apa yang dijaga test, dan apa yang tidak
 
 `src/theme.test.ts` membaca `apps/web/src/app/globals.css` **langsung** lalu
@@ -120,6 +176,7 @@ memberi rasa aman yang tidak berdasar.
 - [x] Proyek Android + integrasi monorepo, `pnpm install` bersih
 - [x] Token design terkunci ke CSS web lewat test
 - [x] Halaman awal (logo beranimasi, menu, palet papan dari shared)
+- [x] APK debug, APK release, dan AAB terbukti benar-benar jadi
 - [ ] Papan permainan dengan Skia + mode solo (offline)
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server`
 - [ ] Audio: musik latar + efek suara
