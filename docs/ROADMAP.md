@@ -145,7 +145,9 @@ Alasan kedua yang menentukan teknologinya. Solo offline berarti engine aturan
 main wajib jalan di HP, dan hanya **React Native** yang bisa memakai
 `@pixelmatrix/shared` apa adanya — Flutter dan Kotlin sama-sama menuntut 3.697
 baris aturan main diport ke bahasa lain, yaitu dua salinan yang harus dijaga
-sinkron selamanya. Papan digambar dengan Skia.
+sinkron selamanya. Penggambar papannya sendiri belum diputuskan — Skia sempat
+ikut dipasang lalu dikeluarkan lagi sebelum dipakai, karena ia menambah ~14 MB
+unduhan untuk sesuatu yang satu barisnya pun belum diimpor.
 
 Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 [ANDROID-NATIVE.md](./ANDROID-NATIVE.md).
@@ -153,8 +155,9 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 - [x] Proyek Android + integrasi monorepo (Metro, Gradle, autolinking) — `pnpm install` bersih
 - [x] Token design terkunci ke `globals.css` lewat test yang membaca CSS-nya langsung
 - [x] Halaman awal: logo beranimasi, menu, palet papan dari `@pixelmatrix/shared`
-- [x] APK debug, APK release, dan AAB terbukti jadi — unduhan per perangkat ≈35 MB (arm64)
-- [ ] Papan Skia + mode solo offline
+- [x] APK debug, APK release, dan AAB terbukti jadi — APK arm64 21,2 MiB, AAB 43,9 MiB
+- [x] Workflow `APK Android` di GitHub Actions: bangun & unduh APK tanpa Android SDK lokal
+- [ ] Papan permainan + mode solo offline (penggambarnya diputuskan di situ)
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server` (server tidak berubah)
 - [ ] Audio, font Fredoka & Nunito, ikon adaptif, splash
 - [ ] Keystore (**dibuat pemilik, tidak pernah masuk repo publik**) + Play Console

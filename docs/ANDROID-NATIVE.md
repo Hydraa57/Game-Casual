@@ -21,8 +21,20 @@ klien membuat tampilan tidak cocok dengan server, dan gejalanya muncul sebagai
 "kok skorku beda" berbulan-bulan kemudian. React Native menghapus seluruh kelas
 masalah itu — bukan karena lebih mudah, tapi karena tidak ada yang disalin.
 
-Papan digambar dengan **Skia** (`@shopify/react-native-skia`), yang menggambar
-langsung ke GPU seperti Phaser di web.
+### Papan digambar dengan apa
+
+Rencana awalnya **Skia** (`@shopify/react-native-skia`) — penggambar GPU yang
+setara Phaser di web — dan paketnya sempat ikut dipasang. Ia **dikeluarkan lagi
+sebelum dipakai**: satu pun barisnya tidak pernah diimpor, tapi `librnskia.so`
+tetap ikut ke dalam APK dan memakan ~14 MB. Bayarannya nyata, manfaatnya belum
+ada.
+
+Keputusan penggambar papan **ditunda sampai papannya benar-benar dibuat**, dan
+saat itu pilihannya jujur ada dua: 64 `View` biasa sudah cukup untuk 8×8 kotak
+berwarna, atau Skia kalau efek yang diinginkan (partikel, kilau emas, getaran
+bom) ternyata membuat `View` biasa tersendat. Menambahkannya nanti butuh satu
+`pnpm add`; membawanya sekarang berarti setiap pemain mengunduh 14 MB untuk
+sesuatu yang belum ada.
 
 ## Yang dipakai bersama, dan yang tidak
 
@@ -52,6 +64,24 @@ pnpm --filter @pixelmatrix/mobile aab     # AAB — ini yang diunggah ke Play St
 
 `apps/mobile/android/local.properties` menunjuk ke Android SDK dan **tidak
 ikut di-commit** — isinya path lokal tiap mesin.
+
+### Mengambil APK tanpa Android SDK
+
+APK adalah hasil build, jadi ia **tidak ada di dalam repo** — `.gitignore`
+mengecualikan seluruh `android/app/build/`, dan memang harus begitu: berkas
+20-an MB yang berubah tiap build akan menggelembungkan riwayat git selamanya,
+dan GitHub sendiri menolak berkas di atas 100 MB.
+
+Yang menggantikannya: workflow **`.github/workflows/android-apk.yml`**.
+Jalankan dari tab **Actions → APK Android → Run workflow**, pilih ABI-nya
+(`arm64-v8a` untuk hampir semua HP modern), lalu unduh berkasnya dari bagian
+**Artifacts** di halaman run itu setelah selesai. Artefaknya kedaluwarsa dalam
+14 hari.
+
+Workflow ini **manual (`workflow_dispatch`), bukan tiap push** — sengaja. Build
+Android mengunduh Android SDK dan makan belasan menit; menjalankannya di tiap
+push memperlambat CI biasa (typecheck/lint/test) yang justru perlu cepat, tanpa
+memberi apa pun, karena APK hanya dibutuhkan saat memang mau dicoba di HP.
 
 ## Empat jebakan pnpm + React Native
 
@@ -95,35 +125,45 @@ jadikan paketnya dependensi langsung supaya benar-benar ada di
 
 ## Ukuran build — angka yang sebenarnya
 
-Diukur dari build sungguhan, bukan diperkirakan:
+Diukur dari build sungguhan, bukan diperkirakan. Semuanya MiB (seperti yang
+ditampilkan pengelola berkas), diukur ulang **setelah Skia dikeluarkan**:
 
 | Berkas | Ukuran | Untuk apa |
 |---|---|---|
-| `app-debug.apk` | 288 MB | Pengembangan saja. Empat ABI + perkakas dev + tanpa minifikasi |
-| `app-release.apk` | 115 MB | Uji langsung di HP. Masih memuat KEEMPAT ABI sekaligus |
-| `app-release.aab` | 87 MB | **Ini yang diunggah ke Play Store** |
+| `app-debug.apk` | 287 MiB | Pengembangan saja. Empat ABI + perkakas dev + simbol debug + tanpa minifikasi |
+| `app-release.apk` (4 ABI) | 61,8 MiB | Bawaan `assembleRelease`. Memuat KEEMPAT ABI sekaligus |
+| `app-release.aab` | 43,9 MiB | **Ini yang diunggah ke Play Store** |
 
-**Yang benar-benar diunduh pemain jauh lebih kecil**, karena Play memotong AAB
-per perangkat — satu HP hanya menerima satu ABI:
+**Yang benar-benar diunduh pemain jauh lebih kecil**, karena satu HP hanya butuh
+satu ABI. Diukur dari APK yang dibangun per-ABI
+(`-PreactNativeArchitectures=…`, persis yang dilakukan workflow CI):
 
-| Perangkat | Unduhan |
+| Perangkat | APK per-ABI |
 |---|---|
-| arm64-v8a (hampir semua HP modern) | **≈ 35 MB** |
-| armeabi-v7a (HP lama) | **≈ 26 MB** |
+| arm64-v8a (hampir semua HP modern) | **21,2 MiB** |
+| armeabi-v7a (HP lama) | **16,6 MiB** |
 
-Yang menyusun angka itu: 6,5 MB isi non-native (dex, aset, resources) plus satu
-pustaka native. Dan pustaka native terbesarnya adalah **Skia**:
+Unduhan lewat Play sedikit lebih kecil lagi — Play memotong AAB bukan cuma per
+ABI tapi juga per kerapatan layar dan per bahasa, yang tidak dilakukan APK di
+atas. Jadi angka ini batas atas, bukan perkiraan optimistis.
 
-| Pustaka | arm64, terkompresi |
+Isi APK arm64 21,2 MiB itu: **14,6 MiB pustaka native**, 4,1 MiB dex, 1,7 MiB
+bundel JS, sisanya resources. Empat pustaka native terbesar:
+
+| Pustaka | arm64 |
 |---|---|
-| `librnskia.so` | ~13,9 MB |
-| `libreactnative.so` | ~6,8 MB |
+| `libreactnative.so` | 6,6 MiB |
+| `libhermesvm.so` | 2,4 MiB |
+| `libreanimated.so` | 1,5 MiB |
+| `libc++_shared.so` | 1,2 MiB |
 
-> **Skia adalah biaya terbesar aplikasi ini.** Papan 8×8 berisi kotak berwarna
-> sebenarnya masih bisa digambar dengan komponen React Native biasa, tanpa Skia
-> sama sekali — dan itu akan memangkas belasan MB. Skia tetap dipakai karena
-> dipilih dengan sadar, tapi kalau suatu saat ukuran unduhan terasa terlalu
-> besar, di situlah tuas yang paling berpengaruh, bukan di aset atau kode.
+> **Tuas terbesar sudah ditarik: Skia dikeluarkan, dan itu memangkas separuh.**
+> AAB turun dari 86,1 → 43,9 MiB dan APK arm64 dari 35,1 → 21,2 MiB. Yang
+> tersisa di daftar atas semuanya adalah React Native itu sendiri — tidak ada
+> yang bisa dibuang tanpa mengganti fondasinya. Artinya penghematan berikutnya
+> harus datang dari R8 (di bawah), bukan dari mengurangi dependensi.
+
+Dua hal yang sengaja BELUM disetel, dan keduanya akan mengubah angka di atas:
 
 Dua hal yang sengaja BELUM disetel, dan keduanya akan mengubah angka di atas:
 
@@ -177,7 +217,8 @@ memberi rasa aman yang tidak berdasar.
 - [x] Token design terkunci ke CSS web lewat test
 - [x] Halaman awal (logo beranimasi, menu, palet papan dari shared)
 - [x] APK debug, APK release, dan AAB terbukti benar-benar jadi
-- [ ] Papan permainan dengan Skia + mode solo (offline)
+- [x] Workflow CI yang membangun APK per-ABI tanpa perlu Android SDK lokal
+- [ ] Papan permainan + mode solo (offline) — penggambarnya diputuskan di situ
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server`
 - [ ] Audio: musik latar + efek suara
 - [ ] Font Fredoka & Nunito dipaketkan — **sampai ini selesai, tampilannya

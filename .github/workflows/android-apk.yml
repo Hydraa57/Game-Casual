@@ -1,0 +1,62 @@
+name: APK Android
+
+# Dijalankan MANUAL, bukan tiap push.
+#
+# Build Android memakan belasan menit dan mengunduh Android SDK; menjalankannya
+# di setiap push akan memperlambat CI biasa (typecheck/lint/test) yang justru
+# perlu cepat, tanpa memberi apa pun — APK hanya dibutuhkan saat memang mau
+# dicoba di HP.
+on:
+  workflow_dispatch:
+    inputs:
+      arsitektur:
+        description: 'ABI yang dibangun'
+        required: true
+        default: 'arm64-v8a'
+        type: choice
+        options:
+          - arm64-v8a
+          - armeabi-v7a
+          - 'arm64-v8a,armeabi-v7a'
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Java 17: versi yang dipakai Android Gradle Plugin. Runner ubuntu-latest
+      # membawa beberapa JDK sekaligus, dan yang terpilih secara baku belum
+      # tentu yang didukung AGP.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: pnpm install --frozen-lockfile
+
+      # Dijalankan sebelum build: kalau token design sudah menyimpang dari CSS
+      # web, lebih baik ketahuan dalam hitungan detik daripada setelah belasan
+      # menit kompilasi native.
+      - run: pnpm --filter @pixelmatrix/mobile test
+      - run: pnpm --filter @pixelmatrix/mobile typecheck
+
+      - name: Build APK release
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=${{ inputs.arsitektur }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PixelMatrix-${{ inputs.arsitektur }}
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          # Artefak GitHub kedaluwarsa sendiri; 14 hari cukup untuk mencoba
+          # sebuah build tanpa menumpuk berkas 20-an MB tanpa batas.
+          retention-days: 14
