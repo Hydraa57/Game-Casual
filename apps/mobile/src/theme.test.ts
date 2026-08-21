@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ALL_COLORS, COLOR_GLYPH, COLOR_HEX } from '@pixelmatrix/shared';
-import { warna } from './theme';
+import { font, warna } from './theme';
 
 /**
  * Design Android dan design web harus tetap satu benda.
@@ -55,6 +55,66 @@ describe('token design Android = token design web', () => {
       expect(warna[kunci].toLowerCase()).toBe(tokenCss(cssVar));
     });
   }
+});
+
+/**
+ * Font Android harus memuat bobot yang SAMA dengan yang diminta web.
+ *
+ * Ini bagian dari janji "design-nya sama persis" yang paling mudah pecah tanpa
+ * terlihat: menambah satu bobot di `layout.tsx` web hanya butuh mengetik angka,
+ * sementara di sisi Android ia butuh berkas .ttf baru. Tanpa test ini, teks
+ * yang memakai bobot yang tidak ada akan diam-diam jatuh ke bobot lain — dan
+ * gejalanya cuma "kok hurufnya agak beda", bukan sebuah error.
+ */
+describe('bobot font Android = bobot font web', () => {
+  const LAYOUT = readFileSync(
+    fileURLToPath(new URL('../../web/src/app/[locale]/layout.tsx', import.meta.url)),
+    'utf8',
+  );
+
+  const berkasFont = (nama: string) =>
+    fileURLToPath(new URL(`../android/app/src/main/assets/fonts/${nama}.ttf`, import.meta.url));
+
+  /** Nama berkas yang dipakai Fredoka/Nunito untuk tiap bobot CSS. */
+  const NAMA_BOBOT: Readonly<Record<string, string>> = {
+    '400': 'Regular',
+    '500': 'Medium',
+    '600': 'SemiBold',
+    '700': 'Bold',
+    '800': 'ExtraBold',
+  };
+
+  /** Baca array `weight: [...]` dari pemanggilan `Fredoka({...})` / `Nunito({...})` di web. */
+  function bobotWeb(keluarga: string): readonly string[] {
+    const blok = LAYOUT.match(new RegExp(`${keluarga}\\(\\{([\\s\\S]*?)\\}\\)`));
+    if (!blok) throw new Error(`pemanggilan ${keluarga}({...}) tidak ada di layout web`);
+
+    const daftar = blok[1]!.match(/weight:\s*\[([^\]]+)\]/);
+    if (!daftar) throw new Error(`${keluarga} di web tidak menyebut weight`);
+
+    return [...daftar[1]!.matchAll(/'(\d+)'/g)].map((m) => m[1]!);
+  }
+
+  for (const keluarga of ['Fredoka', 'Nunito']) {
+    it(`${keluarga}: tiap bobot yang diminta web punya berkas .ttf`, () => {
+      const bobot = bobotWeb(keluarga);
+      expect(bobot.length).toBeGreaterThan(0);
+
+      for (const b of bobot) {
+        const nama = NAMA_BOBOT[b];
+        expect(nama, `bobot ${b} belum punya nama berkas`).toBeDefined();
+        expect(existsSync(berkasFont(`${keluarga}-${nama}`)), `${keluarga}-${nama}.ttf`).toBe(true);
+      }
+    });
+  }
+
+  it('tiap nama font di tema menunjuk berkas yang benar-benar ada', () => {
+    // Salah ketik satu huruf di `font.judulTebal` tidak menghasilkan error apa
+    // pun di Android — teksnya cuma diam-diam memakai font sistem.
+    for (const nama of Object.values(font)) {
+      expect(existsSync(berkasFont(nama)), `${nama}.ttf`).toBe(true);
+    }
+  });
 });
 
 describe('warna papan tidak boleh disalin', () => {

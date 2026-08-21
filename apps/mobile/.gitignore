@@ -66,6 +66,22 @@ yarn-error.log
 # testing
 /coverage
 
+# Sisa-sisa template React Native yang TIDAK dipakai proyek ini
+#
+# Berkas-berkas ini ikut dibuat `react-native init` tapi tidak pernah di-commit:
+# proyek ini memakai ESLint & Prettier dari akar monorepo (bukan .eslintrc.js /
+# .prettierrc.js milik aplikasi), memakai Vitest (bukan Jest), dan belum
+# menggarap iOS sama sekali. Dulu ia cuma "tidak dilacak", dan itu tidak cukup —
+# kalau siapa pun menjalankan ulang template-nya, berkasnya muncul kembali dan
+# langsung menggagalkan `pnpm lint` serta `pnpm format:check` dengan kesalahan
+# yang tidak ada hubungannya dengan kode yang sedang ditulis.
+.eslintrc.js
+.prettierrc.js
+jest.config.js
+Gemfile
+.bundle/
+ios/
+
 # Yarn
 .yarn/*
 !.yarn/patches

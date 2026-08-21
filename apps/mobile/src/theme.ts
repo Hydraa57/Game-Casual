@@ -60,6 +60,54 @@ export const radius = {
 } as const;
 
 /**
+ * Empat noda warna di latar halaman.
+ *
+ * Disalin dari aturan `html { background: ... }` di `globals.css`, termasuk
+ * posisi, ukuran, dan opasitasnya. Tanpa ini latarnya krem polos — dan itu
+ * perbedaan yang paling cepat terlihat saat versi web dan versi Android
+ * disandingkan, karena nodanya memenuhi seperempat layar bagian atas.
+ *
+ * Ukuran di web ditulis dalam `vw` (48vw, 54vw, …), satuan yang tidak ada di
+ * React Native, jadi ia dihitung dari lebar layar sungguhan — hasilnya sama.
+ *
+ * Satu penyimpangan yang disengaja: perhentian terakhir tiap gradien memakai
+ * warna yang sama dengan alpha 0, bukan kata `transparent`. `transparent`
+ * adalah hitam-tembus-pandang, dan mesin yang menginterpolasi tanpa
+ * premultiply akan menyeret warnanya lewat abu-abu — jadi noda birunya
+ * berpinggiran kotor. Menulis alpha 0 pada warna yang sama membuat hasilnya
+ * benar di mesin mana pun.
+ */
+export function latarGradien(lebarLayar: number) {
+  const r = (persen: number) => (lebarLayar * persen) / 100;
+
+  const noda = (
+    ukuranPersen: number,
+    kiri: string,
+    atas: string,
+    rgb: string,
+    alpha: number,
+    akhir: string,
+  ) =>
+    ({
+      type: 'radial-gradient',
+      shape: 'ellipse',
+      size: { x: r(ukuranPersen), y: r(ukuranPersen) },
+      position: { left: kiri, top: atas },
+      colorStops: [
+        { color: `rgba(${rgb}, ${alpha})` },
+        { color: `rgba(${rgb}, 0)`, positions: [akhir] },
+      ],
+    }) as const;
+
+  return [
+    noda(48, '10%', '4%', '173, 216, 255', 0.85, '70%'),
+    noda(54, '94%', '20%', '255, 205, 232', 0.8, '68%'),
+    noda(46, '88%', '78%', '255, 238, 170', 0.7, '70%'),
+    noda(60, '46%', '106%', '186, 242, 214', 0.85, '70%'),
+  ];
+}
+
+/**
  * Bayangan padat ala stiker, bukan blur.
  *
  * Android punya `elevation` yang menggambar bayangan lembut Material. Itu
@@ -69,20 +117,34 @@ export const radius = {
  * dengan elevation.
  */
 export const bayangan = {
-  offsetY: 4,
-  warna: 'rgba(53, 41, 107, 0.22)',
+  /** `--lift` di CSS — dipakai tombol. */
+  tombol: { offsetY: 4, warna: 'rgba(53, 41, 107, 0.28)' },
+  /** `--lift-lg` di CSS — lebih tinggi dan lebih pucat, dipakai kartu. */
+  kartu: { offsetY: 6, warna: 'rgba(53, 41, 107, 0.22)' },
 } as const;
 
+/**
+ * Fredoka (judul, tombol, angka) dan Nunito (kalimat) — dua font yang sama
+ * persis dengan versi web.
+ *
+ * Berkasnya ada di `android/app/src/main/assets/fonts`, dan diambil dari woff2
+ * Google Fonts yang SAMA dengan yang diunduh `next/font` untuk web, cuma dibuka
+ * pembungkusnya jadi TTF (lihat catatan di ANDROID-NATIVE.md). Jadi bentuk
+ * hurufnya identik, bukan sekadar mirip.
+ *
+ * **Satu berkas per bobot, dan `fontWeight` TIDAK dipakai bersamanya.** React
+ * Native di Android mencocokkan `fontFamily` ke nama berkas; kalau `fontWeight`
+ * ikut disetel, Android akan mencoba menebalkan sendiri font yang sudah tebal
+ * dan hasilnya huruf yang gepeng dan kotor. Karena itu bobot dipilih dengan
+ * MEMILIH FONT-nya, bukan dengan menambah properti.
+ */
 export const font = {
-  /**
-   * Fredoka (judul) dan Nunito (teks) belum ikut dipaketkan.
-   *
-   * Sengaja dibiarkan sebagai satu tempat yang jelas, bukan disebar sebagai
-   * `fontFamily` di puluhan komponen: begitu kedua berkas .ttf-nya masuk ke
-   * `android/app/src/main/assets/fonts`, cukup satu berkas ini yang berubah.
-   * Sampai itu terjadi, sistem font Android yang dipakai — dan itu terlihat
-   * berbeda dari web, jadi bagian ini BELUM boleh disebut "sama persis".
-   */
-  judul: undefined as string | undefined,
-  badan: undefined as string | undefined,
+  judul: 'Fredoka-Regular',
+  judulSedang: 'Fredoka-Medium',
+  judulTebal: 'Fredoka-SemiBold',
+  judulTebalSekali: 'Fredoka-Bold',
+  badan: 'Nunito-Regular',
+  badanTebal: 'Nunito-SemiBold',
+  badanTebalSekali: 'Nunito-Bold',
+  badanPaling: 'Nunito-ExtraBold',
 } as const;

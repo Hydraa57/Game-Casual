@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,7 +9,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { warna } from '../theme';
+import { font, warna } from '../theme';
 
 /**
  * Satu kotak pixel yang melayang di sekeliling judul.
@@ -34,7 +34,12 @@ function KotakMelayang({
   readonly putar: number;
   readonly durasiMs: number;
   readonly jedaMs: number;
-  readonly posisi: { top?: number; bottom?: number; left?: number; right?: number };
+  readonly posisi: {
+    top?: number | string;
+    bottom?: number | string;
+    left?: number | string;
+    right?: number | string;
+  };
 }) {
   const maju = useSharedValue(0);
 
@@ -72,7 +77,7 @@ function KotakMelayang({
       style={[
         gaya.kotak,
         { width: ukuran, height: ukuran, backgroundColor: isi },
-        posisi,
+        posisi as object,
         gayaAnimasi,
       ]}
     />
@@ -87,7 +92,7 @@ const KOTAK = [
     putar: -12,
     durasiMs: 3400,
     jedaMs: 0,
-    posisi: { top: 2, left: 16 },
+    posisi: { top: 2, left: '4%' },
   },
   {
     ukuran: 18,
@@ -95,7 +100,7 @@ const KOTAK = [
     putar: 14,
     durasiMs: 4100,
     jedaMs: 500,
-    posisi: { top: 18, right: 4 },
+    posisi: { top: '12%', right: '-1%' },
   },
   {
     ukuran: 22,
@@ -103,7 +108,7 @@ const KOTAK = [
     putar: 9,
     durasiMs: 3700,
     jedaMs: 1100,
-    posisi: { bottom: 0, left: 42 },
+    posisi: { bottom: 0, left: '12%' },
   },
   {
     ukuran: 16,
@@ -111,7 +116,7 @@ const KOTAK = [
     putar: -18,
     durasiMs: 4600,
     jedaMs: 200,
-    posisi: { top: 6, right: 58 },
+    posisi: { top: 6, right: '16%' },
   },
   {
     ukuran: 20,
@@ -119,9 +124,77 @@ const KOTAK = [
     putar: -7,
     durasiMs: 3100,
     jedaMs: 800,
-    posisi: { bottom: -2, right: 16 },
+    posisi: { bottom: -2, right: '4%' },
   },
 ] as const;
+
+/** Tebal garis tepi putih di sekeliling huruf — `-webkit-text-stroke: 6px` di web. */
+const TEBAL_GARIS = 6;
+
+/**
+ * Delapan arah salinan untuk memalsukan garis tepi.
+ *
+ * React Native tidak punya padanan `-webkit-text-stroke`, jadi garisnya dibuat
+ * dengan menumpuk salinan putih teks yang sama, digeser ke segala arah, di
+ * BELAKANG teks berwarnanya. Delapan arah (empat lurus + empat diagonal) sudah
+ * cukup rapat untuk tebal 6 px; di bawah itu sudut hurufnya mulai bergerigi.
+ *
+ * Diagonalnya dibagi √2 supaya jaraknya sama dengan yang lurus — tanpa itu
+ * garisnya menggembung di keempat sudut.
+ */
+const DIAGONAL = TEBAL_GARIS / Math.SQRT2;
+const ARAH = [
+  { x: -TEBAL_GARIS, y: 0 },
+  { x: TEBAL_GARIS, y: 0 },
+  { x: 0, y: -TEBAL_GARIS },
+  { x: 0, y: TEBAL_GARIS },
+  { x: -DIAGONAL, y: -DIAGONAL },
+  { x: DIAGONAL, y: -DIAGONAL },
+  { x: -DIAGONAL, y: DIAGONAL },
+  { x: DIAGONAL, y: DIAGONAL },
+] as const;
+
+/**
+ * Satu kata judul, lengkap dengan garis tepi putih dan bayangan padatnya.
+ *
+ * Urutan gambarnya penting dan meniru `paint-order: stroke fill` di web: garis
+ * lebih dulu, isian di atasnya. Kalau dibalik — isian dulu lalu garis — garis
+ * setebal 6 px akan memakan bagian dalam huruf dan bentuknya jadi kurus.
+ */
+function KataJudul({
+  kata,
+  warnaIsi,
+  ukuran,
+}: {
+  readonly kata: string;
+  readonly warnaIsi: string;
+  readonly ukuran: number;
+}) {
+  const gayaTeks = {
+    fontFamily: font.judulTebalSekali,
+    fontSize: ukuran,
+    lineHeight: ukuran * 1.15,
+  };
+
+  return (
+    <View>
+      {ARAH.map((arah) => (
+        <Text
+          key={`${arah.x},${arah.y}`}
+          aria-hidden
+          style={[
+            gaya.kataGaris,
+            gayaTeks,
+            { transform: [{ translateX: arah.x }, { translateY: arah.y }] },
+          ]}
+        >
+          {kata}
+        </Text>
+      ))}
+      <Text style={[gayaTeks, { color: warnaIsi }]}>{kata}</Text>
+    </View>
+  );
+}
 
 /**
  * Judul "Pixel Matrix" beserta kotak-kotak melayangnya.
@@ -131,14 +204,18 @@ const KOTAK = [
  * bendera, bukan sebagai logo game. Keceriaannya dibawa oleh ORNAMEN.
  */
 export function LogoPixelMatrix() {
+  const { width } = useWindowDimensions();
+  // `clamp(2.2rem, 13vw, 3.6rem)` di web, dengan 1rem = 16 px.
+  const ukuran = Math.min(Math.max(35.2, width * 0.13), 57.6);
+
   return (
     <View style={gaya.bingkai}>
       {KOTAK.map((k) => (
         <KotakMelayang key={k.isi} {...k} />
       ))}
-      <View style={gaya.judulBaris}>
-        <Text style={[gaya.kata, { color: warna.grape }]}>Pixel</Text>
-        <Text style={[gaya.kata, { color: warna.bubblegum }]}>Matrix</Text>
+      <View style={[gaya.judulBaris, { gap: ukuran * 0.32 }]}>
+        <KataJudul kata="Pixel" warnaIsi={warna.grape} ukuran={ukuran} />
+        <KataJudul kata="Matrix" warnaIsi={warna.bubblegum} ukuran={ukuran} />
       </View>
     </View>
   );
@@ -157,16 +234,29 @@ const gaya = StyleSheet.create({
     borderRadius: 5,
     borderWidth: 3,
     borderColor: warna.borderStrong,
+    boxShadow: '0 3px 0 rgba(53, 41, 107, 0.2)',
   },
   judulBaris: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 10,
   },
-  kata: {
-    fontSize: 40,
-    fontWeight: '900',
-    letterSpacing: -0.5,
+  kataGaris: {
+    // Ditumpuk tepat di atas teks isian. `absoluteFillObject` sudah tidak ada
+    // di tipe RN 0.87, dan menuliskan keempat sisinya juga lebih jelas: yang
+    // menentukan ukuran kotaknya adalah teks isian, salinan garis cuma
+    // menempel mengikutinya.
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    color: warna.surface,
+    // Bayangan padat tanpa blur, sama seperti `text-shadow: 0 5px 0` di web.
+    // Ditaruh pada salinan GARIS, bukan pada isian, supaya bayangannya jatuh
+    // dari siluet luar huruf dan bukan dari huruf bagian dalamnya.
+    textShadowColor: 'rgba(53, 41, 107, 0.22)',
+    textShadowOffset: { width: 0, height: 5 },
+    textShadowRadius: 0,
   },
 });
