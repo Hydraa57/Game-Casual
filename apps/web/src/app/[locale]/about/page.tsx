@@ -92,6 +92,14 @@ function About() {
           <li>Prisma · PostgreSQL (Supabase)</li>
         </ul>
       </section>
+
+      {/* Ditaruh di sini, bukan cuma sebagai URL yang dimasukkan ke Play
+          Console: kebijakan privasi yang hanya bisa ditemukan lewat halaman
+          Play Store praktis tidak bisa ditemukan pemain yang sudah memasang
+          aplikasinya. */}
+      <Link className="btn btn--small btn--block" href="/privacy">
+        {t('privacy')}
+      </Link>
     </main>
   );
 }

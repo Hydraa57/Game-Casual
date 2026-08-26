@@ -365,9 +365,13 @@ memberi rasa aman yang tidak berdasar.
 - [ ] Audio: musik latar + efek suara
 - [ ] Layar-layar SISANYA disamakan dengan web (lobby, hasil, pengaturan)
 - [ ] Splash screen
+- [x] Kebijakan privasi terbit di `/privacy` (id + en)
 - [ ] Keystore penandatanganan — **dibuat di mesin pemilik, tidak pernah masuk
       repo publik ini**
-- [ ] Play Console: listing, privacy policy, content rating, 12 tester × 14 hari
+- [ ] Play Console: listing, Data safety, content rating, 12 penguji × 14 hari
+
+Langkah demi langkahnya, termasuk yang hanya bisa dikerjakan pemilik sendiri,
+ada di [PLAY-STORE.md](./PLAY-STORE.md).
 
 ### Nama paket
 

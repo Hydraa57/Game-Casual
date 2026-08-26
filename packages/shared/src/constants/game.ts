@@ -710,3 +710,21 @@ export const GITHUB_PROFILE_URL = `https://github.com/${GITHUB_OWNER}`;
 
 /** Portofolio pembuat game — ditautkan dari halaman About. */
 export const PORTFOLIO_URL = 'https://hfdz.my.id';
+
+/** Tempat melapor & bertanya — dipakai halaman kebijakan privasi. */
+export const GITHUB_ISSUES_URL = `${GITHUB_URL}/issues`;
+
+/**
+ * Alamat email untuk urusan privasi dan permintaan penghapusan data.
+ *
+ * **Sengaja KOSONG, dan harus diisi pemilik sendiri sebelum rilis Play Store.**
+ * Google Play mewajibkan alamat kontak di halaman listing, dan kebijakan
+ * penghapusan data mengharapkan jalur yang tidak memaksa orang menulis di
+ * tempat umum. Tapi alamat email yang ditulis di sini akan ikut terbit di repo
+ * publik ini selamanya — itu keputusan pemiliknya, bukan keputusan yang layak
+ * diambilkan.
+ *
+ * Selama kosong, halaman privasi hanya menawarkan jalur GitHub. Itu cukup untuk
+ * dibaca siapa pun, tapi BELUM cukup untuk Play Console.
+ */
+export const SUPPORT_EMAIL: string = '';

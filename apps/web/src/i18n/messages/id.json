@@ -287,7 +287,8 @@
     "sourceNote": "Terbuka sepenuhnya — silakan dibaca, dipelajari, atau dipakai ulang.",
     "viewSource": "Lihat di GitHub",
     "techTitle": "Dibangun dengan",
-    "rolePortfolio": "Portofolio"
+    "rolePortfolio": "Portofolio",
+    "privacy": "Kebijakan Privasi"
   },
   "common": {
     "enterFullscreen": "Layar penuh",
@@ -332,5 +333,41 @@
     "checkSw": "Service worker mengendalikan halaman",
     "checkPrompt": "Browser menawarkan pemasangan",
     "diagReloadHint": "Service worker baru terdaftar dan belum mengendalikan halaman ini. Muat ulang halamannya sekali, lalu cek lagi."
+  },
+  "privacy": {
+    "back": "Kembali",
+    "title": "Kebijakan Privasi",
+    "updated": "Diperbarui 26 Agustus 2026",
+    "summaryTitle": "Ringkasnya",
+    "summary": "Pixel Matrix tidak memasang iklan, tidak memakai analitik, dan tidak punya satu pun pelacak pihak ketiga. Mode solo di aplikasi Android jalan sepenuhnya di HP-mu — tidak ada data yang dikirim ke mana pun.",
+    "androidTitle": "Aplikasi Android",
+    "androidSolo": "Mode solo tidak menyentuh jaringan sama sekali. Seluruh aturan mainnya ada di dalam aplikasi.",
+    "androidStorage": "Yang disimpan di HP-mu hanya satu angka: rekor skor solo. Ia tidak pernah dikirim ke mana pun, dan hilang saat aplikasinya dicopot.",
+    "androidPermissions": "Aplikasi meminta dua izin. INTERNET untuk mode main bareng, dan VIBRATE untuk getar saat salah tap. Keduanya tidak bisa dipakai membaca apa pun dari HP-mu.",
+    "accountTitle": "Kalau kamu bikin akun di situsnya",
+    "accountIntro": "Akun bersifat opsional — game bisa dimainkan penuh tanpa mendaftar. Kalau kamu mendaftar, yang disimpan hanya ini:",
+    "accountUsername": "Username pilihanmu",
+    "accountPassword": "Password dalam bentuk hash — kami tidak pernah menyimpan password aslinya",
+    "accountEmail": "Email, kalau kamu mengisinya (boleh dikosongkan)",
+    "accountAvatar": "Avatar yang kamu pilih",
+    "accountScores": "Skor solo, riwayat match, dan token sesi supaya kamu tetap masuk",
+    "accountWhy": "Semuanya dipakai untuk satu hal: menampilkan papan skor dan riwayat mainmu sendiri.",
+    "guestTitle": "Kalau kamu main sebagai tamu",
+    "guest": "Nickname-mu disimpan di peramban HP-mu sendiri, bukan di server kami. Skor match yang sudah selesai tersimpan dengan nickname itu, tanpa akun dan tanpa cara mengaitkannya kembali denganmu.",
+    "neverTitle": "Yang TIDAK pernah dikumpulkan",
+    "neverLocation": "Lokasi",
+    "neverContacts": "Kontak, foto, berkas, atau isi HP lainnya",
+    "neverAdId": "ID iklan atau pengenal perangkat",
+    "neverTracking": "Kebiasaan menjelajahmu di aplikasi atau situs lain",
+    "sharingTitle": "Siapa lagi yang bisa melihatnya",
+    "sharing": "Tidak ada data yang dijual atau dibagikan untuk iklan. Data akun disimpan di layanan yang menjalankan situs ini — Vercel (situs), Render (server main bareng), dan penyedia database Postgres — semata sebagai tempat penyimpanan atas nama kami.",
+    "deleteTitle": "Menghapus datamu",
+    "delete": "Kirim permintaan lewat email di bawah dari alamat yang terdaftar, atau lewat GitHub. Akun beserta seluruh skor dan riwayat matchnya dihapus permanen. Untuk data yang cuma ada di HP, mencopot aplikasinya sudah menghapus semuanya.",
+    "childrenTitle": "Anak-anak",
+    "children": "Game ini aman untuk segala umur dan tidak menargetkan anak-anak secara khusus. Kami tidak mengumpulkan data apa pun yang bisa dipakai mengenali seorang anak.",
+    "changesTitle": "Perubahan",
+    "changes": "Kalau kebijakan ini berubah, tanggal di atas ikut berubah. Riwayat lengkap perubahannya bisa dibaca siapa saja di repositori GitHub-nya.",
+    "contactTitle": "Kontak",
+    "contact": "Pertanyaan soal privasi bisa dikirim ke:"
   }
 }

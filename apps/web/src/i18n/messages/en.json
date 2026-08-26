@@ -287,7 +287,8 @@
     "sourceNote": "Fully open — read it, learn from it, or reuse it.",
     "viewSource": "View on GitHub",
     "techTitle": "Built with",
-    "rolePortfolio": "Portfolio"
+    "rolePortfolio": "Portfolio",
+    "privacy": "Privacy Policy"
   },
   "common": {
     "enterFullscreen": "Fullscreen",
@@ -332,5 +333,41 @@
     "checkSw": "Service worker controls the page",
     "checkPrompt": "Browser offers to install",
     "diagReloadHint": "The service worker just registered and doesn't control this page yet. Reload once, then check again."
+  },
+  "privacy": {
+    "back": "Back",
+    "title": "Privacy Policy",
+    "updated": "Updated 26 August 2026",
+    "summaryTitle": "In short",
+    "summary": "Pixel Matrix has no ads, no analytics, and not a single third-party tracker. Solo mode in the Android app runs entirely on your phone — no data is sent anywhere.",
+    "androidTitle": "The Android app",
+    "androidSolo": "Solo mode never touches the network. All the game rules ship inside the app itself.",
+    "androidStorage": "The only thing stored on your phone is a single number: your solo high score. It is never sent anywhere, and it goes away when you uninstall the app.",
+    "androidPermissions": "The app requests two permissions. INTERNET for multiplayer, and VIBRATE for haptic feedback on a wrong tap. Neither can read anything from your phone.",
+    "accountTitle": "If you create an account on the website",
+    "accountIntro": "Accounts are optional — the game is fully playable without signing up. If you do sign up, this is all that is stored:",
+    "accountUsername": "The username you chose",
+    "accountPassword": "Your password as a hash — we never store the password itself",
+    "accountEmail": "An email address, if you provide one (it can be left blank)",
+    "accountAvatar": "The avatar you picked",
+    "accountScores": "Solo scores, match history, and a session token so you stay signed in",
+    "accountWhy": "All of it serves one purpose: showing leaderboards and your own match history.",
+    "guestTitle": "If you play as a guest",
+    "guest": "Your nickname is stored in your own browser, not on our servers. Finished match scores are saved under that nickname, with no account and no way to link them back to you.",
+    "neverTitle": "What is NEVER collected",
+    "neverLocation": "Location",
+    "neverContacts": "Contacts, photos, files, or anything else on your phone",
+    "neverAdId": "Advertising IDs or device identifiers",
+    "neverTracking": "Your browsing behaviour in other apps or on other sites",
+    "sharingTitle": "Who else can see it",
+    "sharing": "Nothing is sold or shared for advertising. Account data lives on the services that run this site — Vercel (the site), Render (the multiplayer server), and a Postgres database provider — purely as storage on our behalf.",
+    "deleteTitle": "Deleting your data",
+    "delete": "Email the address below from your registered address, or reach out via GitHub. Your account and all of its scores and match history are permanently deleted. For anything stored only on your phone, uninstalling the app removes all of it.",
+    "childrenTitle": "Children",
+    "children": "This game is suitable for all ages and is not specifically directed at children. We collect nothing that could be used to identify a child.",
+    "changesTitle": "Changes",
+    "changes": "If this policy changes, the date above changes with it. The full history of those changes is public in the GitHub repository.",
+    "contactTitle": "Contact",
+    "contact": "Privacy questions can be sent to:"
   }
 }
