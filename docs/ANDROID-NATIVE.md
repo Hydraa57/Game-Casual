@@ -29,12 +29,15 @@ sebelum dipakai**: satu pun barisnya tidak pernah diimpor, tapi `librnskia.so`
 tetap ikut ke dalam APK dan memakan ~14 MB. Bayarannya nyata, manfaatnya belum
 ada.
 
-Keputusan penggambar papan **ditunda sampai papannya benar-benar dibuat**, dan
-saat itu pilihannya jujur ada dua: 64 `View` biasa sudah cukup untuk 8×8 kotak
-berwarna, atau Skia kalau efek yang diinginkan (partikel, kilau emas, getaran
-bom) ternyata membuat `View` biasa tersendat. Menambahkannya nanti butuh satu
-`pnpm add`; membawanya sekarang berarti setiap pemain mengunduh 14 MB untuk
-sesuatu yang belum ada.
+Papannya kemudian **dibuat dengan `View` biasa**, dan itu ternyata memang cukup:
+isinya paling banyak 64 kotak berwarna dengan satu huruf di tengahnya. Pudarnya
+pixel digambar lewat `opacity` yang dihitung ulang tiap frame dari
+`remainingRatio` — perhitungan yang sama persis dengan yang dipakai web.
+
+Skia dipertimbangkan lagi kalau efeknya nanti (partikel saat klaim, kilau emas,
+guncangan saat kena bom) membuat ini tersendat di HP kelas bawah. Keputusannya
+menunggu **bukti dari perangkat sungguhan**, bukan firasat — dan menambahkannya
+kembali cuma butuh satu `pnpm add`.
 
 ### Font: jalan yang berputar, dan kenapa
 
@@ -231,15 +234,71 @@ Dua hal yang sengaja BELUM disetel, dan keduanya akan mengubah angka di atas:
 
 Diperiksa dari APK release yang sudah jadi, bukan dari niat:
 
-```
-android.permission.INTERNET
-com.pixelmatrix.game.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
-```
+| Izin | Untuk apa | Jenis |
+|---|---|---|
+| `INTERNET` | Multiplayer nanti. **Mode solo tidak memakainya sama sekali** | normal |
+| `VIBRATE` | Getar saat klik salah dan kena bom | normal |
+| `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Dibuat sendiri oleh AndroidX, bukan diminta aplikasi ini | tanda tangan |
 
-Cuma itu. `SYSTEM_ALERT_WINDOW` yang muncul di build DEBUG berasal dari layar
-merah error React Native dan **tidak ikut ke build rilis** — itu perlu
-diperiksa, bukan diasumsikan, karena Google Play memeriksa izin "gambar di atas
-aplikasi lain" dengan ketat.
+Cuma itu. Ketiganya "normal" atau internal: Android memberikannya saat
+pemasangan tanpa satu pun dialog, dan tidak satu pun bisa dipakai membaca data
+pemain. Tapi keduanya yang pertama **tetap muncul di daftar izin di halaman
+Play Store**, jadi keduanya disebut apa adanya di sini dan di manifest — bukan
+diselipkan diam-diam.
+
+`SYSTEM_ALERT_WINDOW` yang muncul di build DEBUG berasal dari layar merah error
+React Native dan **tidak ikut ke build rilis** — itu perlu diperiksa, bukan
+diasumsikan, karena Google Play memeriksa izin "gambar di atas aplikasi lain"
+dengan ketat.
+
+## Ikon peluncur
+
+Dibuat `apps/mobile/scripts/buat-ikon.py` dari **ikon PWA web yang sama**
+(`apps/web/public/icon-maskable-512.png`), bukan gambar baru yang kebetulan
+mirip. Jalankan ulang skripnya kalau ikon web berubah.
+
+Ikon **adaptif** (Android 8+) dipakai, bukan cuma PNG persegi: latar satu warna
+plus lapisan isi yang digeser peluncur saat animasi. Latarnya sengaja warna
+polos — gambar sebagai latar akan memperlihatkan tepinya begitu digeser. Isinya
+ditaruh di dalam 72 dp tengah dari kanvas 108 dp, karena sisanya bisa terpotong
+bentuk apa pun yang dipakai peluncur.
+
+PNG lama untuk Android 7 tetap dibuat: `minSdk` proyek ini 24, jadi masih ada
+perangkat yang tidak mengenal ikon adaptif.
+
+> Ikon yang sebelumnya terpasang adalah **logo React Native bawaan template**.
+> Selain terbaca sebagai aplikasi yang belum jadi, memakai logo pihak lain di
+> aplikasi yang diterbitkan bukan hal yang layak dibiarkan sampai rilis.
+
+## Penandatanganan rilis
+
+**Kunci rilis tidak pernah masuk repo ini, dan tidak boleh.** Repo ini publik;
+siapa pun yang memegang keystore-nya bisa menerbitkan pembaruan palsu atas nama
+aplikasi ini. Google Play tidak mengizinkan penggantian kunci penandatanganan
+aplikasi yang sudah rilis — **satu kali bocor berarti aplikasinya tidak bisa
+diperbarui lagi selamanya.**
+
+Karena itu `app/build.gradle` membaca kuncinya dari
+`android/keystore.properties`, yang di-gitignore bersama `*.jks` dan
+`*.keystore`. Berkas itu dibuat di mesin pemilik. Langkahnya ada di
+[PLAY-STORE.md](./PLAY-STORE.md).
+
+Kalau berkasnya tidak ada — di CI, atau di mesin yang baru meng-clone — build
+rilisnya **tetap jalan** memakai kunci debug, supaya APK untuk dicoba sendiri
+tetap bisa dibuat. Gradle meneriakkan peringatan saat itu terjadi, karena
+menandatangani rilis dengan kunci debug tidak menggagalkan build: ia
+menghasilkan berkas yang tampak benar dan baru ditolak berjam-jam kemudian di
+Play Console.
+
+## Versi
+
+`pmVersionCode` dan `pmVersionName` ada di `android/gradle.properties`, bukan
+tertanam di `build.gradle`, supaya menaikkan versi cukup mengubah satu berkas
+dan diff-nya jelas terlihat saat direview.
+
+`pmVersionCode` **wajib naik tiap unggahan**. Play menolak angka yang sama atau
+lebih kecil dari yang pernah diunggah, selamanya — termasuk kalau rilis lamanya
+sudah dihapus.
 
 ## Apa yang dijaga test, dan apa yang tidak
 
@@ -260,6 +319,14 @@ Test yang sama juga menjaga bahwa **palet papan tidak pernah disalin** ke
 `theme.ts`. Enam warna papan adalah bagian dari aturan main — server memakainya
 untuk memutuskan pixel mana yang benar — jadi ia harus datang dari
 `@pixelmatrix/shared`.
+
+Test ketiga — dan yang paling berguna — memainkan **satu ronde solo sungguhan,
+frame demi frame**, lewat `MesinSolo`. Mesin itu sengaja tidak tahu apa-apa soal
+React atau cara menggambar, dan justru pemisahan itu yang membuat seluruh alur
+permainan bisa dibuktikan tanpa perangkat: menap warna target menambah skor dan
+combo, menap warna salah mengurangi nyawa dan memutus combo, menap sel kosong
+tidak dihukum sama sekali, nyawa habis mengakhiri ronde, jeda membekukan waktu,
+bom di Lv 8 mengurangi nyawa, dan seed yang sama menghasilkan papan yang sama.
 
 **Yang TIDAK diuji di sini: apa pun yang butuh perangkat.** Tata letak,
 sentuhan, dan animasi tidak dipalsukan dengan renderer tiruan. Test yang
@@ -288,11 +355,16 @@ memberi rasa aman yang tidak berdasar.
       main", menu berwarna, dan empat noda gradien di latar
 - [x] APK debug, APK release, dan AAB terbukti benar-benar jadi
 - [x] Workflow CI yang membangun APK per-ABI tanpa perlu Android SDK lokal
-- [ ] Papan permainan + mode solo (offline) — penggambarnya diputuskan di situ
+- [x] **Papan permainan + mode solo, jalan sepenuhnya offline** — digambar
+      dengan `View` biasa, disetir `MesinSolo` yang diuji 22 test
+- [x] Rekor solo tersimpan di HP, jeda otomatis saat aplikasi ditinggalkan, getar
+- [x] Ikon adaptif dari ikon PWA web (logo React Native bawaan template dibuang)
+- [x] Penandatanganan rilis membaca kunci dari luar repo + peringatan Gradle
+- [x] `versionCode`/`versionName` pindah ke `gradle.properties`
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server`
 - [ ] Audio: musik latar + efek suara
-- [ ] Layar-layar SISANYA disamakan dengan web (papan, lobby, hasil, pengaturan)
-- [ ] Ikon adaptif + splash screen
+- [ ] Layar-layar SISANYA disamakan dengan web (lobby, hasil, pengaturan)
+- [ ] Splash screen
 - [ ] Keystore penandatanganan — **dibuat di mesin pemilik, tidak pernah masuk
       repo publik ini**
 - [ ] Play Console: listing, privacy policy, content rating, 12 tester × 14 hari

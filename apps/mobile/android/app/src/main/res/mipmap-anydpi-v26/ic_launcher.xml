@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ikon adaptif (Android 8+).
+
+  Dua lapisan: latar satu warna dan isi bergambar. Peluncur menggesernya
+  berlawanan arah saat animasi, dan memotongnya jadi bentuk apa pun yang dipakai
+  peluncur itu — lingkaran, kotak membulat, tetesan. Karena itu latarnya warna
+  polos: gambar sebagai latar akan memperlihatkan tepinya saat digeser.
+
+  Kedua berkasnya dibuat `apps/mobile/scripts/buat-ikon.py` dari ikon PWA web,
+  jadi ikon Android dan ikon web tidak mungkin berbeda.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

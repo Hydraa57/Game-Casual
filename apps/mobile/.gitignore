@@ -33,6 +33,18 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+
+# KUNCI PENANDATANGANAN RILIS — TIDAK BOLEH MASUK REPO INI.
+#
+# Repo ini publik. Siapa pun yang memegang keystore-nya bisa menerbitkan
+# pembaruan palsu atas nama aplikasi ini, dan Google Play tidak mengizinkan
+# penggantian kunci penandatanganan aplikasi yang sudah rilis — kebocoran satu
+# kali berarti aplikasinya tidak bisa diperbarui lagi selamanya.
+#
+# `*.keystore` di atas sudah menutup satu ekstensi; `keytool` sekarang membuat
+# `.jks` secara baku, dan itu yang paling mungkin terlanjur ter-commit.
+*.jks
+keystore.properties
 .kotlin/
 
 # node.js

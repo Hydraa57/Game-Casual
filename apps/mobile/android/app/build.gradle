@@ -102,9 +102,40 @@ android {
         applicationId "com.pixelmatrix.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Dibaca dari gradle.properties supaya menaikkan versi cukup mengubah
+        // satu berkas, dan supaya diff-nya jelas terlihat saat direview.
+        //
+        // Google Play MENOLAK unggahan dengan versionCode yang sama atau lebih
+        // kecil dari yang sudah pernah diunggah, selamanya — termasuk kalau
+        // rilis lamanya sudah dihapus. Jadi angkanya cuma boleh naik.
+        versionCode project.property("pmVersionCode").toInteger()
+        versionName project.property("pmVersionName")
     }
+
+    /*
+      Kunci penandatanganan rilis TIDAK PERNAH masuk repo ini.
+
+      Repo ini PUBLIK. Siapa pun yang memegang keystore-nya bisa menerbitkan
+      pembaruan palsu atas nama aplikasi ini, dan Google Play tidak mengizinkan
+      penggantian kunci penandatanganan aplikasi yang sudah rilis — kebocoran
+      satu kali berarti aplikasinya tidak bisa diperbarui lagi selamanya.
+
+      Karena itu kuncinya dibaca dari `android/keystore.properties`, yang
+      di-gitignore bersama seluruh berkas *.jks/*.keystore. Berkas itu dibuat di
+      mesin pemilik dan tidak pernah di-commit. Lihat docs/PLAY-STORE.md.
+
+      Kalau berkasnya tidak ada — di CI, di mesin siapa pun yang baru
+      meng-clone — build rilisnya TETAP JALAN memakai kunci debug, supaya APK
+      untuk dicoba sendiri tetap bisa dibuat. Yang seperti itu tidak bisa
+      diunggah ke Play, dan Gradle mengatakannya dengan keras di bawah.
+    */
+    def berkasKunci = rootProject.file("keystore.properties")
+    def adaKunciRilis = berkasKunci.exists()
+    def kunciRilis = new Properties()
+    if (adaKunciRilis) {
+        berkasKunci.withInputStream { kunciRilis.load(it) }
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -112,17 +143,37 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (adaKunciRilis) {
+            release {
+                storeFile rootProject.file(kunciRilis['storeFile'])
+                storePassword kunciRilis['storePassword']
+                keyAlias kunciRilis['keyAlias']
+                keyPassword kunciRilis['keyPassword']
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig adaKunciRilis ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+// Peringatan yang sulit dilewatkan. Menandatangani rilis dengan kunci debug
+// bukan kesalahan yang menggagalkan build — ia menghasilkan berkas yang tampak
+// benar dan baru ditolak berjam-jam kemudian di Play Console.
+if (!rootProject.file("keystore.properties").exists()) {
+    gradle.taskGraph.whenReady { graf ->
+        if (graf.allTasks.any { it.name.toLowerCase().contains("release") }) {
+            logger.warn("")
+            logger.warn("  ⚠  keystore.properties tidak ada — build RILIS ini ditandatangani KUNCI DEBUG.")
+            logger.warn("     Cukup untuk dipasang sendiri; DITOLAK Google Play. Lihat docs/PLAY-STORE.md.")
+            logger.warn("")
         }
     }
 }
