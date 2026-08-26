@@ -48,10 +48,10 @@ const LANGKAH = [
  * padanan di web. Pembuktian itu sekarang dipegang `theme.test.ts`, yang
  * membaca paket yang sama tanpa perlu menempel di layar pemain.
  *
- * **Tombolnya belum melakukan apa-apa.** Papan permainan, lobby, dan papan skor
- * belum ada di sisi Android; yang dikerjakan patch ini murni tampilan.
+ * "Main Solo" sudah jalan sungguhan dan sepenuhnya offline. Tombol lain — main
+ * bareng, papan skor, pengaturan — belum ada isinya di sisi Android.
  */
-export function LandingScreen() {
+export function LandingScreen({ onMainSolo }: { readonly onMainSolo: () => void }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
@@ -91,7 +91,7 @@ export function LandingScreen() {
         </View>
 
         <View style={gaya.menu}>
-          <TombolChunky label="Main Solo" nada="utama" onPress={() => {}} />
+          <TombolChunky label="Main Solo" nada="utama" onPress={onMainSolo} />
           <TombolChunky label="Main Bareng Teman" nada="grape" onPress={() => {}} />
           <TombolChunky label="Papan Skor" nada="sky" onPress={() => {}} />
           <TombolChunky label="Pengaturan" nada="lemon" onPress={() => {}} />

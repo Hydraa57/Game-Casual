@@ -64,7 +64,19 @@ export class MesinSolo {
       createGameState({ seed: opsi.seed ?? Date.now() }),
       opsi.levelAwal,
     );
-    this.pancarkanSnapshot();
+  }
+
+  /**
+   * Keadaan HUD saat ini, dibaca langsung.
+   *
+   * Ada supaya konstruktor TIDAK perlu memanggil `onHud`. Kalau ia memanggilnya,
+   * komponen React yang membuat mesin ini akan memicu `setState` di tengah
+   * render-nya sendiri — jalur yang secara teori diperbolehkan React tapi mudah
+   * berubah jadi lingkaran tanpa akhir begitu ada satu perubahan kecil. Yang
+   * membuat mesin cukup membaca nilai awalnya dari sini.
+   */
+  get hud(): HudSnapshot {
+    return this.snapshot();
   }
 
   // ------------------------------------------------------------------ kontrol
