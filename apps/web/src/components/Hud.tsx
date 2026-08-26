@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { ChaosModifier } from '@pixelmatrix/shared';
-import type { HudSnapshot } from '@/game/hudSnapshot';
+import type { ChaosModifier, HudSnapshot } from '@pixelmatrix/shared';
 import { LevelBar } from './LevelBar';
 import { TargetIndicator } from './TargetIndicator';
 

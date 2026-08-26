@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
+import type { HudSnapshot } from '@pixelmatrix/shared';
 import { BOARD_SIZE } from './BoardRenderer';
 import { BoardScene } from './BoardScene';
-import type { HudSnapshot } from './hudSnapshot';
 import { Sfx } from './sfx';
 
 export interface SoloController {

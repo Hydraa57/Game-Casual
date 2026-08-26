@@ -77,6 +77,9 @@ export type {
   ScoreState,
 } from './state';
 
+export { INITIAL_SNAPSHOT, isSameSnapshot } from './hud';
+export type { HudSnapshot } from './hud';
+
 export { matchIntensity, soloIntensity } from './intensity';
 export {
   BOT_NAME_PREFIX,

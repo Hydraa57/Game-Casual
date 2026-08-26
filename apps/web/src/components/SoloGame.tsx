@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { pendingTutorial, SOLO_STARTING_LIVES, soloIntensity } from '@pixelmatrix/shared';
-import type { TutorialTopic } from '@pixelmatrix/shared';
-import { INITIAL_SNAPSHOT } from '@/game/hudSnapshot';
-import type { HudSnapshot } from '@/game/hudSnapshot';
+import {
+  INITIAL_SNAPSHOT,
+  pendingTutorial,
+  SOLO_STARTING_LIVES,
+  soloIntensity,
+} from '@pixelmatrix/shared';
+import type { HudSnapshot, TutorialTopic } from '@pixelmatrix/shared';
 import type { SoloController } from '@/game/createSoloGame';
 import { Link, useRouter } from '@/i18n/navigation';
 import { readHighScore, writeHighScore } from '@/lib/highScore';

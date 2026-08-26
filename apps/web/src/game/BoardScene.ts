@@ -18,14 +18,13 @@ import {
   chaosModifierFor,
   isAtMaxLevel,
   isTargetChangeImminent,
+  isSameSnapshot,
   pauseGame,
   resumeGame,
   startGame,
   step,
 } from '@pixelmatrix/shared';
-import type { GameEvent, GameState, Pixel } from '@pixelmatrix/shared';
-import { isSameSnapshot } from './hudSnapshot';
-import type { HudSnapshot } from './hudSnapshot';
+import type { GameEvent, GameState, HudSnapshot, Pixel } from '@pixelmatrix/shared';
 import { BoardRenderer } from './BoardRenderer';
 import { BOARD_BACKGROUND } from './palette';
 import type { Sfx } from './sfx';

@@ -1,13 +1,19 @@
-import { CLICKS_PER_LEVEL, MAX_CONTINUES, SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
-import type { ChaosModifier, Color, GameStatus } from '@pixelmatrix/shared';
+import { CLICKS_PER_LEVEL, MAX_CONTINUES, SOLO_STARTING_LIVES } from '../constants/index';
+import type { ChaosModifier, Color, GameStatus } from '../types/index';
 
 /**
- * Data HUD yang dikirim scene Phaser ke React. Sengaja hanya nilai primitif
- * supaya perbandingannya murah.
+ * Ringkasan keadaan permainan untuk digambar HUD. Sengaja hanya nilai primitif
+ * supaya perbandingannya murah — HUD-nya sendiri dikabari 60× per detik.
  *
- * Modul ini dipisah dari `BoardScene` dan TIDAK boleh meng-import Phaser:
- * komponen React meng-import tipe ini secara statis, jadi kalau Phaser ikut
- * tertarik ke sini, render di server akan gagal (`window is not defined`).
+ * **Ada di paket bersama, bukan di salah satu klien.** Web menghitungnya dari
+ * scene Phaser dan Android dari mesin solonya sendiri, tapi keduanya harus
+ * menjawab pertanyaan yang sama persis: berapa skornya, warna apa targetnya,
+ * sisa berapa nyawanya. Menyalin bentuk ini ke sisi Android akan membuat kedua
+ * HUD bisa berpisah tanpa satu pun error — misalnya saat satu field baru
+ * ditambahkan di web dan yang lain tidak ikut.
+ *
+ * Modul ini TIDAK boleh meng-import mesin gambar apa pun (Phaser, React
+ * Native): ia di-import statis oleh komponen yang dirender di server.
  */
 export interface HudSnapshot {
   readonly status: GameStatus;
