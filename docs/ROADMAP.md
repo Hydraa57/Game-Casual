@@ -145,9 +145,10 @@ Alasan kedua yang menentukan teknologinya. Solo offline berarti engine aturan
 main wajib jalan di HP, dan hanya **React Native** yang bisa memakai
 `@pixelmatrix/shared` apa adanya — Flutter dan Kotlin sama-sama menuntut 3.697
 baris aturan main diport ke bahasa lain, yaitu dua salinan yang harus dijaga
-sinkron selamanya. Penggambar papannya sendiri belum diputuskan — Skia sempat
-ikut dipasang lalu dikeluarkan lagi sebelum dipakai, karena ia menambah ~14 MB
-unduhan untuk sesuatu yang satu barisnya pun belum diimpor.
+sinkron selamanya. Papannya digambar dengan `View` biasa, bukan Skia — Skia
+sempat ikut dipasang lalu dikeluarkan sebelum dipakai (menambah ~14 MB unduhan
+untuk sesuatu yang satu barisnya pun belum diimpor), dan 64 kotak berwarna
+ternyata memang tidak membutuhkannya.
 
 Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 [ANDROID-NATIVE.md](./ANDROID-NATIVE.md).
@@ -158,10 +159,17 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 - [x] Halaman awal sepadan dengan web: logo bergaris tepi + beranimasi, tagline, kartu "Cara main", menu berwarna, latar bergradien
 - [x] APK debug, APK release, dan AAB terbukti jadi — APK arm64 21,2 MiB, AAB 43,9 MiB
 - [x] Workflow `APK Android` di GitHub Actions: bangun & unduh APK tanpa Android SDK lokal
-- [ ] Papan permainan + mode solo offline (penggambarnya diputuskan di situ)
+- [x] **Papan + mode solo, jalan sepenuhnya offline** — disetir `MesinSolo` yang
+      diuji 22 test yang memainkan ronde sungguhan frame demi frame
+- [x] Rekor solo tersimpan di HP, jeda otomatis saat aplikasi ditinggalkan, getar
+- [x] Ikon adaptif dari ikon PWA web (logo React Native bawaan template dibuang)
+- [x] Syarat teknis Play: `targetSdk` 36, izin minimal, versi di satu tempat,
+      penandatanganan yang membaca kunci dari LUAR repo
+- [x] Kebijakan privasi terbit di `/privacy` (id + en) + [PLAY-STORE.md](./PLAY-STORE.md)
 - [ ] Multiplayer lewat Socket.IO ke `apps/game-server` (server tidak berubah)
-- [ ] Layar sisanya disamakan dengan web (papan, lobby, hasil, pengaturan)
-- [ ] Audio, ikon adaptif, splash
+- [ ] Layar sisanya disamakan dengan web (lobby, hasil, pengaturan)
+- [ ] Audio, splash screen
+- [ ] **Diuji di HP sungguhan** — belum pernah; tidak ada emulator di sini
 - [ ] Keystore (**dibuat pemilik, tidak pernah masuk repo publik**) + Play Console
 
 > **Yang tidak berubah:** `apps/game-server` sama sekali tidak disentuh. Server
@@ -179,4 +187,4 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 | 2 | Dua tab browser + satu incognito (3 "pemain"): skor sinkron; klik rebutan hanya dimenangkan satu pemain; spam klik terkena rate limit; tutup satu tab → match jalan terus. Ulangi dengan 2 HP nyata |
 | 3 | Daftar akun username+password (OAuth sudah dibuang, lihat Fase 3); rekor guest dari localStorage ikut terbawa ke akun baru; main solo → skor muncul di profil & DB; main MP → match history terisi (guest tercatat sebagai nickname) |
 | 4 | Main dari 2 jaringan berbeda via URL publik; input terasa < 150 ms; load pertama < 3 dtk; uji di Android Chrome & iOS Safari |
-| 6 | `pnpm --filter @pixelmatrix/mobile test` + `typecheck` hijau, dan `./gradlew assembleDebug` benar-benar menghasilkan APK. **Tampilannya hanya bisa diverifikasi di HP** — tidak ada emulator di lingkungan pengembangan ini, jadi bagian itu butuh kamu |
+| 6 | `pnpm --filter @pixelmatrix/mobile test` hijau — termasuk 22 test yang memainkan satu ronde solo sungguhan frame demi frame (skor, nyawa, bom, jeda, determinisme) — lalu workflow `APK Android` di GitHub Actions menghasilkan APK yang benar-benar bisa dipasang. **Tampilan dan rasa mainnya hanya bisa diverifikasi di HP**: tidak ada emulator di lingkungan pengembangan ini, jadi bagian itu butuh kamu |
