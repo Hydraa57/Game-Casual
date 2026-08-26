@@ -2,6 +2,19 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!--
+      Getar saat klik salah dan kena bom.
+
+      Izin "normal": Android memberikannya saat pemasangan tanpa dialog apa pun,
+      dan ia tidak bisa dipakai membaca apa-apa. Tapi ia TETAP muncul di daftar
+      izin aplikasi di Play Store, jadi ia disebut apa adanya di sini dan di
+      docs/ANDROID-NATIVE.md — bukan diselipkan diam-diam.
+
+      Di HP, getar adalah umpan balik paling jelas tanpa pemain harus melihat
+      HUD; sisi web memakai navigator.vibrate untuk hal yang sama persis.
+    -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"

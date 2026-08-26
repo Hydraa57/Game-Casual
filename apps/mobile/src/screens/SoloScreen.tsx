@@ -1,12 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  AppState,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAX_CONTINUES } from '@pixelmatrix/shared';
 import type { GameEvent, HudSnapshot, Pixel } from '@pixelmatrix/shared';
 import { Hud } from '../components/Hud';
 import { Papan } from '../components/Papan';
 import { TombolChunky } from '../components/TombolChunky';
+import { getarUntuk } from '../game/getar';
 import { MesinSolo } from '../game/MesinSolo';
+import { bacaRekor, simpanRekorKalauLebihTinggi } from '../lib/rekor';
 import { latarGradien, font, radius, warna } from '../theme';
 
 /** Jarak papan dari tepi layar. */
@@ -31,9 +41,18 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
-  const tanganiEvent = useCallback((_event: GameEvent) => {
-    // Bunyi dan getaran menyusul di patch audio. Handler-nya sudah ada supaya
-    // mesinnya tidak perlu diubah lagi saat itu tiba.
+  const [rekor, setRekor] = useState(0);
+
+  const tanganiEvent = useCallback((event: GameEvent) => {
+    // Bunyi menyusul di patch audio; getarnya sudah jalan sekarang.
+    getarUntuk(event);
+
+    if (event.type === 'gameOver') {
+      // Perbandingannya dilakukan di dalam `simpanRekorKalauLebihTinggi`, yang
+      // membaca ulang dari penyimpanan sebelum menulis — `rekor` di state ini
+      // bisa saja tertinggal.
+      void simpanRekorKalauLebihTinggi(event.score).then(setRekor);
+    }
   }, []);
 
   /*
@@ -87,6 +106,35 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
     };
   }, [mesin]);
 
+  // ------------------------------------------------------------------- rekor
+
+  useEffect(() => {
+    let hidup = true;
+    void bacaRekor().then((nilai) => {
+      if (hidup) setRekor(nilai);
+    });
+    return () => {
+      hidup = false;
+    };
+  }, []);
+
+  // -------------------------------------------------- aplikasi ke latar belakang
+
+  /**
+   * Ronde dibekukan begitu aplikasi ditinggalkan.
+   *
+   * Tanpa ini, pemain yang menerima telepon kembali ke papan yang sudah berubah
+   * — dan bisa kehilangan nyawa untuk pixel yang tidak pernah dilihatnya.
+   * Penjepit 100 ms di mesin mencegah papannya kacau, tapi tidak mengembalikan
+   * waktu yang hilang; membekukannya di sini yang benar-benar adil.
+   */
+  useEffect(() => {
+    const langganan = AppState.addEventListener('change', (keadaan) => {
+      if (keadaan !== 'active') mesin.jeda();
+    });
+    return () => langganan.remove();
+  }, [mesin]);
+
   // ----------------------------------------------------------------- tampilan
 
   const lebarTersedia = width - PADDING * 2;
@@ -104,6 +152,7 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
           <Pressable onPress={onKeluar} hitSlop={12} style={gaya.tombolKecil}>
             <Text style={gaya.tombolKecilTeks}>‹ Keluar</Text>
           </Pressable>
+          {rekor > 0 && <Text style={gaya.rekor}>REKOR {rekor}</Text>}
           {berjalan && (
             <Pressable onPress={() => mesin.jeda()} hitSlop={12} style={gaya.tombolKecil}>
               <Text style={gaya.tombolKecilTeks}>Jeda</Text>
@@ -137,6 +186,7 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
       {adaTirai && (
         <Tirai
           snapshot={snapshot}
+          rekor={rekor}
           onMulai={() => mesin.mulai()}
           onLanjutkan={() => mesin.lanjutkan()}
           onLanjutCheckpoint={() => mesin.lanjutDariCheckpoint()}
@@ -156,12 +206,14 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
  */
 function Tirai({
   snapshot,
+  rekor,
   onMulai,
   onLanjutkan,
   onLanjutCheckpoint,
   onKeluar,
 }: {
   readonly snapshot: HudSnapshot;
+  readonly rekor: number;
   readonly onMulai: () => void;
   readonly onLanjutkan: () => void;
   readonly onLanjutCheckpoint: () => void;
@@ -169,6 +221,13 @@ function Tirai({
 }) {
   const kalah = snapshot.status === 'gameOver';
   const jeda = snapshot.status === 'paused';
+  /*
+    Rekor sudah disimpan lebih dulu oleh penangan event `gameOver`, jadi saat
+    tirai ini tergambar `rekor` SUDAH memuat skor ronde ini kalau memang
+    memecahkan rekor. Karena itu perbandingannya `>=`, bukan `>` — dengan `>`,
+    rekor baru tidak akan pernah terumumkan sama sekali.
+  */
+  const rekorBaru = kalah && snapshot.score > 0 && snapshot.score >= rekor;
 
   return (
     <View style={gaya.tirai}>
@@ -177,12 +236,14 @@ function Tirai({
 
         {kalah ? (
           <>
+            {rekorBaru && <Text style={gaya.rekorBaru}>REKOR BARU</Text>}
             <Text style={gaya.rinci}>
               Skor {snapshot.score} · Level {snapshot.level}
             </Text>
             <Text style={gaya.rinci}>
               Combo terbaik {snapshot.bestCombo} · Akurasi {Math.round(snapshot.accuracy * 100)}%
             </Text>
+            {!rekorBaru && rekor > 0 && <Text style={gaya.rinci}>Rekormu {rekor}</Text>}
           </>
         ) : (
           <Text style={gaya.rinci}>
@@ -245,6 +306,21 @@ const gaya = StyleSheet.create({
     fontFamily: font.judulTebal,
     fontSize: 13,
     color: warna.text,
+  },
+  rekor: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: font.judulTebal,
+    fontSize: 12.5,
+    letterSpacing: 0.5,
+    color: warna.textDim,
+  },
+  rekorBaru: {
+    textAlign: 'center',
+    fontFamily: font.judulTebalSekali,
+    fontSize: 15,
+    letterSpacing: 1,
+    color: warna.successInk,
   },
   wadahPapan: {
     flex: 1,
