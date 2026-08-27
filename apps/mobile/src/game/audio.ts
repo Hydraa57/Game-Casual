@@ -16,6 +16,14 @@ import { keVibrationRN } from './polaGetar';
  * dipakai di sisi bersama — osilator, gain, filter lowpass, buffer derau —
  * berjalan apa adanya. Itu yang membuat musik dan efek suaranya benar-benar
  * sama, bukan sekadar mirip.
+ *
+ * **Kenapa `react-native-gesture-handler` ada di dependensi padahal game ini
+ * tidak memakai satu pun gesture-nya:** paket audio-api mengekspor komponen UI
+ * pemutar audio (`AudioControls`) dari berkas index yang sama, dan komponen itu
+ * mengimpor gesture-handler. Metro menelusuri seluruh isi index saat membundel,
+ * jadi bundel gagal dibuat walau komponennya tidak pernah dirender. Itu peer
+ * dependency yang lupa dideklarasikan audio-api — jangan dibuang sebagai
+ * "dependensi tak terpakai".
  */
 function buatKonteks(): KonteksAudio | null {
   // Cast-nya ada karena tipe pustaka memakai union yang lebih sempit
