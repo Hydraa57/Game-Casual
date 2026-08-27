@@ -198,6 +198,36 @@ Android mengunduh Android SDK dan makan ~7 menit; menjalankannya di tiap push
 memperlambat CI biasa (typecheck/lint/test) yang justru perlu cepat, tanpa
 memberi apa pun, karena APK hanya dibutuhkan saat memang mau dicoba di HP.
 
+## Jebakan kelima: audio-api vs worklets
+
+Ditemukan setelah audio masuk, dan bentuknya berbeda dari empat yang di bawah —
+ini bukan soal pnpm, melainkan soal dua pustaka yang saling menuntut versi yang
+tidak bisa dipenuhi bersamaan.
+
+`react-native-audio-api` memanggil `worklets::WorkletRuntime::executeSync`.
+Method itu **tidak ada** di `react-native-worklets` 0.12.x. Dan 0.12.x tidak
+bisa dihindari: `react-native-reanimated` 4.6 memakukan worklets ke `0.12.x`
+tepat, sementara 0.12.1 adalah versi terbaru yang ada. Menurunkan audio-api juga
+tidak menolong — 0.11.7 pun sudah memanggilnya.
+
+Yang membuatnya lolos sampai jauh: skrip validasi audio-api hanya memeriksa
+**batas bawah** (`>= 0.6.0`). Worklets 0.12.1 lulus, Gradle menyalakan
+integrasinya, lalu kompilasi native menabrak method yang tidak ada — **setelah
+enam menit build**, bukan saat `pnpm install`.
+
+Diperbaiki lewat `pnpm patch` yang menambahkan batas atas ke skrip itu. Gradle
+lalu menyetel `RN_AUDIO_API_ENABLE_WORKLETS=false`, dan audio-api memakai
+implementasi worklets tiruan miliknya sendiri — yang memang sudah disiapkan
+untuk keadaan ini.
+
+Yang hilang hanya **worklet node**: menjalankan pemrosesan audio di runtime
+worklet, yang tidak dipakai game ini sama sekali. `AudioContext`, osilator,
+gain, filter lowpass, dan buffer derau tetap jalan penuh — dan itu seluruh Web
+Audio yang dipakai `packages/shared/src/audio`.
+
+Patch-nya tercatat di `pnpm-workspace.yaml` dan bisa dibuang begitu audio-api
+memperbaiki pemanggilannya.
+
 ## Empat jebakan pnpm + React Native
 
 Keempatnya sudah kena dan sudah diperbaiki. Ditulis di sini karena akan kembali
