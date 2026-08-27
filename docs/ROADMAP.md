@@ -166,9 +166,13 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 - [x] Syarat teknis Play: `targetSdk` 36, izin minimal, versi di satu tempat,
       penandatanganan yang membaca kunci dari LUAR repo
 - [x] Kebijakan privasi terbit di `/privacy` (id + en) + [PLAY-STORE.md](./PLAY-STORE.md)
-- [ ] Multiplayer lewat Socket.IO ke `apps/game-server` (server tidak berubah)
-- [ ] Layar sisanya disamakan dengan web (lobby, hasil, pengaturan)
-- [ ] Audio, splash screen
+- [x] **Audio**: musik + SFX, sintesisnya dipindah ke `packages/shared` supaya
+      kedua versi tidak mungkin berbeda bunyinya
+- [x] **Main bareng** lewat Socket.IO ke `apps/game-server` (server tidak berubah
+      satu baris pun): masuk room, lobby, papan rebutan, papan skor live, hasil
+- [x] Splash screen + workflow CI untuk AAB
+- [ ] `ALAMAT_GAME_SERVER` diisi supaya main bareng benar-benar tersambung
+- [ ] Chat lobby, mode beregu, ubah pengaturan, reconnect mid-match di Android
 - [ ] **Diuji di HP sungguhan** — belum pernah; tidak ada emulator di sini
 - [ ] Keystore (**dibuat pemilik, tidak pernah masuk repo publik**) + Play Console
 

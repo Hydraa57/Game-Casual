@@ -79,6 +79,64 @@ diam-diam tidak pernah terpakai.
 Lisensinya **OFL 1.1** — boleh dipaketkan ke aplikasi, termasuk yang dijual.
 Teks lisensinya ikut di `assets/fonts/OFL-*.txt`, sebagaimana yang diminta.
 
+### Audio: yang dipindah bukan aset, melainkan sintesisnya
+
+Versi web **tidak memakai satu pun berkas audio**. Musik latar dan seluruh efek
+suaranya disintesis lewat Web Audio — osilator, filter lowpass, buffer derau.
+Jadi yang perlu dibawa ke Android bukan aset, melainkan kodenya.
+
+`sfx.ts` dan `music.ts` pindah dari `apps/web` ke `packages/shared`, dan Android
+memakainya lewat **`react-native-audio-api`**, yang mengimplementasikan
+spesifikasi Web Audio yang sama.
+
+Itu penting karena setiap angka di kedua berkas itu adalah keputusan yang sudah
+ditala lewat playtest: tangga nada C mayor pentatonik (diganti dari A minor
+karena pemain melaporkan musiknya terdengar menegangkan alih-alih ceria),
+progresi I–V–vi–IV, timbre marimba alih-alih gelombang kotak, dan arpeggio yang
+membedakan "dapat nyawa" dari "naik level". Menyalinnya berarti dua game yang
+lama-lama berbeda bunyinya.
+
+Konteks audio, penjadwal, dan penggetar **disuntik** lewat antarmuka
+`KonteksAudio` yang ditulis sendiri — bukan tipe DOM. `packages/shared` juga
+dikompilasi untuk Node (game server), dan menyebut tipe DOM di sana akan memaksa
+`lib: ["DOM"]` masuk ke tempat yang tidak punya peramban.
+
+> **Konvensi array getar web dan React Native BERLAWANAN, dan itu jebakan yang
+> tidak menghasilkan error apa pun.** `navigator.vibrate([50, 40, 90])` berarti
+> getar 50, diam 40, getar 90. `Vibration.vibrate([50, 40, 90])` berarti **diam**
+> 50, getar 40, diam 90. Pola yang sama diteruskan apa adanya bergeser satu
+> langkah: getaran 50 ms yang paling penting hilang, dan yang terasa di tangan
+> justru jeda-jedanya. Konversinya ada di `polaGetar.ts`, dipisah dari kode yang
+> mengimpor React Native supaya bisa diuji — dan test-nya memeriksa indeks
+> genap/ganjil hasilnya, bukan sekadar bentuk arraynya.
+
+### Main bareng: server tidak disentuh sama sekali
+
+Klien Android masuk ke room yang sama dengan pemain web dan merebutkan papan
+yang sama. Seluruh aturan rebutan, skor, nyawa, dan bot sudah otoritatif di
+`apps/game-server`; yang dilakukan sisi Android hanya menggambar apa yang
+dikirim server dan meneruskan ketukan.
+
+Yang dikirim saat menap adalah **ID pixel, bukan koordinat sel**. Papannya
+rebutan: pixel di sel itu bisa sudah direbut orang lain sepersekian detik lalu,
+dan server yang memutuskan siapa yang lebih dulu.
+
+Kode penyambungnya memang ditulis dua kali — `apps/mobile/src/net/useRoom.ts`
+dan `apps/web/src/hooks/useRoom.ts` — dan itu keputusan sadar. Yang TIDAK boleh
+menyimpang adalah kontraknya, dan kontrak itu sudah ada di `packages/shared`
+sebagai `ClientToServerEvents`/`ServerToClientEvents`: nama event yang salah
+atau payload yang kurang satu field gagal typecheck di kedua sisi. Menyatukan
+sisa glue-nya butuh paket React bersama, dan itu biaya arsitektur yang belum
+sepadan untuk dua layar.
+
+> **`ALAMAT_GAME_SERVER` di `src/net/socket.ts` sengaja kosong dan harus diisi
+> sebelum rilis.** Versi web menebak alamat game-server dari halaman yang sedang
+> dibuka; aplikasi Android tidak punya "halaman yang sedang dibuka", jadi
+> alamatnya wajib dibawa di dalam aplikasi. Diisi tebakan, gejalanya adalah
+> tombol yang berputar lalu gagal tanpa alasan yang jelas; dibiarkan kosong,
+> aplikasinya mengenali keadaan itu dan menjelaskannya. **Mode solo tidak
+> terpengaruh sama sekali** — ia memang tidak butuh server.
+
 ## Yang dipakai bersama, dan yang tidak
 
 | Bagian | Nasib |
@@ -361,10 +419,16 @@ memberi rasa aman yang tidak berdasar.
 - [x] Ikon adaptif dari ikon PWA web (logo React Native bawaan template dibuang)
 - [x] Penandatanganan rilis membaca kunci dari luar repo + peringatan Gradle
 - [x] `versionCode`/`versionName` pindah ke `gradle.properties`
-- [ ] Multiplayer lewat Socket.IO ke `apps/game-server`
-- [ ] Audio: musik latar + efek suara
-- [ ] Layar-layar SISANYA disamakan dengan web (lobby, hasil, pengaturan)
-- [ ] Splash screen
+- [x] **Audio**: musik latar + efek suara, disintesis dari kode yang SAMA dengan web
+- [x] **Main bareng** lewat Socket.IO ke `apps/game-server` — masuk room, lobby,
+      papan rebutan, papan skor live, hasil
+- [x] Splash screen
+- [x] Workflow CI yang membangun AAB
+- [ ] Alamat game-server diisi (`ALAMAT_GAME_SERVER`) — tanpa ini main bareng
+      menampilkan penjelasan, bukan mencoba menyambung ke alamat kosong
+- [ ] Chat lobby, mode beregu, ubah pengaturan room, reconnect mid-match —
+      keempatnya sudah jalan di web dan sudah didukung server
+- [ ] Layar Papan Skor & Pengaturan
 - [x] Kebijakan privasi terbit di `/privacy` (id + en)
 - [ ] Keystore penandatanganan — **dibuat di mesin pemilik, tidak pernah masuk
       repo publik ini**
