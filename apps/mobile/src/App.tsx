@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LandingScreen } from './screens/LandingScreen';
+import { RoomScreen } from './screens/RoomScreen';
 import { SoloScreen } from './screens/SoloScreen';
 
-type Layar = 'awal' | 'solo';
+type Layar = 'awal' | 'solo' | 'bareng';
 
 /**
  * Aplikasi Android Pixel Matrix.
@@ -51,8 +52,13 @@ export default function App() {
     <SafeAreaProvider>
       {layar === 'solo' ? (
         <SoloScreen onKeluar={keAwal} />
+      ) : layar === 'bareng' ? (
+        <RoomScreen onKeluar={keAwal} />
       ) : (
-        <LandingScreen onMainSolo={() => setLayar('solo')} />
+        <LandingScreen
+          onMainSolo={() => setLayar('solo')}
+          onMainBareng={() => setLayar('bareng')}
+        />
       )}
     </SafeAreaProvider>
   );
