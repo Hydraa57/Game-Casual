@@ -65,7 +65,13 @@ const MATCH_KOSONG: KeadaanMatch = {
  * saja terjadi, dan tebakan itu gagal untuk dua kejadian identik berurutan.
  */
 export interface PendengarMatch {
-  onKlaim?: (cell: Cell, kind: Pixel['kind'], poin: number, olehSaya: boolean) => void;
+  onKlaim?: (
+    cell: Cell,
+    kind: Pixel['kind'],
+    warna: Color,
+    poin: number,
+    olehSaya: boolean,
+  ) => void;
   onSalah?: () => void;
   onBom?: () => void;
   onGantiTarget?: () => void;
@@ -136,12 +142,18 @@ export function useRoom(dengar: PendengarMatch = {}) {
     soket.on('game:pixelClaimed', (p) => {
       setMatch((m) => {
         const diambil = m.pixels.find((x) => x.id === p.pixelId);
-        // Jenis pixelnya dibaca dari papan LOKAL, bukan dari payload: server
-        // mengirim `kind` juga, tapi membaca dari papan yang sedang digambar
-        // menjamin warnanya cocok dengan yang benar-benar terlihat pemain.
+        // Jenis DAN warna pixelnya dibaca dari papan LOKAL: membacanya dari
+        // papan yang sedang digambar menjamin semburannya berwarna sama dengan
+        // pixel yang benar-benar dilihat pemain sesaat sebelumnya.
+        //
+        // Cadangannya warna target pertama, bukan warna tetap — pixel yang
+        // direbut PASTI salah satu warna target, jadi tebakan itu benar
+        // kecuali saat modifier dua-target sedang aktif. Cadangan ini baru
+        // terpakai kalau eventnya mendahului papan lokalnya sendiri.
         dengarRef.current.onKlaim?.(
           p.cell,
           diambil?.kind ?? 'normal',
+          diambil?.color ?? m.targetColors[0] ?? 'red',
           p.points,
           p.byPlayerId === idSayaRef.current,
         );

@@ -48,6 +48,19 @@ export type GameEvent =
        * mengambil ♥ atau ★ di multiplayer tidak berbunyi apa pun.
        */
       readonly kind: Pixel['kind'];
+      /**
+       * Warna pixel yang direbut — dipakai untuk mewarnai semburannya.
+       *
+       * Dibutuhkan karena alasan yang sama seperti `kind`, dan tidak bisa
+       * ditebak dari warna target: dengan modifier dua-target ada DUA warna
+       * yang sah pada saat yang sama, jadi "yang mana yang barusan diambil"
+       * hanya diketahui di sini.
+       *
+       * Tanpa ini, semburannya harus memakai satu warna tetap — dan warna
+       * tetap membuatnya terbaca sebagai kilatan generik, bukan sebagai pixel
+       * yang barusan direbut.
+       */
+      readonly color: Color;
     }
   | {
       readonly type: 'clickRejected';

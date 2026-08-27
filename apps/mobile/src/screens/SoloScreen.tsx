@@ -96,8 +96,11 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
             gayaPixel({
               id: event.pixelId,
               cell: event.cell,
-              color: 'red',
+              color: event.color,
               kind: event.kind,
+              // Pixelnya sudah dilepas dari papan saat event ini tiba, jadi
+              // yang dibentuk di sini cuma cukup untuk menanyakan warnanya.
+              // Umurnya tidak ikut menentukan warna isi.
               spawnedAtMs: 0,
               lifetimeMs: 1,
             }).isi,

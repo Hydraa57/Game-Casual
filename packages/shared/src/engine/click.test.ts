@@ -74,7 +74,34 @@ describe('klik benar', () => {
       // Jenis pixelnya ikut supaya multiplayer bisa memilih bunyinya: tanpa
       // ini, mengambil ♥ atau ★ di MP tidak terdengar berbeda dari pixel biasa.
       kind: 'normal',
+      // Warnanya ikut supaya semburannya bisa diwarnai sesuai pixel yang
+      // barusan direbut.
+      color: 'red',
     });
+  });
+
+  it('pixelClaimed membawa warna pixel yang direbut, bukan warna target', () => {
+    /*
+      Kelihatannya berlebihan karena satu-satunya warna yang sah untuk diklaim
+      memang warna target. Tapi modifier dua-target membuat DUA warna sah pada
+      saat yang sama, dan pemakainya (semburan di papan) butuh tahu yang MANA.
+
+      Yang dijaga test ini: nilainya diambil dari pixelnya, bukan dari
+      `state.board.targetColors[0]` — dua sumber yang di ronde biasa selalu
+      memberi jawaban sama, jadi kekeliruannya tidak akan terlihat sampai
+      dua-target aktif.
+    */
+    const biru: Pixel = { ...targetPixel, id: 'target-biru', color: 'blue' };
+    const state = gameWithBoard();
+    const duaTarget = {
+      ...state,
+      board: { ...state.board, targetColors: ['red', 'blue'] as const, pixels: [biru] },
+    };
+
+    const events = applyClick(duaTarget, 'target-biru').events;
+    const klaim = events.find((e) => e.type === 'pixelClaimed');
+    expect(klaim).toBeDefined();
+    expect(klaim?.type === 'pixelClaimed' && klaim.color).toBe('blue');
   });
 
   it('bestCombo tersimpan walau combo kemudian putus', () => {

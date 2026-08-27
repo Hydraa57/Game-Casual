@@ -221,6 +221,7 @@ function applyCorrectClick(state: GameState, pixelId: string, ratio: number): Cl
     multiplier: comboMultiplier(combo),
     score: score.score,
     kind: pixel.kind,
+    color: pixel.color,
   });
 
   if (newLevel > previousLevel) {

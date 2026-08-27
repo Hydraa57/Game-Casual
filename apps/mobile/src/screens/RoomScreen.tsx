@@ -104,10 +104,10 @@ function RoomAktif({ onKeluar }: { readonly onKeluar: () => void }) {
     ditembakkan optimis saat jari menyentuh.
   */
   const r = useRoom({
-    onKlaim: (cell, kind, poin) => {
+    onKlaim: (cell, kind, warnaPixel, poin) => {
       papanRef.current?.klaim(
         cell,
-        gayaPixel({ id: '', cell, color: 'red', kind, spawnedAtMs: 0, lifetimeMs: 1 }).isi,
+        gayaPixel({ id: '', cell, color: warnaPixel, kind, spawnedAtMs: 0, lifetimeMs: 1 }).isi,
         poin,
       );
     },
