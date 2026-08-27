@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -20,8 +20,9 @@ import {
 } from '@pixelmatrix/shared';
 import type { AvatarId, MatchEndedPayload, RoomState, ScoreboardEntry } from '@pixelmatrix/shared';
 import { Papan } from '../components/Papan';
+import type { KaitPapan } from '../components/Papan';
 import { TombolChunky } from '../components/TombolChunky';
-import { warnaPapanCss } from '../game/palet';
+import { gayaPixel, warnaPapanCss } from '../game/palet';
 import { adaGameServer } from '../net/socket';
 import { useRoom } from '../net/useRoom';
 import type { KeadaanMatch } from '../net/useRoom';
@@ -91,7 +92,29 @@ function BelumDikonfigurasi({
 function RoomAktif({ onKeluar }: { readonly onKeluar: () => void }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const r = useRoom();
+
+  const papanRef = useRef<KaitPapan | null>(null);
+
+  /*
+    Efek papan dipicu dari event SERVER, bukan dari ketukan lokal.
+
+    Bedanya penting di papan rebutan: ketukan yang kalah cepat tidak boleh
+    menyemburkan apa pun, dan ketukan pemain LAIN harus menyemburkan. Yang tahu
+    siapa yang menang cuma server, jadi efeknya menunggu jawabannya — bukan
+    ditembakkan optimis saat jari menyentuh.
+  */
+  const r = useRoom({
+    onKlaim: (cell, kind, poin) => {
+      papanRef.current?.klaim(
+        cell,
+        gayaPixel({ id: '', cell, color: 'red', kind, spawnedAtMs: 0, lifetimeMs: 1 }).isi,
+        poin,
+      );
+    },
+    onSalah: () => papanRef.current?.salah(),
+    onBom: () => papanRef.current?.bom(),
+    onGantiTarget: () => papanRef.current?.gantiTarget(),
+  });
 
   const keluarSemua = useCallback(() => {
     r.keluarRoom();
@@ -131,7 +154,13 @@ function RoomAktif({ onKeluar }: { readonly onKeluar: () => void }) {
         {r.hasil !== null ? (
           <Hasil hasil={r.hasil} playerId={r.playerId} onKembali={r.kembaliKeLobby} />
         ) : bermain ? (
-          <Match match={r.match} playerId={r.playerId} lebar={width} onTapPixel={r.tap} />
+          <Match
+            match={r.match}
+            playerId={r.playerId}
+            lebar={width}
+            onTapPixel={r.tap}
+            papanRef={papanRef}
+          />
         ) : r.room !== null ? (
           <Lobby
             room={r.room}
@@ -334,11 +363,13 @@ function Match({
   playerId,
   lebar,
   onTapPixel,
+  papanRef,
 }: {
   readonly match: KeadaanMatch;
   readonly playerId: string | null;
   readonly lebar: number;
   readonly onTapPixel: (pixelId: string) => void;
+  readonly papanRef: React.RefObject<KaitPapan | null>;
 }) {
   const [tinggiPapan, setTinggiPapan] = useState(0);
   const sisi = Math.max(0, Math.min(lebar - PADDING * 2, tinggiPapan));
@@ -390,6 +421,7 @@ function Match({
       >
         {sisi > 0 && (
           <Papan
+            ref={papanRef}
             pixels={match.pixels}
             elapsedMs={sekarang}
             ukuran={sisi}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
   Pressable,
@@ -9,12 +9,20 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MAX_CONTINUES, soloIntensity, SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
+import {
+  COMBO_STEP,
+  isComboMilestone,
+  MAX_CONTINUES,
+  soloIntensity,
+  SOLO_STARTING_LIVES,
+} from '@pixelmatrix/shared';
 import type { GameEvent, HudSnapshot, Pixel } from '@pixelmatrix/shared';
 import { Hud } from '../components/Hud';
 import { Papan } from '../components/Papan';
+import type { KaitPapan } from '../components/Papan';
 import { TombolChunky } from '../components/TombolChunky';
 import { buatMusic, buatSfx } from '../game/audio';
+import { gayaPixel } from '../game/palet';
 import { MesinSolo } from '../game/MesinSolo';
 import { bacaBisu, simpanBisu } from '../lib/preferensi';
 import { bacaRekor, simpanRekorKalauLebihTinggi } from '../lib/rekor';
@@ -55,28 +63,80 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
   const [sfx] = useState(buatSfx);
   const [music] = useState(buatMusic);
 
+  /*
+    Kait ke papan, dipakai memicu efek.
+
+    Imperatif lewat ref, bukan props: efek-efek ini KEJADIAN, bukan keadaan.
+    Sebagai props, papan harus menebak dari perubahan nilai kapan sesuatu baru
+    saja terjadi — dan tebakan itu selalu gagal untuk dua kejadian identik yang
+    berurutan, misalnya dua klik benar dengan poin yang sama persis.
+  */
+  const papanRef = useRef<KaitPapan | null>(null);
+
   const tanganiEvent = useCallback(
     (event: GameEvent) => {
-      // Getarnya ikut di sini: `Sfx` bersama yang memegang pola getar tiap
-      // kejadian, jadi bunyi dan getar tidak mungkin berpisah.
+      // Bunyi, getar, dan efek gambar dipicu dari satu tempat, dari event yang
+      // sama. `Sfx` bersama yang memegang pola getar tiap kejadian, jadi bunyi
+      // dan getar tidak mungkin berpisah.
+      const papan = papanRef.current;
+
       switch (event.type) {
+        case 'pixelSpawned':
+          break;
+
         case 'pixelClaimed':
           sfx.correct(event.combo);
           if (event.kind === 'gold') sfx.gold();
           if (event.kind === 'life') sfx.life();
+          papan?.klaim(
+            event.cell,
+            // Warna semburannya diambil dari JENIS pixel yang direbut, lewat
+            // fungsi yang sama yang menggambar pixelnya — jadi emas menyembur
+            // emas, bukan menyembur warna papan biasa.
+            gayaPixel({
+              id: event.pixelId,
+              cell: event.cell,
+              color: 'red',
+              kind: event.kind,
+              spawnedAtMs: 0,
+              lifetimeMs: 1,
+            }).isi,
+            event.points,
+          );
+          if (isComboMilestone(event.combo)) papan?.combo(event.combo);
           break;
+
         case 'clickRejected':
-          if (event.reason === 'wrongColor') sfx.wrong();
+          if (event.reason === 'wrongColor') {
+            sfx.wrong();
+            papan?.salah();
+          }
           break;
+
         case 'bombHit':
           sfx.bomb();
+          papan?.bom();
           break;
+
         case 'levelUp':
           sfx.levelUp();
+          papan?.naikLevel(event.level);
           break;
+
+        case 'comboBroken':
+          // Hanya combo yang sudah bernilai. Umpan balik untuk setiap kejadian
+          // biasa membuat umpan balik itu berhenti berarti apa-apa.
+          if (event.previousCombo >= COMBO_STEP) papan?.comboPutus(event.previousCombo);
+          break;
+
+        case 'targetChanged':
+          papan?.gantiTarget();
+          break;
+
         case 'gameOver':
           sfx.gameOver();
           break;
+
         default:
           break;
       }
@@ -269,6 +329,7 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
         >
           {sisiPapan > 0 && (
             <Papan
+              ref={papanRef}
               pixels={pixels}
               elapsedMs={elapsedMs}
               ukuran={sisiPapan}
@@ -285,6 +346,7 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
           rekor={rekor}
           onMulai={() => {
             sfx.unlock();
+            papanRef.current?.bersihkan();
             mesin.mulai();
           }}
           onLanjutkan={() => {
@@ -293,6 +355,7 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
           }}
           onLanjutCheckpoint={() => {
             sfx.unlock();
+            papanRef.current?.bersihkan();
             mesin.lanjutDariCheckpoint();
           }}
           onKeluar={onKeluar}

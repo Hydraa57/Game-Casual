@@ -42,10 +42,22 @@ export class Sfx {
   }
 
   private getar(pola: number | readonly number[]): void {
-    // Getar ikut dimatikan bersama bunyi: keduanya adalah "umpan balik yang
-    // mengganggu orang di sekitar", dan pemain yang mematikan suara di tempat
-    // umum hampir selalu memaksudkan keduanya.
-    if (this.muted) return;
+    /*
+      Getar TIDAK ikut dimatikan bersama bunyi, dan itu diperbaiki setelah
+      dipakai di HP sungguhan.
+
+      Versi pertama modul ini menjepitnya di balik `muted` dengan alasan yang
+      terdengar masuk akal — keduanya "umpan balik yang mengganggu orang di
+      sekitar". Ternyata salah dua kali. Pertama, itu diam-diam mengubah
+      perilaku versi WEB, yang sejak awal memanggil `navigator.vibrate` tanpa
+      peduli mute. Kedua, dan lebih penting: orang mematikan suara justru di
+      tempat yang ramai atau yang harus sunyi, dan di situlah getar menjadi
+      SATU-SATUNYA umpan balik yang tersisa. Mematikannya bersama suara membuat
+      klik salah tidak terasa sama sekali.
+
+      Kalau suatu saat getar perlu bisa dimatikan sendiri, itu sakelar
+      tersendiri — bukan menumpang sakelar suara.
+    */
     this.opsi.getar?.(pola);
   }
 

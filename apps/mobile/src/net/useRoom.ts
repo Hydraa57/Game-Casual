@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   Ack,
   AvatarId,
+  Cell,
   BotDifficulty,
   Color,
   JoinedRoom,
@@ -56,12 +57,39 @@ const MATCH_KOSONG: KeadaanMatch = {
  * `apps/web/src/hooks/useRoom.ts`), KONTRAKNYA tidak bisa menyimpang: nama
  * event yang salah atau payload yang kurang satu field akan gagal typecheck.
  */
-export function useRoom() {
+/**
+ * Kejadian match yang layak digambar atau dibunyikan.
+ *
+ * Diteruskan sebagai callback, bukan disimpan di state: ini KEJADIAN. Menaruhnya
+ * di state berarti layar harus menebak dari perubahan nilai kapan sesuatu baru
+ * saja terjadi, dan tebakan itu gagal untuk dua kejadian identik berurutan.
+ */
+export interface PendengarMatch {
+  onKlaim?: (cell: Cell, kind: Pixel['kind'], poin: number, olehSaya: boolean) => void;
+  onSalah?: () => void;
+  onBom?: () => void;
+  onGantiTarget?: () => void;
+}
+
+export function useRoom(dengar: PendengarMatch = {}) {
+  /*
+    Pendengarnya dipegang di ref, bukan dipakai langsung di dalam effect.
+
+    Effect koneksi sengaja hanya jalan SEKALI (dependensi kosong) — memasang
+    ulang seluruh listener socket tiap render akan memutus dan menyambung
+    kembali di tengah match. Ref membuat callback terbaru selalu terpakai tanpa
+    effect itu perlu dijalankan ulang.
+  */
+  const dengarRef = useRef(dengar);
+  dengarRef.current = dengar;
+
   const soketRef = useRef<SoketGame | null>(null);
 
   const [status, setStatus] = useState<StatusKoneksi>('menyambung');
   const [room, setRoom] = useState<RoomState | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  /** Dibaca dari dalam listener socket, yang tidak ikut render. */
+  const idSayaRef = useRef<string | null>(null);
   const [kodeGalat, setKodeGalat] = useState<RoomErrorCode | null>(null);
   const [sibuk, setSibuk] = useState(false);
   const [match, setMatch] = useState<KeadaanMatch>(MATCH_KOSONG);
@@ -105,17 +133,38 @@ export function useRoom() {
       setMatch((m) => ({ ...m, pixels: m.pixels.filter((p) => p.id !== pixelId) })),
     );
 
-    soket.on('game:pixelClaimed', ({ pixelId }) =>
-      setMatch((m) => ({ ...m, pixels: m.pixels.filter((p) => p.id !== pixelId) })),
-    );
+    soket.on('game:pixelClaimed', (p) => {
+      setMatch((m) => {
+        const diambil = m.pixels.find((x) => x.id === p.pixelId);
+        // Jenis pixelnya dibaca dari papan LOKAL, bukan dari payload: server
+        // mengirim `kind` juga, tapi membaca dari papan yang sedang digambar
+        // menjamin warnanya cocok dengan yang benar-benar terlihat pemain.
+        dengarRef.current.onKlaim?.(
+          p.cell,
+          diambil?.kind ?? 'normal',
+          p.points,
+          p.byPlayerId === idSayaRef.current,
+        );
+        return { ...m, pixels: m.pixels.filter((x) => x.id !== p.pixelId) };
+      });
+    });
 
-    soket.on('game:bombHit', ({ pixelId }) =>
-      setMatch((m) => ({ ...m, pixels: m.pixels.filter((p) => p.id !== pixelId) })),
-    );
+    soket.on('game:bombHit', ({ pixelId }) => {
+      dengarRef.current.onBom?.();
+      setMatch((m) => ({ ...m, pixels: m.pixels.filter((p) => p.id !== pixelId) }));
+    });
 
-    soket.on('game:targetChanged', ({ colors }) =>
-      setMatch((m) => ({ ...m, targetColors: colors })),
-    );
+    // Ditolak karena warnanya salah: satu-satunya penolakan yang benar-benar
+    // kesalahan pemain. `notFound` dan `tooLate` itu tap yang datang telat
+    // sedikit — wajar di papan rebutan, dan menghukumnya terasa tidak adil.
+    soket.on('game:clickRejected', (p) => {
+      if (p.reason === 'wrongColor') dengarRef.current.onSalah?.();
+    });
+
+    soket.on('game:targetChanged', ({ colors }) => {
+      dengarRef.current.onGantiTarget?.();
+      setMatch((m) => ({ ...m, targetColors: colors }));
+    });
 
     soket.on('game:boardShuffled', ({ pixels }) => setMatch((m) => ({ ...m, pixels })));
 
@@ -179,6 +228,7 @@ export function useRoom() {
       );
       if (data !== null) {
         setPlayerId(data.playerId);
+        idSayaRef.current = data.playerId;
         setRoom(data.roomState);
       }
       return data !== null;
@@ -195,6 +245,7 @@ export function useRoom() {
       );
       if (data !== null) {
         setPlayerId(data.playerId);
+        idSayaRef.current = data.playerId;
         setRoom(data.roomState);
       }
       return data !== null;
