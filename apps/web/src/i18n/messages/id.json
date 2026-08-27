@@ -343,6 +343,7 @@
     "androidTitle": "Aplikasi Android",
     "androidSolo": "Mode solo tidak menyentuh jaringan sama sekali. Seluruh aturan mainnya ada di dalam aplikasi.",
     "androidStorage": "Yang disimpan di HP-mu hanya satu angka: rekor skor solo. Ia tidak pernah dikirim ke mana pun, dan hilang saat aplikasinya dicopot.",
+    "androidBareng": "Kalau kamu memilih main bareng, nickname dan skormu dikirim ke server main bareng supaya pemain lain bisa melihatmu di lobby dan di papan skor. Itu satu-satunya data yang keluar dari HP-mu, dan hanya saat kamu memilih mode itu.",
     "androidPermissions": "Aplikasi meminta dua izin. INTERNET untuk mode main bareng, dan VIBRATE untuk getar saat salah tap. Keduanya tidak bisa dipakai membaca apa pun dari HP-mu.",
     "accountTitle": "Kalau kamu bikin akun di situsnya",
     "accountIntro": "Akun bersifat opsional — game bisa dimainkan penuh tanpa mendaftar. Kalau kamu mendaftar, yang disimpan hanya ini:",

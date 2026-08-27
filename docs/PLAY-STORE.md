@@ -124,20 +124,34 @@ sendirinya — itu penanda paling cepat bahwa kuncinya terbaca.
 
 ## Langkah 4 — Formulir Data safety
 
-Diisi di Play Console, dan **harus cocok dengan kebijakan privasi**. Jawaban
-yang benar untuk aplikasi ini sekarang:
+Diisi di Play Console, dan **harus cocok dengan kebijakan privasi** — Google
+membandingkan keduanya, dan selisihnya adalah salah satu penyebab penolakan
+paling umum.
+
+> **Jawabannya BERUBAH sejak main bareng masuk ke aplikasi Android.** Sebelum
+> itu aplikasinya murni offline dan jawaban yang benar adalah "tidak
+> mengumpulkan apa pun". Sekarang tidak lagi: begitu pemain masuk room, nickname
+> dan skornya dikirim ke game-server. Mengisi formulir dengan jawaban lama
+> adalah pernyataan yang tidak benar, bukan sekadar dokumen yang tertinggal.
 
 | Pertanyaan | Jawaban |
 |---|---|
-| Mengumpulkan data pengguna? | **Tidak** — selama aplikasi Android baru punya mode solo |
-| Membagikan data ke pihak ketiga? | Tidak |
-| Data dienkripsi saat transit? | Ya (HTTPS/WSS) — relevan begitu multiplayer masuk |
-| Ada cara meminta penghapusan data? | Ya, lewat kontak di kebijakan privasi |
+| Mengumpulkan data pengguna? | **Ya** — tapi hanya saat pemain memilih main bareng |
+| Data apa? | **Personal info → Name** (nickname yang diketik pemain) dan **App activity → Other actions** (skor, akurasi, hasil match) |
+| Wajib atau opsional? | **Opsional** — mode solo tidak mengirim apa pun |
+| Dipakai untuk apa? | **App functionality** saja. Bukan iklan, bukan analitik, bukan personalisasi |
+| Dibagikan ke pihak ketiga? | **Tidak** |
+| Dienkripsi saat transit? | **Ya** (HTTPS/WSS) |
+| Bisa diminta hapus? | **Ya**, lewat kontak di kebijakan privasi |
 
-**Jawabannya berubah begitu akun dan multiplayer masuk ke aplikasi Android.**
-Saat itu yang dikumpulkan menjadi: username, email opsional, dan skor —
-kategori "Personal info" dan "App activity". Formulir ini wajib diperbarui di
-rilis yang sama, bukan sesudahnya.
+Dua hal yang mudah salah diisi dan layak dibaca ulang sebelum mengirim:
+
+- **Nickname dihitung sebagai "Name"**, bukan sebagai data anonim. Ia diketik
+  pemain dan bisa saja berisi nama aslinya; Play menilai dari apa yang BISA
+  dikirim, bukan dari apa yang biasanya dikirim.
+- **Akun (username + password + email) belum ada di aplikasi Android.** Itu
+  masih fitur web saja. Begitu ia masuk, formulir ini wajib diperbarui di rilis
+  yang sama — bukan sesudahnya.
 
 ## Langkah 5 — Content rating
 
@@ -146,21 +160,34 @@ tidak ada kekerasan, tidak ada konten dewasa, tidak ada judi, tidak ada
 pembelian dalam aplikasi.
 
 Satu yang **harus dijawab jujur "ya"**: game ini punya **fitur interaksi
-pengguna** (chat lobby dan nickname yang terlihat pemain lain) begitu
-multiplayer masuk ke aplikasi Android. Menyembunyikannya adalah pelanggaran
-kebijakan yang bisa membuat aplikasi diturunkan.
+pengguna** — nickname yang terlihat pemain lain di lobby dan di papan skor.
+Menyembunyikannya adalah pelanggaran kebijakan yang bisa membuat aplikasi
+diturunkan.
+
+Chat lobby belum ada di aplikasi Android (masih web saja), tapi nickname
+sendiri sudah cukup untuk membuat jawabannya "ya": ia teks bebas yang dilihat
+orang lain.
 
 ## Sisa jalan sebelum layak dikirim
 
 Yang berikut ini bukan syarat Play, tapi menerbitkan tanpanya berarti
 menerbitkan sesuatu yang belum layak dinilai orang:
 
-- [ ] Aplikasi diuji di HP sungguhan — **belum pernah**; tidak ada emulator di
+- [x] Audio (musik latar + efek suara)
+- [x] Main bareng di aplikasi Android
+- [x] Splash screen
+- [ ] **`ALAMAT_GAME_SERVER` diisi** di `apps/mobile/src/net/socket.ts` — tanpa
+      ini tombol main bareng menampilkan penjelasan, bukan lobby. Mode solo
+      tidak terpengaruh
+- [ ] **Aplikasi diuji di HP sungguhan** — belum pernah; tidak ada emulator di
       lingkungan pengembangan ini
-- [ ] Audio (musik latar + efek suara)
-- [ ] Multiplayer di aplikasi Android
-- [ ] Splash screen
 - [ ] Uji di layar kecil (320 dp) dan layar besar (tablet)
+
+> **Yang paling penting dari daftar ini adalah baris "diuji di HP sungguhan".**
+> Semua yang lain bisa diperiksa dari sini; yang itu tidak. Google menjalankan
+> aplikasinya di perangkat sungguhan saat meninjau, dan aplikasi yang crash di
+> sana ditolak — sementara satu-satunya bukti yang ada sekarang adalah bahwa
+> kodenya lulus typecheck, testnya hijau, dan Gradle menghasilkan berkas.
 
 ## Kalau ditolak
 

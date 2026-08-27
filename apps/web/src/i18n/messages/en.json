@@ -343,6 +343,7 @@
     "androidTitle": "The Android app",
     "androidSolo": "Solo mode never touches the network. All the game rules ship inside the app itself.",
     "androidStorage": "The only thing stored on your phone is a single number: your solo high score. It is never sent anywhere, and it goes away when you uninstall the app.",
+    "androidBareng": "If you choose multiplayer, your nickname and score are sent to the multiplayer server so other players can see you in the lobby and on the scoreboard. That is the only data that leaves your phone, and only when you choose that mode.",
     "androidPermissions": "The app requests two permissions. INTERNET for multiplayer, and VIBRATE for haptic feedback on a wrong tap. Neither can read anything from your phone.",
     "accountTitle": "If you create an account on the website",
     "accountIntro": "Accounts are optional — the game is fully playable without signing up. If you do sign up, this is all that is stored:",

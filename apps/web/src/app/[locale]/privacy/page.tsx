@@ -48,6 +48,7 @@ function Privacy() {
         <ul className="steps">
           <li>{t('androidSolo')}</li>
           <li>{t('androidStorage')}</li>
+          <li>{t('androidBareng')}</li>
           <li>{t('androidPermissions')}</li>
         </ul>
       </section>
