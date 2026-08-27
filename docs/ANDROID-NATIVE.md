@@ -34,10 +34,18 @@ isinya paling banyak 64 kotak berwarna dengan satu huruf di tengahnya. Pudarnya
 pixel digambar lewat `opacity` yang dihitung ulang tiap frame dari
 `remainingRatio` — perhitungan yang sama persis dengan yang dipakai web.
 
-Skia dipertimbangkan lagi kalau efeknya nanti (partikel saat klaim, kilau emas,
-guncangan saat kena bom) membuat ini tersendat di HP kelas bawah. Keputusannya
-menunggu **bukti dari perangkat sungguhan**, bukan firasat — dan menambahkannya
-kembali cuma butuh satu `pnpm add`.
+Efeknya sekarang sudah ada — semburan saat klaim, angka poin melayang,
+guncangan, kilatan bom, gelombang pelangi naik level — dan **semuanya tetap
+`View` biasa plus Reanimated**, yang sudah ikut dipaketkan untuk keperluan lain.
+Jadi Skia tidak dibutuhkan untuk sampai ke titik ini.
+
+Yang paling berat di antaranya adalah gelombang pelangi: ia membuat 64 View
+tambahan selama 0,9 detik, sekali tiap naik level. Angka itu ditulis di sini
+supaya jelas apa yang harus dicurigai duluan kalau nanti tersendat.
+
+Skia baru dipertimbangkan lagi kalau ada **bukti dari perangkat sungguhan**
+bahwa ini tersendat di HP kelas bawah — bukan firasat. Menambahkannya kembali
+cuma butuh satu `pnpm add`.
 
 ### Font: jalan yang berputar, dan kenapa
 
@@ -465,6 +473,14 @@ memberi rasa aman yang tidak berdasar.
       papan rebutan, papan skor live, hasil
 - [x] Splash screen
 - [x] Workflow CI yang membangun AAB
+- [x] **Efek papan** sepadan dengan web: semburan saat klaim (berwarna sesuai
+      pixel yang diambil), angka poin melayang, guncangan saat salah klik,
+      kilatan bom, gelombang pelangi diagonal saat naik level, popup combo,
+      kedip saat target berganti, dan pixel yang melompat masuk. Dipicu lewat
+      ref imperatif karena ini KEJADIAN, bukan keadaan
+- [x] Setelan **"Hapus animasi"** Android dihormati — yang dimatikan hanya
+      gerak (guncangan, gelombang, lompatan pixel); kilatan dan teks tetap
+      jalan supaya umpan baliknya tidak ikut hilang
 - [ ] Alamat game-server diisi (`ALAMAT_GAME_SERVER`) — tanpa ini main bareng
       menampilkan penjelasan, bukan mencoba menyambung ke alamat kosong
 - [ ] Chat lobby, mode beregu, ubah pengaturan room, reconnect mid-match —

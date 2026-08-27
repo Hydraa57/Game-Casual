@@ -157,7 +157,7 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 - [x] Token design terkunci ke `globals.css` lewat test yang membaca CSS-nya langsung
 - [x] Font Fredoka & Nunito dipaketkan (8 bobot, 304 KB), dikunci test ke bobot yang diminta web
 - [x] Halaman awal sepadan dengan web: logo bergaris tepi + beranimasi, tagline, kartu "Cara main", menu berwarna, latar bergradien
-- [x] APK debug, APK release, dan AAB terbukti jadi — APK arm64 21,2 MiB, AAB 43,9 MiB
+- [x] APK debug, APK release, dan AAB terbukti jadi — APK arm64 26,7 MiB, AAB 60,6 MiB
 - [x] Workflow `APK Android` di GitHub Actions: bangun & unduh APK tanpa Android SDK lokal
 - [x] **Papan + mode solo, jalan sepenuhnya offline** — disetir `MesinSolo` yang
       diuji 22 test yang memainkan ronde sungguhan frame demi frame
@@ -171,6 +171,10 @@ Rincian lengkap, jebakan pnpm+RN yang sudah kena, dan sisa jalannya ada di
 - [x] **Main bareng** lewat Socket.IO ke `apps/game-server` (server tidak berubah
       satu baris pun): masuk room, lobby, papan rebutan, papan skor live, hasil
 - [x] Splash screen + workflow CI untuk AAB
+- [x] **Efek papan**: semburan saat klaim, angka poin melayang, guncangan salah
+      klik, kilatan bom, gelombang pelangi naik level, popup combo, kedip ganti
+      target, pixel yang melompat masuk — plus setelan "Hapus animasi" Android
+      yang dihormati
 - [ ] `ALAMAT_GAME_SERVER` diisi supaya main bareng benar-benar tersambung
 - [ ] Chat lobby, mode beregu, ubah pengaturan, reconnect mid-match di Android
 - [ ] **Diuji di HP sungguhan** — belum pernah; tidak ada emulator di sini
