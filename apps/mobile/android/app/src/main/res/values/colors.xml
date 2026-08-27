@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Krem halaman awal (#fff6e9), sama dengan `--bg` di globals.css.
+
+      Latar splash sengaja BUKAN nila papan permainan: yang muncul sesudah
+      splash adalah halaman awal yang krem, dan latar gelap yang berganti terang
+      dalam sepersekian detik terbaca sebagai kedipan, bukan sebagai peralihan.
+    -->
+    <color name="splash_background">#fff6e9</color>
+</resources>

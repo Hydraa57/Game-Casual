@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Layar pembuka: latar krem halaman awal, dengan ikon aplikasi di tengahnya.
+
+  Digambar sebagai layer-list XML, bukan sebagai gambar bitmap penuh layar.
+  Alasannya bukan ukuran berkas: satu bitmap harus dipilih ukurannya, dan HP
+  Android punya rasio layar dari 18:9 sampai tablet 4:3 — bitmap yang sama akan
+  terpotong di satu perangkat dan berpinggiran di perangkat lain. Layer-list
+  membiarkan warnanya membentang dan ikonnya tetap di tengah, berapa pun
+  layarnya.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item
+        android:gravity="center"
+        android:width="160dp"
+        android:height="160dp">
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher_foreground" />
+    </item>
+</layer-list>
