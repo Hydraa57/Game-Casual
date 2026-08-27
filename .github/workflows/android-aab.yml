@@ -1,0 +1,57 @@
+name: AAB Play Store
+
+# Dijalankan MANUAL. Ini berkas yang diunggah ke Google Play, bukan yang dipakai
+# mencoba di HP sendiri — untuk itu ada workflow "APK Android".
+#
+# Bedanya bukan cuma format. AAB memuat KEEMPAT ABI sekaligus dan Play yang
+# memotongnya per perangkat, jadi ia jauh lebih besar dan lebih lama dibangun.
+on:
+  workflow_dispatch:
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Java 17: versi yang dipakai Android Gradle Plugin.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @pixelmatrix/mobile test
+      - run: pnpm --filter @pixelmatrix/mobile typecheck
+
+      - name: Build AAB
+        working-directory: apps/mobile/android
+        run: ./gradlew bundleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PixelMatrix-aab
+          path: apps/mobile/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 14
+
+      # Peringatan yang sulit dilewatkan, dan ditaruh PALING AKHIR supaya ia
+      # yang terbaca terakhir di log.
+      #
+      # CI tidak punya — dan tidak boleh punya — kunci penandatanganan rilis:
+      # repo ini publik, dan kunci yang bocor tidak bisa diganti setelah
+      # aplikasinya rilis. Jadi AAB dari sini SELALU ditandatangani kunci debug
+      # dan SELALU ditolak Play Console. Ia berguna untuk memeriksa bahwa
+      # build-nya jadi dan isinya benar; yang diunggah harus dibangun di mesin
+      # pemilik.
+      - name: Ingatkan soal penandatanganan
+        run: |
+          echo "::warning title=AAB ini TIDAK bisa diunggah ke Play::Ditandatangani kunci debug karena CI tidak memegang keystore rilis. Bangun di mesin sendiri dengan android/keystore.properties terisi — lihat docs/PLAY-STORE.md."
