@@ -85,6 +85,19 @@ export interface PropsSkor extends EfekDasar {
 export function SkorMelayang({ id, onSelesai, kiri, atas, ukuranSel, teks }: PropsSkor) {
   const maju = useSharedValue(0);
 
+  /*
+    Jarak naiknya DIJEPIT supaya angkanya tidak pernah keluar dari papan.
+
+    Papan memakai `overflow: 'hidden'`, jadi apa pun yang melewati tepi atas
+    terpotong bersih — dan pixel di baris teratas justru yang paling sering
+    diketuk di awal ronde. Tanpa jepitan ini, poin pertama yang dilihat pemain
+    adalah poin yang hilang separuh.
+
+    Versi web tidak punya masalah ini karena Phaser menggambar di kanvas yang
+    lebih tinggi dari papannya.
+  */
+  const naik = Math.min(ukuranSel * 0.8, Math.max(0, atas));
+
   useEffect(() => {
     maju.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) }, (habis) => {
       if (habis === true) runOnJS(onSelesai)(id);
@@ -95,7 +108,12 @@ export function SkorMelayang({ id, onSelesai, kiri, atas, ukuranSel, teks }: Pro
     // Pudarnya dimulai di paruh kedua, bukan sejak awal: angka yang langsung
     // memudar tidak sempat terbaca.
     opacity: maju.value < 0.5 ? 1 : 1 - (maju.value - 0.5) * 2,
-    transform: [{ translateY: -maju.value * ukuranSel * 0.9 }],
+    // Membesar dari 0,7 ke 1 seperti di web: itu yang membuatnya terbaca
+    // sebagai REAKSI atas ketukan, bukan sebagai teks yang kebetulan bergerak.
+    transform: [
+      { translateY: -maju.value * naik },
+      { scale: 0.7 + Math.min(1, maju.value * 3) * 0.3 },
+    ],
   }));
 
   return (

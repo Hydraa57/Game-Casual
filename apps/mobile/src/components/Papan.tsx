@@ -17,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GRID_SIZE, remainingRatio } from '@pixelmatrix/shared';
 import type { Cell, Pixel } from '@pixelmatrix/shared';
+import { useGerakDikurangi } from '../game/gerak';
 import { GARIS_KISI, gayaPixel, kepekatan, LATAR_PAPAN } from '../game/palet';
 import { Ledakan, PerayaanLevel, SkorMelayang, TeksTengah } from './efek';
 import { warna } from '../theme';
@@ -94,6 +95,7 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
 ) {
   const sel = ukuran / gridSize;
   const inset = sel * INSET_RATIO;
+  const gerakDikurangi = useGerakDikurangi();
 
   const [efek, setEfek] = useState<readonly Efek[]>([]);
   const idBerikut = useRef(1);
@@ -101,6 +103,15 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
   /** Guncangan papan dan kilatan warna — keduanya milik seluruh papan. */
   const guncang = useSharedValue(0);
   const kilat = useSharedValue(0);
+  /*
+    Warna kilatannya ikut berubah, dan itu bukan hiasan.
+
+    Satu lapisan yang selalu MERAH dipakai bersama oleh bom dan pergantian
+    target akan mengajarkan hal yang salah: kilatan merah sudah berarti "kamu
+    baru saja kena bom", jadi memakainya lagi saat target berganti membuat
+    pemain mengira dirinya dihukum padahal aturannya cuma berubah.
+  */
+  const warnaKilat = useSharedValue<string>(warna.danger);
 
   const buangEfek = useCallback((id: number) => {
     setEfek((daftar) => daftar.filter((e) => e.id !== id));
@@ -120,6 +131,7 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
         tambahEfek((id) => ({ jenis: 'skor', id, cell, teks: `+${poin}` }));
       },
       salah() {
+        if (gerakDikurangi) return;
         // Guncangan pendek dan halus. Klik salah sering terjadi; guncangan
         // sekeras bom akan membuat papannya terasa gemetar sepanjang ronde.
         guncang.value = withSequence(
@@ -139,20 +151,30 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
       bom() {
         // Lebih keras dan lebih panjang dari klik salah: bom itu kesalahan yang
         // paling mahal, dan pemain harus langsung tahu tanpa melihat HUD.
-        guncang.value = withSequence(
-          withTiming(-1, { duration: 45 }),
-          withTiming(1, { duration: 60 }),
-          withTiming(-0.7, { duration: 60 }),
-          withTiming(0.5, { duration: 55 }),
-          withTiming(0, { duration: 40 }),
-        );
+        //
+        // Kilatan merahnya TETAP ada walau gerak dikurangi: ia perubahan
+        // opasitas, bukan gerak, dan ia satu-satunya penanda bom yang tersisa
+        // di layar setelah guncangannya dimatikan.
+        if (!gerakDikurangi) {
+          guncang.value = withSequence(
+            withTiming(-1, { duration: 45 }),
+            withTiming(1, { duration: 60 }),
+            withTiming(-0.7, { duration: 60 }),
+            withTiming(0.5, { duration: 55 }),
+            withTiming(0, { duration: 40 }),
+          );
+        }
+        warnaKilat.value = warna.danger;
         kilat.value = withSequence(
           withTiming(1, { duration: 60 }),
           withTiming(0, { duration: 220 }),
         );
       },
       naikLevel(level) {
-        tambahEfek((id) => ({ jenis: 'perayaan', id }));
+        // Gelombang pelangi menyapu seluruh layar — persis jenis gerakan yang
+        // dimaksud setelan itu. Teks "LEVEL N"-nya tetap muncul, jadi naik
+        // level tidak pernah lewat tanpa diberitahu.
+        if (!gerakDikurangi) tambahEfek((id) => ({ jenis: 'perayaan', id }));
         tambahEfek((id) => ({
           jenis: 'teks',
           id,
@@ -182,6 +204,7 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
       gantiTarget() {
         // Mata pemain ada di PAPAN, dan papan adalah satu-satunya tempat yang
         // tidak memberi tanda apa pun saat aturannya berubah.
+        warnaKilat.value = warna.sky;
         kilat.value = withSequence(
           withTiming(0.35, { duration: 90 }),
           withTiming(0, { duration: 260 }),
@@ -191,7 +214,7 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
         setEfek([]);
       },
     }),
-    [tambahEfek, guncang, kilat],
+    [tambahEfek, guncang, kilat, warnaKilat, gerakDikurangi],
   );
 
   const garis = useMemo(
@@ -203,7 +226,10 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
     transform: [{ translateX: guncang.value * ukuran * 0.015 }],
   }));
 
-  const gayaKilat = useAnimatedStyle(() => ({ opacity: kilat.value * 0.55 }));
+  const gayaKilat = useAnimatedStyle(() => ({
+    opacity: kilat.value * 0.55,
+    backgroundColor: warnaKilat.value,
+  }));
 
   function tangani(e: GestureResponderEvent): void {
     const { locationX, locationY } = e.nativeEvent;
@@ -238,6 +264,7 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
           inset={inset}
           elapsedMs={elapsedMs}
           sembunyikan={sembunyikanGlyph?.(pixel) === true}
+          gerakDikurangi={gerakDikurangi}
         />
       ))}
 
@@ -262,7 +289,10 @@ export const Papan = forwardRef<KaitPapan, PapanProps>(function Papan(
                 id={e.id}
                 onSelesai={buangEfek}
                 kiri={e.cell.col * sel}
-                atas={e.cell.row * sel}
+                // Dimulai dari TENGAH sel, bukan dari tepi atasnya — sama
+                // seperti web, dan itu juga yang memberi baris teratas ruang
+                // untuk naik sedikit alih-alih diam di tempat.
+                atas={e.cell.row * sel + sel * 0.33}
                 ukuranSel={sel}
                 teks={e.teks}
               />
@@ -312,19 +342,24 @@ function PixelView({
   inset,
   elapsedMs,
   sembunyikan,
+  gerakDikurangi,
 }: {
   readonly pixel: Pixel;
   readonly sel: number;
   readonly inset: number;
   readonly elapsedMs: number;
   readonly sembunyikan: boolean;
+  readonly gerakDikurangi: boolean;
 }) {
   const g = gayaPixel(pixel);
-  const muncul = useSharedValue(0);
+  // Mulai dari 1 kalau gerak dikurangi: pixelnya langsung ada dengan ukuran
+  // penuh, tanpa satu frame pun dalam keadaan mengecil.
+  const muncul = useSharedValue(gerakDikurangi ? 1 : 0);
 
   React.useEffect(() => {
+    if (gerakDikurangi) return;
     muncul.value = withTiming(1, { duration: 140, easing: Easing.out(Easing.back(1.6)) });
-  }, [muncul]);
+  }, [muncul, gerakDikurangi]);
 
   const gayaMuncul = useAnimatedStyle(() => ({
     transform: [{ scale: 0.55 + muncul.value * 0.45 }],
@@ -403,6 +438,8 @@ const gaya = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#e43b44',
+    // Warnanya ditentukan `warnaKilat` saat kilatannya dipicu; nilai di sini
+    // hanya supaya lapisannya tidak pernah tanpa warna sebelum dipakai.
+    backgroundColor: warna.danger,
   },
 });
