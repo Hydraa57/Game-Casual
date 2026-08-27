@@ -12,7 +12,8 @@ import type { HudSnapshot, TutorialTopic } from '@pixelmatrix/shared';
 import type { SoloController } from '@/game/createSoloGame';
 import { Link, useRouter } from '@/i18n/navigation';
 import { readHighScore, writeHighScore } from '@/lib/highScore';
-import { Music } from '@/game/music';
+import { buatMusic } from '@/game/audio';
+import type { Music } from '@pixelmatrix/shared';
 import { readMusicVolume, writeMusicVolume } from '@/lib/musicVolume';
 import { markTutorialSeen, readTutorialSeen } from '@/lib/tutorialSeen';
 import { readMuted, writeMuted } from '@/lib/mute';
@@ -55,7 +56,7 @@ export function SoloGame({ startLevel }: { startLevel?: number }) {
    */
   const musicRef = useRef<Music | null>(null);
   if (musicRef.current === null && typeof window !== 'undefined') {
-    musicRef.current = new Music();
+    musicRef.current = buatMusic();
   }
 
   useEffect(() => {

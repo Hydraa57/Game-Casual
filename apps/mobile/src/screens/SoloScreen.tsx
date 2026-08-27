@@ -9,13 +9,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MAX_CONTINUES } from '@pixelmatrix/shared';
+import { MAX_CONTINUES, soloIntensity, SOLO_STARTING_LIVES } from '@pixelmatrix/shared';
 import type { GameEvent, HudSnapshot, Pixel } from '@pixelmatrix/shared';
 import { Hud } from '../components/Hud';
 import { Papan } from '../components/Papan';
 import { TombolChunky } from '../components/TombolChunky';
-import { getarUntuk } from '../game/getar';
+import { buatMusic, buatSfx } from '../game/audio';
 import { MesinSolo } from '../game/MesinSolo';
+import { bacaBisu, simpanBisu } from '../lib/preferensi';
 import { bacaRekor, simpanRekorKalauLebihTinggi } from '../lib/rekor';
 import { latarGradien, font, radius, warna } from '../theme';
 
@@ -42,18 +43,53 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
   const { width } = useWindowDimensions();
 
   const [rekor, setRekor] = useState(0);
+  const [bisu, setBisu] = useState(false);
 
-  const tanganiEvent = useCallback((event: GameEvent) => {
-    // Bunyi menyusul di patch audio; getarnya sudah jalan sekarang.
-    getarUntuk(event);
+  /*
+    Bunyi dan musik dibuat SEKALI per layar, dipegang di `useState`.
 
-    if (event.type === 'gameOver') {
-      // Perbandingannya dilakukan di dalam `simpanRekorKalauLebihTinggi`, yang
-      // membaca ulang dari penyimpanan sebelum menulis — `rekor` di state ini
-      // bisa saja tertinggal.
-      void simpanRekorKalauLebihTinggi(event.score).then(setRekor);
-    }
-  }, []);
+    AudioContext itu sumber daya sistem; membuatnya ulang tiap render akan
+    ditolak setelah beberapa kali, dan yang terdengar pemain adalah bunyi yang
+    tiba-tiba mati di tengah ronde.
+  */
+  const [sfx] = useState(buatSfx);
+  const [music] = useState(buatMusic);
+
+  const tanganiEvent = useCallback(
+    (event: GameEvent) => {
+      // Getarnya ikut di sini: `Sfx` bersama yang memegang pola getar tiap
+      // kejadian, jadi bunyi dan getar tidak mungkin berpisah.
+      switch (event.type) {
+        case 'pixelClaimed':
+          sfx.correct(event.combo);
+          if (event.kind === 'gold') sfx.gold();
+          if (event.kind === 'life') sfx.life();
+          break;
+        case 'clickRejected':
+          if (event.reason === 'wrongColor') sfx.wrong();
+          break;
+        case 'bombHit':
+          sfx.bomb();
+          break;
+        case 'levelUp':
+          sfx.levelUp();
+          break;
+        case 'gameOver':
+          sfx.gameOver();
+          break;
+        default:
+          break;
+      }
+
+      if (event.type === 'gameOver') {
+        // Perbandingannya dilakukan di dalam `simpanRekorKalauLebihTinggi`, yang
+        // membaca ulang dari penyimpanan sebelum menulis — `rekor` di state ini
+        // bisa saja tertinggal.
+        void simpanRekorKalauLebihTinggi(event.score).then(setRekor);
+      }
+    },
+    [sfx],
+  );
 
   /*
     Mesin dibuat SEKALI, lewat penginisialisasi `useState`.
@@ -106,6 +142,33 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
     };
   }, [mesin]);
 
+  // ------------------------------------------------------------------- musik
+
+  /*
+    Musik hanya berbunyi saat benar-benar bermain.
+
+    Di layar siap, jeda, dan kalah ia berhenti — itu momen untuk membaca dan
+    memutuskan, bukan momen untuk didesak. Aturan yang sama dipakai versi web.
+  */
+  useEffect(() => {
+    if (snapshot.status === 'running') music.start();
+    else music.stop();
+  }, [music, snapshot.status]);
+
+  /* Ketegangan dihitung di `shared`, jadi bisa diuji tanpa audio sama sekali. */
+  useEffect(() => {
+    music.setIntensity(soloIntensity(snapshot.level, snapshot.lives, SOLO_STARTING_LIVES));
+  }, [music, snapshot.level, snapshot.lives]);
+
+  /* AudioContext itu sumber daya sistem — dilepas saat layarnya ditutup. */
+  useEffect(
+    () => () => {
+      music.dispose();
+      sfx.dispose();
+    },
+    [music, sfx],
+  );
+
   // ------------------------------------------------------------------- rekor
 
   useEffect(() => {
@@ -113,10 +176,28 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
     void bacaRekor().then((nilai) => {
       if (hidup) setRekor(nilai);
     });
+    void bacaBisu().then((nilai) => {
+      if (!hidup) return;
+      setBisu(nilai);
+      // Diterapkan langsung, bukan menunggu render berikutnya: musik bisa
+      // sudah mulai sebelum pembacaan preferensi ini selesai.
+      sfx.setMuted(nilai);
+      music.setMuted(nilai);
+    });
     return () => {
       hidup = false;
     };
-  }, []);
+  }, [sfx, music]);
+
+  const gantiBisu = useCallback(() => {
+    setBisu((sekarang) => {
+      const berikutnya = !sekarang;
+      sfx.setMuted(berikutnya);
+      music.setMuted(berikutnya);
+      void simpanBisu(berikutnya);
+      return berikutnya;
+    });
+  }, [sfx, music]);
 
   // -------------------------------------------------- aplikasi ke latar belakang
 
@@ -130,10 +211,15 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
    */
   useEffect(() => {
     const langganan = AppState.addEventListener('change', (keadaan) => {
-      if (keadaan !== 'active') mesin.jeda();
+      if (keadaan !== 'active') {
+        mesin.jeda();
+        // Musik yang terus berbunyi setelah aplikasi ditinggalkan adalah salah
+        // satu keluhan paling umum tentang game HP.
+        music.stop();
+      }
     });
     return () => langganan.remove();
-  }, [mesin]);
+  }, [mesin, music]);
 
   // ----------------------------------------------------------------- tampilan
 
@@ -153,6 +239,16 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
             <Text style={gaya.tombolKecilTeks}>‹ Keluar</Text>
           </Pressable>
           {rekor > 0 && <Text style={gaya.rekor}>REKOR {rekor}</Text>}
+          <Pressable
+            onPress={gantiBisu}
+            hitSlop={12}
+            style={gaya.tombolKecil}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: bisu }}
+            accessibilityLabel={bisu ? 'Nyalakan suara' : 'Matikan suara'}
+          >
+            <Text style={gaya.tombolKecilTeks}>{bisu ? '🔇' : '🔊'}</Text>
+          </Pressable>
           {berjalan && (
             <Pressable onPress={() => mesin.jeda()} hitSlop={12} style={gaya.tombolKecil}>
               <Text style={gaya.tombolKecilTeks}>Jeda</Text>
@@ -187,9 +283,18 @@ export function SoloScreen({ onKeluar }: SoloScreenProps) {
         <Tirai
           snapshot={snapshot}
           rekor={rekor}
-          onMulai={() => mesin.mulai()}
-          onLanjutkan={() => mesin.lanjutkan()}
-          onLanjutCheckpoint={() => mesin.lanjutDariCheckpoint()}
+          onMulai={() => {
+            sfx.unlock();
+            mesin.mulai();
+          }}
+          onLanjutkan={() => {
+            sfx.unlock();
+            mesin.lanjutkan();
+          }}
+          onLanjutCheckpoint={() => {
+            sfx.unlock();
+            mesin.lanjutDariCheckpoint();
+          }}
           onKeluar={onKeluar}
         />
       )}

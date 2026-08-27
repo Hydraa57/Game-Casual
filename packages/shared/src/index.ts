@@ -1,3 +1,4 @@
+export * from './audio/index';
 export * from './auth/index';
 export * from './constants/index';
 export * from './engine/index';

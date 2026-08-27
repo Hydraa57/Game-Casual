@@ -9,7 +9,7 @@ import {
 import type { AvatarId, ChaosModifier, Cell, Color, Pixel, PixelKind } from '@pixelmatrix/shared';
 import { BoardRenderer } from './BoardRenderer';
 import { BOARD_BACKGROUND } from './palette';
-import type { Sfx } from './sfx';
+import type { Sfx } from '@pixelmatrix/shared';
 
 interface DebugWindow {
   __pmRemote?: {

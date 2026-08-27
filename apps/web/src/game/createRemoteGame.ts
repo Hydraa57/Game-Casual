@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { BOARD_SIZE } from './BoardRenderer';
 import { RemoteBoardScene } from './RemoteBoardScene';
-import { Sfx } from './sfx';
+import { buatSfx } from './audio';
 
 export interface RemoteController {
   readonly scene: RemoteBoardScene;
@@ -19,7 +19,7 @@ export function createRemoteGame({
   parent,
   onTapPixel,
 }: CreateRemoteGameOptions): RemoteController {
-  const sfx = new Sfx();
+  const sfx = buatSfx();
   const scene = new RemoteBoardScene({ onTapPixel, sfx });
 
   const game = new Phaser.Game({

@@ -27,7 +27,7 @@ import {
 import type { GameEvent, GameState, HudSnapshot, Pixel } from '@pixelmatrix/shared';
 import { BoardRenderer } from './BoardRenderer';
 import { BOARD_BACKGROUND } from './palette';
-import type { Sfx } from './sfx';
+import type { Sfx } from '@pixelmatrix/shared';
 
 /**
  * Kalau tab di-background, `delta` bisa melompat detik-detikan. Dijepit supaya

@@ -1,3 +1,12 @@
+import type {
+  BentukGelombang,
+  KonteksAudio,
+  NodeFilter,
+  NodeGain,
+  PembuatKonteks,
+  PembuatPengulang,
+} from './tipe';
+
 /**
  * Musik latar yang disintesis, bukan file audio.
  *
@@ -97,16 +106,17 @@ export const DEFAULT_MUSIC_VOLUME = 0.6;
 const LOOKAHEAD_MS = 25;
 const SCHEDULE_AHEAD_S = 0.12;
 
-interface AudioWindow {
-  AudioContext?: typeof AudioContext;
-  webkitAudioContext?: typeof AudioContext;
+export interface OpsiMusic {
+  readonly buatKonteks: PembuatKonteks;
+  readonly buatPengulang: PembuatPengulang;
 }
 
 export class Music {
-  private context: AudioContext | null = null;
-  private master: GainNode | null = null;
-  private filter: BiquadFilterNode | null = null;
-  private timer: number | null = null;
+  private context: KonteksAudio | null = null;
+  private master: NodeGain | null = null;
+  private filter: NodeFilter | null = null;
+  /** Cara menghentikan pengulang yang sedang jalan; `null` kalau tidak jalan. */
+  private hentikanPengulang: (() => void) | null = null;
 
   /** Waktu audio nada berikutnya dijadwalkan. */
   private nextNoteAt = 0;
@@ -117,15 +127,14 @@ export class Music {
   private volume = DEFAULT_MUSIC_VOLUME;
 
   /** Dipanggil dari gestur pemain — tanpa itu browser menolak memulai audio. */
+  constructor(private readonly opsi: OpsiMusic) {}
+
   start(): void {
     if (this.running) return;
 
-    const globals = window as unknown as AudioWindow;
-    const Ctor = globals.AudioContext ?? globals.webkitAudioContext;
-    if (!Ctor) return;
-
     if (this.context === null) {
-      this.context = new Ctor();
+      this.context = this.opsi.buatKonteks();
+      if (this.context === null) return;
 
       this.filter = this.context.createBiquadFilter();
       this.filter.type = 'lowpass';
@@ -142,14 +151,14 @@ export class Music {
     void this.context.resume();
     this.running = true;
     this.nextNoteAt = this.context.currentTime + 0.05;
-    this.timer = window.setInterval(() => this.schedule(), LOOKAHEAD_MS);
+    this.hentikanPengulang = this.opsi.buatPengulang(() => this.schedule(), LOOKAHEAD_MS);
   }
 
   stop(): void {
     this.running = false;
-    if (this.timer !== null) {
-      window.clearInterval(this.timer);
-      this.timer = null;
+    if (this.hentikanPengulang !== null) {
+      this.hentikanPengulang();
+      this.hentikanPengulang = null;
     }
   }
 
@@ -295,7 +304,7 @@ export class Music {
     frequency: number,
     at: number,
     duration: number,
-    type: OscillatorType,
+    type: BentukGelombang,
     gain: number,
   ): void {
     const context = this.context;

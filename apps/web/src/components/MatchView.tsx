@@ -27,7 +27,8 @@ import type {
   TickPayload,
 } from '@pixelmatrix/shared';
 import type { RemoteController } from '@/game/createRemoteGame';
-import { Music } from '@/game/music';
+import { buatMusic } from '@/game/audio';
+import type { Music } from '@pixelmatrix/shared';
 import { BoardModal } from './BoardModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { LevelBar } from './LevelBar';
@@ -151,7 +152,7 @@ export function MatchView({
 
   const musicRef = useRef<Music | null>(null);
   if (musicRef.current === null && typeof window !== 'undefined') {
-    musicRef.current = new Music();
+    musicRef.current = buatMusic();
   }
 
   useEffect(() => {

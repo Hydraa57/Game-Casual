@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import type { HudSnapshot } from '@pixelmatrix/shared';
 import { BOARD_SIZE } from './BoardRenderer';
 import { BoardScene } from './BoardScene';
-import { Sfx } from './sfx';
+import { buatSfx } from './audio';
 
 export interface SoloController {
   start(): void;
@@ -25,7 +25,7 @@ export function createSoloGame({
   onHud,
   startLevel,
 }: CreateSoloGameOptions): SoloController {
-  const sfx = new Sfx();
+  const sfx = buatSfx();
   const scene = new BoardScene({ onHud, sfx, startLevel });
 
   const game = new Phaser.Game({

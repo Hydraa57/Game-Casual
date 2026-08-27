@@ -1,4 +1,4 @@
-import { DEFAULT_MUSIC_VOLUME } from '@/game/music';
+import { DEFAULT_MUSIC_VOLUME } from '@pixelmatrix/shared';
 
 /**
  * Volume musik latar, 0..1, disimpan per perangkat.
