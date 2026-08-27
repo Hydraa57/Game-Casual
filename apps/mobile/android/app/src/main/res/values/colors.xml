@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      Krem halaman awal (#fff6e9), sama dengan `--bg` di globals.css.
+      Krem halaman awal (#fff6e9), sama dengan variabel `bg` di globals.css.
 
-      Latar splash sengaja BUKAN nila papan permainan: yang muncul sesudah
-      splash adalah halaman awal yang krem, dan latar gelap yang berganti terang
-      dalam sepersekian detik terbaca sebagai kedipan, bukan sebagai peralihan.
+      Nama variabelnya sengaja ditulis tanpa dua tanda hubung di depannya: XML
+      melarang tanda hubung ganda muncul di dalam komentar, dan aapt menolak
+      seluruh berkasnya kalau itu terjadi. Kegagalannya baru muncul di langkah
+      packageRelease, delapan menit setelah build dimulai — dan itu sudah
+      pernah terjadi di repo ini.
+
+      Dijaga `src/androidXml.test.ts`, yang menemukannya dalam hitungan detik.
     -->
     <color name="splash_background">#fff6e9</color>
 </resources>
