@@ -275,9 +275,10 @@ ditampilkan pengelola berkas), diukur ulang **setelah Skia dikeluarkan**:
 
 | Berkas | Ukuran | Untuk apa |
 |---|---|---|
-| `app-debug.apk` | 287 MiB | Pengembangan saja. Empat ABI + perkakas dev + simbol debug + tanpa minifikasi |
-| `app-release.apk` (4 ABI) | 61,8 MiB | Bawaan `assembleRelease`. Memuat KEEMPAT ABI sekaligus |
-| `app-release.aab` | 43,9 MiB | **Ini yang diunggah ke Play Store** |
+| `app-release.aab` | **60,6 MiB** | **Ini yang diunggah ke Play Store.** Memuat keempat ABI |
+| `app-release.apk` (arm64) | **26,7 MiB** | Yang dipakai mencoba di HP |
+| `app-release.apk` (4 ABI) | 61,8 MiB | _Belum diukur ulang sejak audio & main bareng masuk_ |
+| `app-debug.apk` | 287 MiB | _Belum diukur ulang._ Pengembangan saja — empat ABI + simbol debug |
 
 **Yang benar-benar diunduh pemain jauh lebih kecil**, karena satu HP hanya butuh
 satu ABI. Diukur dari APK yang dibangun per-ABI
@@ -285,22 +286,32 @@ satu ABI. Diukur dari APK yang dibangun per-ABI
 
 | Perangkat | APK per-ABI |
 |---|---|
-| arm64-v8a (hampir semua HP modern) | **21,2 MiB** |
-| armeabi-v7a (HP lama) | **16,6 MiB** |
+| arm64-v8a (hampir semua HP modern) | **26,7 MiB** |
+| armeabi-v7a (HP lama) | ~21 MiB _(diperkirakan; belum diukur ulang)_ |
 
 Unduhan lewat Play sedikit lebih kecil lagi — Play memotong AAB bukan cuma per
 ABI tapi juga per kerapatan layar dan per bahasa, yang tidak dilakukan APK di
 atas. Jadi angka ini batas atas, bukan perkiraan optimistis.
 
-Isi APK arm64 21,2 MiB itu: **14,6 MiB pustaka native**, 4,1 MiB dex, 1,7 MiB
-bundel JS, sisanya resources. Empat pustaka native terbesar:
+Pustaka native terbesar di APK arm64, semuanya diukur dari berkas jadi:
 
-| Pustaka | arm64 |
-|---|---|
-| `libreactnative.so` | 6,6 MiB |
-| `libhermesvm.so` | 2,4 MiB |
-| `libreanimated.so` | 1,5 MiB |
-| `libc++_shared.so` | 1,2 MiB |
+| Pustaka | arm64 | Untuk apa |
+|---|---|---|
+| `libreactnative.so` | 6,58 MiB | React Native itu sendiri |
+| `libreact-native-audio-api.so` | 2,52 MiB | Mesin Web Audio |
+| `libhermesvm.so` | 2,36 MiB | Mesin JavaScript |
+| `libreanimated.so` | 1,53 MiB | Animasi |
+| `libc++_shared.so` | 1,23 MiB | Runtime C++ |
+| `libsqliteJni.so` | 1,05 MiB | Penyimpanan rekor offline |
+
+> **FFmpeg dimatikan lewat `disableAudioapiFFmpeg=true`.** Ia ikut terpaket
+> secara baku dan menambah **5,7 MiB** (`libavformat.so` 5,12 + `libavcodec.so`
+> 0,59) untuk MEMUTAR dan MENDEKODE berkas audio — kemampuan yang game ini tidak
+> pakai sama sekali, karena seluruh bunyinya disintesis.
+>
+> Kasus yang sama persis dengan Skia: megabyte yang diunduh tiap pemain untuk
+> sesuatu yang tidak pernah dipanggil. Ditemukan dengan cara yang sama juga —
+> **membongkar isi APK-nya**, bukan menebak dari ukurannya.
 
 > **Tuas terbesar sudah ditarik: Skia dikeluarkan, dan itu memangkas separuh.**
 > AAB turun dari 86,1 → 43,9 MiB dan APK arm64 dari 35,1 → 21,2 MiB. Yang

@@ -38,7 +38,14 @@ aplikasinya tidak bisa diperbarui lagi selamanya. Tidak ada pemulihan.
       debug.
 - [x] **Kebijakan privasi** di `/privacy` (id + en), ditulis dari skema database
       dan manifest yang sebenarnya.
-- [x] **AAB bisa dibuat** (`pnpm --filter @pixelmatrix/mobile aab`).
+- [x] **AAB terbukti jadi**: 60,6 MiB, keempat ABI, 8 font terpaket, tanpa
+      FFmpeg. Dibangun lewat workflow **AAB Play Store** di tab Actions, atau
+      `pnpm --filter @pixelmatrix/mobile aab` di mesin sendiri.
+
+> AAB dari CI **selalu ditandatangani kunci debug** dan **selalu ditolak Play
+> Console** — CI tidak punya, dan tidak boleh punya, kunci rilis. Ia berguna
+> untuk memeriksa isinya. Yang diunggah harus dibangun di mesinmu setelah
+> `android/keystore.properties` terisi (Langkah 1 di bawah).
 
 ## Langkah 1 — Buat keystore (di mesinmu, sekali seumur aplikasi)
 
