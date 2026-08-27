@@ -1,0 +1,54 @@
+diff --git a/scripts/validate-worklets-version.js b/scripts/validate-worklets-version.js
+index 9d2b0d99b62b66dd529f9904fa34f84167a54b32..50eebd2abc00c1b18fc702a91a62026e7e764dc8 100644
+--- a/scripts/validate-worklets-version.js
++++ b/scripts/validate-worklets-version.js
+@@ -1,9 +1,37 @@
+ 'use strict';
+ 
+ const semverGte = require('semver/functions/gte');
++const semverLt = require('semver/functions/lt');
+ 
+ const MIN_WORKLETS_VERSION = '0.6.0';
+ 
++/**
++ * PATCH PIXEL MATRIX — batas ATAS ditambahkan.
++ *
++ * Aslinya skrip ini hanya memeriksa batas bawah (>= 0.6.0), dan itu salah untuk
++ * worklets 0.12.x: kelas `worklets::WorkletRuntime` di sana SUDAH TIDAK PUNYA
++ * `executeSync`, sementara kode C++ react-native-audio-api masih memanggilnya.
++ * Hasilnya build Android gagal saat kompilasi native:
++ *
++ *   WorkletsRunner.cpp:65:25: error: no member named 'executeSync'
++ *       in 'worklets::WorkletRuntime'
++ *
++ * Kegagalannya baru muncul setelah ~6 menit kompilasi, bukan saat `pnpm
++ * install`, karena pemeriksaannya memang cuma membaca nomor versi.
++ *
++ * Dengan mengembalikan false, Gradle menyetel RN_AUDIO_API_ENABLE_WORKLETS=false
++ * dan audio-api memakai implementasi worklets TIRUAN miliknya sendiri (lihat
++ * `common/cpp/audioapi/core/utils/worklets/SafeIncludes.h`). Yang hilang
++ * hanyalah worklet node — menjalankan pemrosesan audio di runtime worklet, yang
++ * TIDAK dipakai game ini sama sekali. AudioContext, osilator, gain, filter, dan
++ * buffer derau — semua yang dipakai `packages/shared/src/audio` — tetap jalan
++ * penuh.
++ *
++ * Batasnya ditulis sebagai versi, bukan sebagai deteksi simbol, karena skrip
++ * ini memang hanya bisa membaca package.json. Kalau audio-api suatu saat
++ * memperbaiki pemanggilan `executeSync`-nya, patch ini bisa dibuang.
++ */
++const MAX_WORKLETS_VERSION_EXCLUSIVE = '0.12.0';
+ 
+ /**
+  * Checks if the installed version of react-native-worklets is compatible with react-native-audio-api.
+@@ -18,7 +46,10 @@ function validateVersion() {
+     return false;
+   }
+ 
+-  return semverGte(workletsVersion, MIN_WORKLETS_VERSION);
++  return (
++    semverGte(workletsVersion, MIN_WORKLETS_VERSION) &&
++    semverLt(workletsVersion, MAX_WORKLETS_VERSION_EXCLUSIVE)
++  );
+ }
+ 
+ if (!validateVersion()) {
